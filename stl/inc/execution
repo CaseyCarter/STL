@@ -834,8 +834,9 @@ template <class _RanIt, class _Diff>
 struct _Static_partition_range<_RanIt, _Diff, true> {
     using _Target_diff = _Iter_diff_t<_RanIt>;
     using _URanIt      = _Unwrapped_t<const _RanIt&>;
-    _URanIt _Start_at;
     using _Chunk_type = _Iterator_range<_URanIt>;
+
+    _URanIt _Start_at;
 
     _RanIt _Populate(const _Static_partition_team<_Diff>& _Team,
         _RanIt _First) { // statically partition a random-access iterator range and return next(_First, _Team._Count)
@@ -870,8 +871,9 @@ template <class _FwdIt, class _Diff>
 struct _Static_partition_range<_FwdIt, _Diff, false> {
     using _Target_diff = _Iter_diff_t<_FwdIt>;
     using _UFwdIt      = _Unwrapped_t<const _FwdIt&>;
-    _Parallel_vector<_UFwdIt> _Division_points;
     using _Chunk_type = _Iterator_range<_UFwdIt>;
+
+    _Parallel_vector<_UFwdIt> _Division_points;
 
     _FwdIt _Populate(const _Static_partition_team<_Diff>& _Team,
         _FwdIt _First) { // statically partition a forward iterator range and return next(_First, _Team._Count)
@@ -954,8 +956,9 @@ struct _Static_partition_range_backward;
 template <class _RanIt, class _Diff>
 struct _Static_partition_range_backward<_RanIt, _Diff, true> {
     using _Target_diff = _Iter_diff_t<_RanIt>;
-    _Unwrapped_t<const _RanIt&> _Start_at;
     using _Chunk_type = _Iterator_range<_Unwrapped_t<const _RanIt&>>;
+
+    _Unwrapped_t<const _RanIt&> _Start_at;
 
     void _Populate(const _Static_partition_team<_Diff>& _Team, _RanIt _Last) {
         // statically partition a random-access iterator range ending at _Last
@@ -974,8 +977,9 @@ struct _Static_partition_range_backward<_RanIt, _Diff, true> {
 template <class _BidIt, class _Diff>
 struct _Static_partition_range_backward<_BidIt, _Diff, false> {
     using _Target_diff = _Iter_diff_t<_BidIt>;
-    _Parallel_vector<_Unwrapped_t<const _BidIt&>> _Division_points;
     using _Chunk_type = _Iterator_range<_Unwrapped_t<const _BidIt&>>;
+
+    _Parallel_vector<_Unwrapped_t<const _BidIt&>> _Division_points;
 
     void _Populate(const _Static_partition_team<_Diff>& _Team, _BidIt _Last) {
         // statically partition a bidirectional iterator range ending at _Last
@@ -1007,8 +1011,8 @@ struct _Static_partition_range_backward<_BidIt, _Diff, false> {
 
 // FUNCTION TEMPLATE _Distance_any
 template <class _InIt1, class _InIt2>
-_Common_diff_t<_InIt1, _InIt2> _Distance_any(_InIt1 _First1, _InIt1 _Last1, _InIt2 _First2,
-    _InIt2 _Last2) { // get the distance from 2 ranges which should have identical lengths
+_Common_diff_t<_InIt1, _InIt2> _Distance_any(_InIt1 _First1, _InIt1 _Last1, _InIt2 _First2, _InIt2 _Last2) {
+    // get the distance from 2 ranges which should have identical lengths
     if constexpr (_Is_random_iter_v<_InIt1>) {
         (void) _First2; // TRANSITION, VSO-486357
         (void) _Last2; // TRANSITION, VSO-486357
@@ -1697,6 +1701,7 @@ _NODISCARD _FwdIt adjacent_find(_ExPo&&, _FwdIt _First, _FwdIt _Last, _Pr _Pred)
 template <class _FwdIt, class _Pr>
 struct _Static_partitioned_count_if2 {
     using _Diff = _Iter_diff_t<_FwdIt>;
+
     _Static_partition_team<_Diff> _Team;
     _Static_partition_range<_FwdIt> _Basis;
     _Pr _Pred;
@@ -1816,6 +1821,7 @@ struct _Static_partitioned_mismatch_results<_FwdIt1, _FwdIt2, false, false> {
     // get both iterators by manipulating them under lock
     using _UFwdIt1 = _Unwrapped_t<const _FwdIt1&>;
     using _UFwdIt2 = _Unwrapped_t<const _FwdIt2&>;
+
     _Parallel_choose_min_chunk<pair<_UFwdIt1, _UFwdIt2>> _Storage;
 
     _Static_partitioned_mismatch_results(const _UFwdIt1 _Last1, const _UFwdIt2 _Last2) : _Storage({_Last1, _Last2}) {}
@@ -1835,6 +1841,7 @@ struct _Static_partitioned_mismatch_results<_FwdIt1, _FwdIt2, false, false> {
 template <class _FwdIt1, class _FwdIt2, class _Pr>
 struct _Static_partitioned_mismatch2 {
     using _Diff = _Common_diff_t<_FwdIt1, _FwdIt2>;
+
     _Static_partition_team<_Diff> _Team;
     _Static_partition_range<_FwdIt1, _Diff> _Basis1;
     _Static_partition_range<_FwdIt2, _Diff> _Basis2;
@@ -1969,6 +1976,7 @@ _NODISCARD pair<_FwdIt1, _FwdIt2> mismatch(
 template <class _FwdIt1, class _FwdIt2, class _Pr>
 struct _Static_partitioned_equal2 {
     using _Diff = _Common_diff_t<_FwdIt1, _FwdIt2>;
+
     _Static_partition_team<_Diff> _Team;
     _Static_partition_range<_FwdIt1, _Diff> _Basis1;
     _Static_partition_range<_FwdIt2, _Diff> _Basis2;
@@ -2310,6 +2318,7 @@ _FwdIt2 _Transform_ivdep(_FwdIt1 _First, const _FwdIt1 _Last, _FwdIt2 _Dest, _Fn
 template <class _FwdIt1, class _FwdIt2, class _Fn>
 struct _Static_partitioned_unary_transform2 {
     using _Diff = _Common_diff_t<_FwdIt1, _FwdIt2>;
+
     _Static_partition_team<_Diff> _Team;
     _Static_partition_range<_FwdIt1, _Diff> _Source_basis;
     _Static_partition_range<_FwdIt2, _Diff> _Dest_basis;
@@ -2393,6 +2402,7 @@ _FwdIt3 _Transform_ivdep(_FwdIt1 _First1, const _FwdIt1 _Last1, _FwdIt2 _First2,
 template <class _FwdIt1, class _FwdIt2, class _FwdIt3, class _Fn>
 struct _Static_partitioned_binary_transform2 {
     using _Diff = _Common_diff_t<_FwdIt1, _FwdIt2, _FwdIt3>;
+
     _Static_partition_team<_Diff> _Team;
     _Static_partition_range<_FwdIt1, _Diff> _Source1_basis;
     _Static_partition_range<_FwdIt2, _Diff> _Source2_basis;
@@ -2909,6 +2919,7 @@ struct _Bottom_up_tree_visitor {
 template <class _BidIt, class _Pr>
 struct _Static_partitioned_stable_sort3 {
     using _Diff = _Iter_diff_t<_BidIt>;
+
     _Static_partition_team<_Diff> _Team;
     _Static_partition_range<_BidIt> _Basis;
     _Bottom_up_merge_tree _Merge_tree;
@@ -3290,6 +3301,7 @@ _NODISCARD bool is_partitioned(_ExPo&&, const _FwdIt _First, const _FwdIt _Last,
 template <class _RanIt, class _Pr>
 struct _Static_partitioned_is_heap_until {
     using _Diff = _Iter_diff_t<_RanIt>;
+
     _Static_partition_team<_Diff> _Team;
     _RanIt _Range_first;
     _Pr _Pred;
@@ -3631,6 +3643,7 @@ struct _Scan_decoupled_lookback {
     // inter-chunk communication block in "Single-pass Parallel Prefix Scan with Decoupled Look-back" by Merrill and
     // Garland
     using value_type = _Ty;
+
     atomic<unsigned char> _State;
     _Storage_for<_Ty> _Local; // owned by thread iff _State < _Local_available; otherwise const and shared
     _Storage_for<_Ty> _Sum; // owned by thread iff _State < _Sum_available
@@ -3766,6 +3779,7 @@ void _Place_elements_from_indices(
 template <class _RanIt1, class _RanIt2, class _RanIt3, class _Pr, class _SetOper>
 struct _Static_partitioned_set_subtraction {
     using _Diff = _Common_diff_t<_RanIt1, _RanIt2, _RanIt3>;
+
     _Static_partition_team<_Diff> _Team;
     _Static_partition_range<_RanIt1, _Diff> _Basis;
     _Parallel_vector<_Diff> _Index_indicator; // buffer used to store information about indices in Range 1
@@ -4169,6 +4183,7 @@ _NODISCARD _Ty reduce(
 template <class _FwdIt1, class _FwdIt2, class _Ty, class _BinOp1, class _BinOp2>
 struct _Static_partitioned_transform_reduce_binary2 { // transform-reduction task scheduled on the system thread pool
     using _Diff = _Common_diff_t<_FwdIt1, _FwdIt2>;
+
     _Static_partition_team<_Diff> _Team;
     _Static_partition_range<_FwdIt1, _Diff> _Basis1;
     _Static_partition_range<_FwdIt2, _Diff> _Basis2;
@@ -4406,6 +4421,7 @@ void _Exclusive_scan_per_chunk_complete(
 template <class _FwdIt1, class _FwdIt2, class _Ty, class _BinOp>
 struct _Static_partitioned_exclusive_scan2 {
     using _Diff = _Common_diff_t<_FwdIt1, _FwdIt2>;
+
     _Static_partition_team<_Diff> _Team;
     _Static_partition_range<_FwdIt1, _Diff> _Basis1;
     _Static_partition_range<_FwdIt2, _Diff> _Basis2;
@@ -4553,6 +4569,7 @@ _FwdIt2 _Inclusive_scan_per_chunk(
 template <class _Ty, class _Init_ty, class _FwdIt1, class _FwdIt2, class _BinOp>
 struct _Static_partitioned_inclusive_scan2 {
     using _Diff = _Common_diff_t<_FwdIt1, _FwdIt2>;
+
     _Static_partition_team<_Diff> _Team;
     _Static_partition_range<_FwdIt1, _Diff> _Basis1;
     _Static_partition_range<_FwdIt2, _Diff> _Basis2;
@@ -4738,6 +4755,7 @@ void _Transform_exclusive_scan_per_chunk_complete(_FwdIt1 _First, const _FwdIt1 
 template <class _FwdIt1, class _FwdIt2, class _Ty, class _BinOp, class _UnaryOp>
 struct _Static_partitioned_transform_exclusive_scan2 {
     using _Diff = _Common_diff_t<_FwdIt1, _FwdIt2>;
+
     _Static_partition_team<_Diff> _Team;
     _Static_partition_range<_FwdIt1, _Diff> _Basis1;
     _Static_partition_range<_FwdIt2, _Diff> _Basis2;
@@ -4887,6 +4905,7 @@ _FwdIt2 _Transform_inclusive_scan_per_chunk(_FwdIt1 _First, const _FwdIt1 _Last,
 template <class _Ty, class _Init_ty, class _FwdIt1, class _FwdIt2, class _BinOp, class _UnaryOp>
 struct _Static_partitioned_transform_inclusive_scan2 {
     using _Diff = _Common_diff_t<_FwdIt1, _FwdIt2>;
+
     _Static_partition_team<_Diff> _Team;
     _Static_partition_range<_FwdIt1, _Diff> _Basis1;
     _Static_partition_range<_FwdIt2, _Diff> _Basis2;
@@ -5045,6 +5064,7 @@ _FwdIt2 transform_inclusive_scan(_ExPo&&, const _FwdIt1 _First, const _FwdIt1 _L
 template <class _FwdIt1, class _FwdIt2, class _BinOp>
 struct _Static_partitioned_adjacent_difference2 {
     using _Diff = _Common_diff_t<_FwdIt1, _FwdIt2>;
+
     _Static_partition_team<_Diff> _Team;
     // note offset partitioning:
     _Static_partition_range<_FwdIt1, _Diff> _Basis1; // contains partition of [_First, _Last - 1)
