@@ -834,7 +834,7 @@ template <class _RanIt, class _Diff>
 struct _Static_partition_range<_RanIt, _Diff, true> {
     using _Target_diff = _Iter_diff_t<_RanIt>;
     using _URanIt      = _Unwrapped_t<const _RanIt&>;
-    using _Chunk_type = _Iterator_range<_URanIt>;
+    using _Chunk_type  = _Iterator_range<_URanIt>;
 
     _URanIt _Start_at;
 
@@ -871,7 +871,7 @@ template <class _FwdIt, class _Diff>
 struct _Static_partition_range<_FwdIt, _Diff, false> {
     using _Target_diff = _Iter_diff_t<_FwdIt>;
     using _UFwdIt      = _Unwrapped_t<const _FwdIt&>;
-    using _Chunk_type = _Iterator_range<_UFwdIt>;
+    using _Chunk_type  = _Iterator_range<_UFwdIt>;
 
     _Parallel_vector<_UFwdIt> _Division_points;
 
@@ -956,7 +956,7 @@ struct _Static_partition_range_backward;
 template <class _RanIt, class _Diff>
 struct _Static_partition_range_backward<_RanIt, _Diff, true> {
     using _Target_diff = _Iter_diff_t<_RanIt>;
-    using _Chunk_type = _Iterator_range<_Unwrapped_t<const _RanIt&>>;
+    using _Chunk_type  = _Iterator_range<_Unwrapped_t<const _RanIt&>>;
 
     _Unwrapped_t<const _RanIt&> _Start_at;
 
@@ -977,7 +977,7 @@ struct _Static_partition_range_backward<_RanIt, _Diff, true> {
 template <class _BidIt, class _Diff>
 struct _Static_partition_range_backward<_BidIt, _Diff, false> {
     using _Target_diff = _Iter_diff_t<_BidIt>;
-    using _Chunk_type = _Iterator_range<_Unwrapped_t<const _BidIt&>>;
+    using _Chunk_type  = _Iterator_range<_Unwrapped_t<const _BidIt&>>;
 
     _Parallel_vector<_Unwrapped_t<const _BidIt&>> _Division_points;
 
