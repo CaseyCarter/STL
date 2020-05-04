@@ -1625,6 +1625,15 @@ namespace pmr {
     using deque = _STD deque<_Ty, polymorphic_allocator<_Ty>>;
 } // namespace pmr
 #endif // _HAS_CXX17
+
+// VARIABLE TEMPLATE _Can_emplace_back
+template <class _Void, class _Container, class... _Types>
+_INLINE_VAR constexpr bool _Can_emplace_back = false;
+
+template <class _Container, class... _Types>
+_INLINE_VAR constexpr bool _Can_emplace_back<
+    void_t<decltype(_STD declval<_Container&>().emplace_back(_STD declval<_Types>()...))>, _Container, _Types...> =
+    true;
 _STD_END
 
 #pragma pop_macro("new")

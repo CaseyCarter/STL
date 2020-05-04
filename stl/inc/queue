@@ -127,10 +127,20 @@ public:
     template <class... _Valty>
     decltype(auto) emplace(_Valty&&... _Val) {
 #if _HAS_CXX17
-        return c.emplace_back(_STD forward<_Valty>(_Val)...);
-#else // ^^^ C++17 or newer / C++14 vvv
-        c.emplace_back(_STD forward<_Valty>(_Val)...);
-#endif // _HAS_CXX17
+        if constexpr (_Can_emplace_back<void, _Container>) {
+            return c.emplace_back(_STD forward<_Valty>(_Val)...);
+        } else {
+            return c.emplace(c.end(), _STD forward<_Valty>(_Val)...);
+        }
+#elif _HAS_IF_CONSTEXPR // ^^^ C++17 or newer / C++14 _HAS_IF_CONSTEXPR vvv
+        if constexpr (_Can_emplace_back<void, _Container>) {
+            c.emplace_back(_STD forward<_Valty>(_Val)...);
+        } else {
+            c.emplace(c.end(), _STD forward<_Valty>(_Val)...)
+        }
+#else // ^^^ C++14 _HAS_IF_CONSTEXPR / C++14 !_HAS_IF_CONSTEXPR vvv
+        _Emplace(bool_constant<_Can_emplace_back<void, _Container>>{}, _STD forward<_Valty>(_Val)...);
+#endif // ^^^ C++14 !_HAS_IF_CONSTEXPR ^^^
     }
 
     void pop() noexcept(noexcept(c.pop_front())) /* strengthened */ {
@@ -152,6 +162,19 @@ public:
 
 protected:
     _Container c{};
+
+#if !_HAS_IF_CONSTEXPR
+private:
+    template <class... _Valty>
+    void _Emplace(true_type, _Valty&&... _Val) {
+        c.emplace_back(_STD forward<_Valty>(_Val)...);
+    }
+
+    template <class... _Valty>
+    void _Emplace(false_type, _Valty&&... _Val) {
+        c.emplace(c.end(), _STD forward<_Valty>(_Val)...);
+    }
+#endif // !_HAS_IF_CONSTEXPR
 };
 
 #if _HAS_CXX17
