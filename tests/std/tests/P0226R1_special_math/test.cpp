@@ -42,6 +42,7 @@
 #pragma warning(disable : 4702) // unreachable code
 #pragma warning(disable : 6011) // Dereferencing NULL pointer '%s'
 #pragma warning(disable : 6031) // Return value ignored: '%s'
+#pragma warning(disable : 6246) // Local declaration of '%s' hides declaration of the same name in outer scope
 #pragma warning(disable : 6269) // Possibly incorrect order of operations: dereference ignored
 #pragma warning(disable : 6320) // Exception-filter expression is the constant EXCEPTION_EXECUTE_HANDLER.
 #pragma warning(disable : 6322) // Empty _except block.
@@ -120,7 +121,7 @@ namespace assoc_laguerre {
     constexpr auto test_fn<long double> = std::assoc_laguerrel;
 
     BOOST_AUTO_TEST_CASE_TEMPLATE(test_assoc_laguerre, T, fptypes) {
-#include <test/laguerre3.ipp>
+#include <libs/math/test/laguerre3.ipp>
 
         for (auto const& datum : laguerre3) {
             unsigned const n  = std::lround(datum[0]);
@@ -168,7 +169,7 @@ namespace assoc_legendre {
     constexpr auto test_fn<long double> = std::assoc_legendrel;
 
     BOOST_AUTO_TEST_CASE_TEMPLATE(test_assoc_legendre, T, fptypes) {
-#include <test/assoc_legendre_p.ipp>
+#include <libs/math/test/assoc_legendre_p.ipp>
 
         for (auto const& datum : assoc_legendre_p) {
             auto const l      = static_cast<unsigned const>(datum[0]);
@@ -261,9 +262,9 @@ namespace beta {
     constexpr auto test_fn<long double> = std::betal;
 
     BOOST_AUTO_TEST_CASE_TEMPLATE(test_beta, T, fptypes) {
-#include <test/beta_exp_data.ipp>
-#include <test/beta_med_data.ipp>
-#include <test/beta_small_data.ipp>
+#include <libs/math/test/beta_exp_data.ipp>
+#include <libs/math/test/beta_med_data.ipp>
+#include <libs/math/test/beta_small_data.ipp>
 
         auto const tester = [](T tolerance) {
             return [tolerance](auto const& datum) {
@@ -341,7 +342,7 @@ namespace comp_ellint_1 {
         }};
         // End extract
 
-#include <test/ellint_k_data.ipp>
+#include <libs/math/test/ellint_k_data.ipp>
 
         auto const tester = [](T tolerance) {
             return [tolerance](auto const& datum) {
@@ -400,7 +401,7 @@ namespace comp_ellint_2 {
         }};
         // End extract
 
-#include <test/ellint_e_data.ipp>
+#include <libs/math/test/ellint_e_data.ipp>
 
         auto const tester = [](T tolerance) {
             return [tolerance](auto const& datum) {
@@ -484,7 +485,7 @@ namespace comp_ellint_3 {
         }};
         // End extract
 
-#include <test/ellint_pi2_data.ipp>
+#include <libs/math/test/ellint_pi2_data.ipp>
 
         auto const tester = [](T tolerance) {
             return [tolerance](auto const& datum) {
@@ -612,8 +613,8 @@ namespace cyl_bessel_i {
         }};
         // End extract
 
-#include <test/bessel_i_data.ipp>
-#include <test/bessel_i_int_data.ipp>
+#include <libs/math/test/bessel_i_data.ipp>
+#include <libs/math/test/bessel_i_int_data.ipp>
 
         auto const tester = [](T tolerance) {
             return [tolerance](auto const& datum) {
@@ -785,9 +786,9 @@ namespace cyl_bessel_j {
         }};
         // End extract
 
-#include <test/bessel_j_data.ipp>
-#include <test/bessel_j_int_data.ipp>
-#include <test/bessel_j_large_data.ipp>
+#include <libs/math/test/bessel_j_data.ipp>
+#include <libs/math/test/bessel_j_int_data.ipp>
+#include <libs/math/test/bessel_j_large_data.ipp>
 
         auto const tester = [](T tolerance) {
             return [tolerance](auto const& datum) {
@@ -935,8 +936,8 @@ namespace cyl_bessel_k {
         }};
         // End extract
 
-#include <test/bessel_k_data.ipp>
-#include <test/bessel_k_int_data.ipp>
+#include <libs/math/test/bessel_k_data.ipp>
+#include <libs/math/test/bessel_k_int_data.ipp>
 
         auto const tester = [](T tolerance) {
             return [tolerance](auto const& datum) {
@@ -1063,9 +1064,9 @@ namespace cyl_neumann {
         }};
         // End extract
 
-#include <test/bessel_y01_data.ipp>
-#include <test/bessel_yn_data.ipp>
-#include <test/bessel_yv_data.ipp>
+#include <libs/math/test/bessel_y01_data.ipp>
+#include <libs/math/test/bessel_yn_data.ipp>
+#include <libs/math/test/bessel_yv_data.ipp>
 
         auto const tester = [](T tolerance) {
             return [tolerance](auto const& datum) {
@@ -1143,7 +1144,7 @@ namespace ellint_1 {
         }};
         // End extract
 
-#include <test/ellint_f_data.ipp>
+#include <libs/math/test/ellint_f_data.ipp>
 
         auto const tester = [](T tolerance) {
             return [tolerance](auto const& datum) {
@@ -1207,7 +1208,7 @@ namespace ellint_2 {
         }};
         // End extract
 
-#include <test/ellint_e2_data.ipp>
+#include <libs/math/test/ellint_e2_data.ipp>
 
         // Extracted from math\test\test_ellint_2.hpp lines 127-129:
         static constexpr _Boost::array<_Boost::array<typename table_type<T>::type, 3>, 72> small_angles = {
@@ -1573,8 +1574,8 @@ namespace ellint_3 {
         }};
         // End extract
 
-#include <test/ellint_pi3_data.ipp>
-#include <test/ellint_pi3_large_data.ipp>
+#include <libs/math/test/ellint_pi3_data.ipp>
+#include <libs/math/test/ellint_pi3_large_data.ipp>
 
         auto const tester = [](T tolerance) {
             return [tolerance](auto const& datum) {
@@ -1641,8 +1642,8 @@ namespace expint {
             };
         };
 
-#include <test/expinti_data.ipp>
-#include <test/expinti_data_double.ipp>
+#include <libs/math/test/expinti_data.ipp>
+#include <libs/math/test/expinti_data_double.ipp>
 
         ::for_each(expinti_data, tester(2 * eps<T>));
 
@@ -1698,7 +1699,7 @@ namespace hermite {
     constexpr auto test_fn<long double> = std::hermitel;
 
     BOOST_AUTO_TEST_CASE_TEMPLATE(test_hermite, T, fptypes) {
-#include <test/hermite.ipp>
+#include <libs/math/test/hermite.ipp>
 
         for (auto const& datum : hermite) {
             unsigned const n  = std::lround(datum[0]);
@@ -1844,7 +1845,7 @@ namespace laguerre {
     constexpr auto test_fn<long double> = std::laguerrel;
 
     BOOST_AUTO_TEST_CASE_TEMPLATE(test_laguerre, T, fptypes) {
-#include <test/laguerre2.ipp>
+#include <libs/math/test/laguerre2.ipp>
 
         for (auto const& datum : laguerre2) {
             unsigned const n  = std::lround(datum[0]);
@@ -1909,8 +1910,8 @@ namespace legendre {
     constexpr auto test_fn<long double> = std::legendrel;
 
     BOOST_AUTO_TEST_CASE_TEMPLATE(test_legendre, T, fptypes) {
-#include <test/legendre_p.ipp>
-#include <test/legendre_p_large.ipp>
+#include <libs/math/test/legendre_p.ipp>
+#include <libs/math/test/legendre_p_large.ipp>
 
         auto test_one_value = [](auto const& datum) {
             unsigned const l  = std::lround(datum[0]);
@@ -1984,10 +1985,10 @@ namespace riemann_zeta {
             };
         };
 
-#include <test/zeta_1_below_data.ipp>
-#include <test/zeta_1_up_data.ipp>
-#include <test/zeta_data.ipp>
-#include <test/zeta_neg_data.ipp>
+#include <libs/math/test/zeta_1_below_data.ipp>
+#include <libs/math/test/zeta_1_up_data.ipp>
+#include <libs/math/test/zeta_data.ipp>
+#include <libs/math/test/zeta_neg_data.ipp>
 
         // Extracted from math\test\test_zeta.hpp lines 74-77:
         static constexpr _Boost::array<_Boost::array<typename table_type<T>::type, 2>, 90> integer_data = {
@@ -2237,7 +2238,7 @@ namespace sph_bessel {
     constexpr auto test_fn<long double> = std::sph_bessell;
 
     BOOST_AUTO_TEST_CASE_TEMPLATE(test_sph_bessel, T, fptypes) {
-#include <test/sph_bessel_data.ipp>
+#include <libs/math/test/sph_bessel_data.ipp>
 
         auto const tester = [](T tolerance) {
             return [tolerance](auto const& datum) {
@@ -2393,7 +2394,7 @@ namespace sph_neumann {
     constexpr auto test_fn<long double> = std::sph_neumannl;
 
     BOOST_AUTO_TEST_CASE_TEMPLATE(test_sph_neumann, T, fptypes) {
-#include <test/sph_neumann_data.ipp>
+#include <libs/math/test/sph_neumann_data.ipp>
 
         auto const tester = [](T tolerance) {
             return [tolerance](auto const& datum) {
