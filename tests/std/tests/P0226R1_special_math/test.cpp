@@ -1085,10 +1085,8 @@ namespace cyl_neumann {
         if (static_cast<T>(yv_large_data[0][1]) != 0) {
             ::for_each(yv_large_data, tester(2 * eps<T>));
         }
-#if 0 // FIXME
-        ::for_each(bessel_y01_data, tester(10 * eps<T>));
-        ::for_each(bessel_yn_data, tester(200 * eps<T>));
-#endif
+        ::for_each(bessel_y01_data, tester(20 * eps<T>));
+        ::for_each(bessel_yn_data, tester(210 * eps<T>));
         ::for_each(bessel_yv_data, tester(1250 * eps<T>));
     }
 
