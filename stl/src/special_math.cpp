@@ -55,7 +55,7 @@ _CRT_SATELLITE_2 _NODISCARD double __stdcall __std_smf_assoc_laguerre(
         return _Px;
     }
 
-    return _Boost_call([=] { return ::boost::math::laguerre(_Pn, _Pm, _Px); });
+    return _Boost_call([=] { return ::_Boost::math::laguerre(_Pn, _Pm, _Px); });
 }
 
 _CRT_SATELLITE_2 _NODISCARD float __stdcall __std_smf_assoc_laguerref(
@@ -64,7 +64,7 @@ _CRT_SATELLITE_2 _NODISCARD float __stdcall __std_smf_assoc_laguerref(
         return _Px;
     }
 
-    return _Boost_call([=] { return ::boost::math::laguerre(_Pn, _Pm, _Px); });
+    return _Boost_call([=] { return ::_Boost::math::laguerre(_Pn, _Pm, _Px); });
 }
 
 _CRT_SATELLITE_2 _NODISCARD double __stdcall __std_smf_assoc_legendre(
@@ -74,7 +74,7 @@ _CRT_SATELLITE_2 _NODISCARD double __stdcall __std_smf_assoc_legendre(
     }
 
     return _Boost_call([=] {
-        auto _Result = ::boost::math::legendre_p(_Pl, _Pm, _Px);
+        auto _Result = ::_Boost::math::legendre_p(_Pl, _Pm, _Px);
         // Boost includes the Condon-Shortley phase term (-1)^m, std does not
         if ((_Pm & 1u) != 0) {
             _Result = -_Result;
@@ -90,7 +90,7 @@ _CRT_SATELLITE_2 _NODISCARD float __stdcall __std_smf_assoc_legendref(
     }
 
     return _Boost_call([=] {
-        auto _Result = ::boost::math::legendre_p(_Pl, _Pm, _Px);
+        auto _Result = ::_Boost::math::legendre_p(_Pl, _Pm, _Px);
         // Boost includes the Condon-Shortley phase term (-1)^m, std does not
         if ((_Pm & 1u) != 0) {
             _Result = -_Result;
@@ -100,19 +100,19 @@ _CRT_SATELLITE_2 _NODISCARD float __stdcall __std_smf_assoc_legendref(
 }
 
 _CRT_SATELLITE_2 _NODISCARD double __stdcall __std_smf_beta(const double _Px, const double _Py) noexcept {
-    return _Boost_call([=] { return ::boost::math::beta(_Px, _Py); });
+    return _Boost_call([=] { return ::_Boost::math::beta(_Px, _Py); });
 }
 
 _CRT_SATELLITE_2 _NODISCARD float __stdcall __std_smf_betaf(const float _Px, const float _Py) noexcept {
-    return _Boost_call([=] { return ::boost::math::beta(_Px, _Py); });
+    return _Boost_call([=] { return ::_Boost::math::beta(_Px, _Py); });
 }
 
 _CRT_SATELLITE_2 _NODISCARD double __stdcall __std_smf_comp_ellint_1(const double _Pk) noexcept {
-    return _Boost_call([=] { return ::boost::math::ellint_1(_Pk); });
+    return _Boost_call([=] { return ::_Boost::math::ellint_1(_Pk); });
 }
 
 _CRT_SATELLITE_2 _NODISCARD float __stdcall __std_smf_comp_ellint_1f(const float _Pk) noexcept {
-    return _Boost_call([=] { return ::boost::math::ellint_1(_Pk); });
+    return _Boost_call([=] { return ::_Boost::math::ellint_1(_Pk); });
 }
 
 _CRT_SATELLITE_2 _NODISCARD double __stdcall __std_smf_comp_ellint_2(const double _Pk) noexcept {
@@ -120,7 +120,7 @@ _CRT_SATELLITE_2 _NODISCARD double __stdcall __std_smf_comp_ellint_2(const doubl
         return _Pk;
     }
 
-    return _Boost_call([=] { return ::boost::math::ellint_2(_Pk); });
+    return _Boost_call([=] { return ::_Boost::math::ellint_2(_Pk); });
 }
 
 _CRT_SATELLITE_2 _NODISCARD float __stdcall __std_smf_comp_ellint_2f(const float _Pk) noexcept {
@@ -128,7 +128,7 @@ _CRT_SATELLITE_2 _NODISCARD float __stdcall __std_smf_comp_ellint_2f(const float
         return _Pk;
     }
 
-    return _Boost_call([=] { return ::boost::math::ellint_2(_Pk); });
+    return _Boost_call([=] { return ::_Boost::math::ellint_2(_Pk); });
 }
 
 _CRT_SATELLITE_2 _NODISCARD double __stdcall __std_smf_comp_ellint_3(const double _Pk, const double _Pnu) noexcept {
@@ -140,7 +140,7 @@ _CRT_SATELLITE_2 _NODISCARD double __stdcall __std_smf_comp_ellint_3(const doubl
         return _Pnu;
     }
 
-    return _Boost_call([=] { return ::boost::math::ellint_3(_Pk, _Pnu); });
+    return _Boost_call([=] { return ::_Boost::math::ellint_3(_Pk, _Pnu); });
 }
 
 _CRT_SATELLITE_2 _NODISCARD float __stdcall __std_smf_comp_ellint_3f(const float _Pk, const float _Pnu) noexcept {
@@ -152,7 +152,7 @@ _CRT_SATELLITE_2 _NODISCARD float __stdcall __std_smf_comp_ellint_3f(const float
         return _Pnu;
     }
 
-    return _Boost_call([=] { return ::boost::math::ellint_3(_Pk, _Pnu); });
+    return _Boost_call([=] { return ::_Boost::math::ellint_3(_Pk, _Pnu); });
 }
 
 _CRT_SATELLITE_2 _NODISCARD double __stdcall __std_smf_cyl_bessel_i(const double _Pnu, const double _Px) noexcept {
@@ -164,7 +164,7 @@ _CRT_SATELLITE_2 _NODISCARD double __stdcall __std_smf_cyl_bessel_i(const double
         return _Px;
     }
 
-    return _Boost_call([=] { return ::boost::math::cyl_bessel_i(_Pnu, _Px); });
+    return _Boost_call([=] { return ::_Boost::math::cyl_bessel_i(_Pnu, _Px); });
 }
 
 _CRT_SATELLITE_2 _NODISCARD float __stdcall __std_smf_cyl_bessel_if(const float _Pnu, const float _Px) noexcept {
@@ -176,7 +176,7 @@ _CRT_SATELLITE_2 _NODISCARD float __stdcall __std_smf_cyl_bessel_if(const float 
         return _Px;
     }
 
-    return _Boost_call([=] { return ::boost::math::cyl_bessel_i(_Pnu, _Px); });
+    return _Boost_call([=] { return ::_Boost::math::cyl_bessel_i(_Pnu, _Px); });
 }
 
 _CRT_SATELLITE_2 _NODISCARD double __stdcall __std_smf_cyl_bessel_j(const double _Pnu, const double _Px) noexcept {
@@ -188,7 +188,7 @@ _CRT_SATELLITE_2 _NODISCARD double __stdcall __std_smf_cyl_bessel_j(const double
         return _Px;
     }
 
-    return _Boost_call([=] { return ::boost::math::cyl_bessel_j(_Pnu, _Px); });
+    return _Boost_call([=] { return ::_Boost::math::cyl_bessel_j(_Pnu, _Px); });
 }
 
 _CRT_SATELLITE_2 _NODISCARD float __stdcall __std_smf_cyl_bessel_jf(const float _Pnu, const float _Px) noexcept {
@@ -200,7 +200,7 @@ _CRT_SATELLITE_2 _NODISCARD float __stdcall __std_smf_cyl_bessel_jf(const float 
         return _Px;
     }
 
-    return _Boost_call([=] { return ::boost::math::cyl_bessel_j(_Pnu, _Px); });
+    return _Boost_call([=] { return ::_Boost::math::cyl_bessel_j(_Pnu, _Px); });
 }
 
 _CRT_SATELLITE_2 _NODISCARD double __stdcall __std_smf_cyl_bessel_k(const double _Pnu, const double _Px) noexcept {
@@ -212,7 +212,7 @@ _CRT_SATELLITE_2 _NODISCARD double __stdcall __std_smf_cyl_bessel_k(const double
         return _Px;
     }
 
-    return _Boost_call([=] { return ::boost::math::cyl_bessel_k(_Pnu, _Px); });
+    return _Boost_call([=] { return ::_Boost::math::cyl_bessel_k(_Pnu, _Px); });
 }
 
 _CRT_SATELLITE_2 _NODISCARD float __stdcall __std_smf_cyl_bessel_kf(const float _Pnu, const float _Px) noexcept {
@@ -224,7 +224,7 @@ _CRT_SATELLITE_2 _NODISCARD float __stdcall __std_smf_cyl_bessel_kf(const float 
         return _Px;
     }
 
-    return _Boost_call([=] { return ::boost::math::cyl_bessel_k(_Pnu, _Px); });
+    return _Boost_call([=] { return ::_Boost::math::cyl_bessel_k(_Pnu, _Px); });
 }
 
 _CRT_SATELLITE_2 _NODISCARD double __stdcall __std_smf_cyl_neumann(const double _Pnu, const double _Px) noexcept {
@@ -236,7 +236,7 @@ _CRT_SATELLITE_2 _NODISCARD double __stdcall __std_smf_cyl_neumann(const double 
         return _Px;
     }
 
-    return _Boost_call([=] { return ::boost::math::cyl_neumann(_Pnu, _Px); });
+    return _Boost_call([=] { return ::_Boost::math::cyl_neumann(_Pnu, _Px); });
 }
 
 _CRT_SATELLITE_2 _NODISCARD float __stdcall __std_smf_cyl_neumannf(const float _Pnu, const float _Px) noexcept {
@@ -248,7 +248,7 @@ _CRT_SATELLITE_2 _NODISCARD float __stdcall __std_smf_cyl_neumannf(const float _
         return _Px;
     }
 
-    return _Boost_call([=] { return ::boost::math::cyl_neumann(_Pnu, _Px); });
+    return _Boost_call([=] { return ::_Boost::math::cyl_neumann(_Pnu, _Px); });
 }
 
 _CRT_SATELLITE_2 _NODISCARD double __stdcall __std_smf_ellint_1(const double _Pk, const double _Pphi) noexcept {
@@ -260,7 +260,7 @@ _CRT_SATELLITE_2 _NODISCARD double __stdcall __std_smf_ellint_1(const double _Pk
         return _Pphi;
     }
 
-    return _Boost_call([=] { return ::boost::math::ellint_1(_Pk, _Pphi); });
+    return _Boost_call([=] { return ::_Boost::math::ellint_1(_Pk, _Pphi); });
 }
 
 _CRT_SATELLITE_2 _NODISCARD float __stdcall __std_smf_ellint_1f(const float _Pk, const float _Pphi) noexcept {
@@ -272,7 +272,7 @@ _CRT_SATELLITE_2 _NODISCARD float __stdcall __std_smf_ellint_1f(const float _Pk,
         return _Pphi;
     }
 
-    return _Boost_call([=] { return ::boost::math::ellint_1(_Pk, _Pphi); });
+    return _Boost_call([=] { return ::_Boost::math::ellint_1(_Pk, _Pphi); });
 }
 
 _CRT_SATELLITE_2 _NODISCARD double __stdcall __std_smf_ellint_2(const double _Pk, const double _Pphi) noexcept {
@@ -284,7 +284,7 @@ _CRT_SATELLITE_2 _NODISCARD double __stdcall __std_smf_ellint_2(const double _Pk
         return _Pphi;
     }
 
-    return _Boost_call([=] { return ::boost::math::ellint_2(_Pk, _Pphi); });
+    return _Boost_call([=] { return ::_Boost::math::ellint_2(_Pk, _Pphi); });
 }
 
 _CRT_SATELLITE_2 _NODISCARD float __stdcall __std_smf_ellint_2f(const float _Pk, const float _Pphi) noexcept {
@@ -296,7 +296,7 @@ _CRT_SATELLITE_2 _NODISCARD float __stdcall __std_smf_ellint_2f(const float _Pk,
         return _Pphi;
     }
 
-    return _Boost_call([=] { return ::boost::math::ellint_2(_Pk, _Pphi); });
+    return _Boost_call([=] { return ::_Boost::math::ellint_2(_Pk, _Pphi); });
 }
 
 _CRT_SATELLITE_2 _NODISCARD double __stdcall __std_smf_ellint_3(
@@ -313,7 +313,7 @@ _CRT_SATELLITE_2 _NODISCARD double __stdcall __std_smf_ellint_3(
         return _Pphi;
     }
 
-    return _Boost_call([=] { return ::boost::math::ellint_3(_Pk, _Pnu, _Pphi); });
+    return _Boost_call([=] { return ::_Boost::math::ellint_3(_Pk, _Pnu, _Pphi); });
 }
 
 _CRT_SATELLITE_2 _NODISCARD float __stdcall __std_smf_ellint_3f(
@@ -330,7 +330,7 @@ _CRT_SATELLITE_2 _NODISCARD float __stdcall __std_smf_ellint_3f(
         return _Pphi;
     }
 
-    return _Boost_call([=] { return ::boost::math::ellint_3(_Pk, _Pnu, _Pphi); });
+    return _Boost_call([=] { return ::_Boost::math::ellint_3(_Pk, _Pnu, _Pphi); });
 }
 
 _CRT_SATELLITE_2 _NODISCARD double __stdcall __std_smf_expint(const double _Px) noexcept {
@@ -338,7 +338,7 @@ _CRT_SATELLITE_2 _NODISCARD double __stdcall __std_smf_expint(const double _Px) 
         return _Px;
     }
 
-    return _Boost_call([=] { return ::boost::math::expint(_Px); });
+    return _Boost_call([=] { return ::_Boost::math::expint(_Px); });
 }
 
 _CRT_SATELLITE_2 _NODISCARD float __stdcall __std_smf_expintf(const float _Px) noexcept {
@@ -346,7 +346,7 @@ _CRT_SATELLITE_2 _NODISCARD float __stdcall __std_smf_expintf(const float _Px) n
         return _Px;
     }
 
-    return _Boost_call([=] { return ::boost::math::expint(_Px); });
+    return _Boost_call([=] { return ::_Boost::math::expint(_Px); });
 }
 
 _CRT_SATELLITE_2 _NODISCARD double __stdcall __std_smf_hermite(const unsigned int _Pn, const double _Px) noexcept {
@@ -354,7 +354,7 @@ _CRT_SATELLITE_2 _NODISCARD double __stdcall __std_smf_hermite(const unsigned in
         return _Px;
     }
 
-    return _Boost_call([=] { return ::boost::math::hermite(_Pn, _Px); });
+    return _Boost_call([=] { return ::_Boost::math::hermite(_Pn, _Px); });
 }
 
 _CRT_SATELLITE_2 _NODISCARD float __stdcall __std_smf_hermitef(const unsigned int _Pn, const float _Px) noexcept {
@@ -362,7 +362,7 @@ _CRT_SATELLITE_2 _NODISCARD float __stdcall __std_smf_hermitef(const unsigned in
         return _Px;
     }
 
-    return _Boost_call([=] { return ::boost::math::hermite(_Pn, _Px); });
+    return _Boost_call([=] { return ::_Boost::math::hermite(_Pn, _Px); });
 }
 
 _CRT_SATELLITE_2 _NODISCARD double __stdcall __std_smf_laguerre(const unsigned int _Pn, const double _Px) noexcept {
@@ -370,7 +370,7 @@ _CRT_SATELLITE_2 _NODISCARD double __stdcall __std_smf_laguerre(const unsigned i
         return _Px;
     }
 
-    return _Boost_call([=] { return ::boost::math::laguerre(_Pn, _Px); });
+    return _Boost_call([=] { return ::_Boost::math::laguerre(_Pn, _Px); });
 }
 
 _CRT_SATELLITE_2 _NODISCARD float __stdcall __std_smf_laguerref(const unsigned int _Pn, const float _Px) noexcept {
@@ -378,7 +378,7 @@ _CRT_SATELLITE_2 _NODISCARD float __stdcall __std_smf_laguerref(const unsigned i
         return _Px;
     }
 
-    return _Boost_call([=] { return ::boost::math::laguerre(_Pn, _Px); });
+    return _Boost_call([=] { return ::_Boost::math::laguerre(_Pn, _Px); });
 }
 
 _CRT_SATELLITE_2 _NODISCARD double __stdcall __std_smf_legendre(const unsigned int _Pl, const double _Px) noexcept {
@@ -386,7 +386,7 @@ _CRT_SATELLITE_2 _NODISCARD double __stdcall __std_smf_legendre(const unsigned i
         return _Px;
     }
 
-    return _Boost_call([=] { return ::boost::math::legendre_p(_Pl, _Px); });
+    return _Boost_call([=] { return ::_Boost::math::legendre_p(_Pl, _Px); });
 }
 
 _CRT_SATELLITE_2 _NODISCARD float __stdcall __std_smf_legendref(const unsigned int _Pl, const float _Px) noexcept {
@@ -394,7 +394,7 @@ _CRT_SATELLITE_2 _NODISCARD float __stdcall __std_smf_legendref(const unsigned i
         return _Px;
     }
 
-    return _Boost_call([=] { return ::boost::math::legendre_p(_Pl, _Px); });
+    return _Boost_call([=] { return ::_Boost::math::legendre_p(_Pl, _Px); });
 }
 
 _CRT_SATELLITE_2 _NODISCARD double __stdcall __std_smf_riemann_zeta(const double _Px) noexcept {
@@ -402,7 +402,7 @@ _CRT_SATELLITE_2 _NODISCARD double __stdcall __std_smf_riemann_zeta(const double
         return _Px;
     }
 
-    return _Boost_call([=] { return ::boost::math::zeta(_Px); });
+    return _Boost_call([=] { return ::_Boost::math::zeta(_Px); });
 }
 
 _CRT_SATELLITE_2 _NODISCARD float __stdcall __std_smf_riemann_zetaf(const float _Px) noexcept {
@@ -410,7 +410,7 @@ _CRT_SATELLITE_2 _NODISCARD float __stdcall __std_smf_riemann_zetaf(const float 
         return _Px;
     }
 
-    return _Boost_call([=] { return ::boost::math::zeta(_Px); });
+    return _Boost_call([=] { return ::_Boost::math::zeta(_Px); });
 }
 
 _CRT_SATELLITE_2 _NODISCARD double __stdcall __std_smf_sph_bessel(const unsigned int _Pn, const double _Px) noexcept {
@@ -418,7 +418,7 @@ _CRT_SATELLITE_2 _NODISCARD double __stdcall __std_smf_sph_bessel(const unsigned
         return _Px;
     }
 
-    return _Boost_call([=] { return ::boost::math::sph_bessel(_Pn, _Px); });
+    return _Boost_call([=] { return ::_Boost::math::sph_bessel(_Pn, _Px); });
 }
 
 _CRT_SATELLITE_2 _NODISCARD float __stdcall __std_smf_sph_besself(const unsigned int _Pn, const float _Px) noexcept {
@@ -426,7 +426,7 @@ _CRT_SATELLITE_2 _NODISCARD float __stdcall __std_smf_sph_besself(const unsigned
         return _Px;
     }
 
-    return _Boost_call([=] { return ::boost::math::sph_bessel(_Pn, _Px); });
+    return _Boost_call([=] { return ::_Boost::math::sph_bessel(_Pn, _Px); });
 }
 
 _CRT_SATELLITE_2 _NODISCARD double __stdcall __std_smf_sph_legendre(
@@ -435,7 +435,7 @@ _CRT_SATELLITE_2 _NODISCARD double __stdcall __std_smf_sph_legendre(
         return _Ptheta;
     }
 
-    return _Boost_call([=] { return ::boost::math::spherical_harmonic_r(_Pl, _Pm, _Ptheta, 0.0); });
+    return _Boost_call([=] { return ::_Boost::math::spherical_harmonic_r(_Pl, _Pm, _Ptheta, 0.0); });
 }
 
 _CRT_SATELLITE_2 _NODISCARD float __stdcall __std_smf_sph_legendref(
@@ -444,7 +444,7 @@ _CRT_SATELLITE_2 _NODISCARD float __stdcall __std_smf_sph_legendref(
         return _Ptheta;
     }
 
-    return _Boost_call([=] { return ::boost::math::spherical_harmonic_r(_Pl, _Pm, _Ptheta, 0.0f); });
+    return _Boost_call([=] { return ::_Boost::math::spherical_harmonic_r(_Pl, _Pm, _Ptheta, 0.0f); });
 }
 
 _CRT_SATELLITE_2 _NODISCARD double __stdcall __std_smf_sph_neumann(const unsigned int _Pn, const double _Px) noexcept {
@@ -452,7 +452,7 @@ _CRT_SATELLITE_2 _NODISCARD double __stdcall __std_smf_sph_neumann(const unsigne
         return _Px;
     }
 
-    return _Boost_call([=] { return ::boost::math::sph_neumann(_Pn, _Px); });
+    return _Boost_call([=] { return ::_Boost::math::sph_neumann(_Pn, _Px); });
 }
 
 _CRT_SATELLITE_2 _NODISCARD float __stdcall __std_smf_sph_neumannf(const unsigned int _Pn, const float _Px) noexcept {
@@ -460,7 +460,7 @@ _CRT_SATELLITE_2 _NODISCARD float __stdcall __std_smf_sph_neumannf(const unsigne
         return _Px;
     }
 
-    return _Boost_call([=] { return ::boost::math::sph_neumann(_Pn, _Px); });
+    return _Boost_call([=] { return ::_Boost::math::sph_neumann(_Pn, _Px); });
 }
 _END_EXTERN_C
 
@@ -485,7 +485,7 @@ namespace {
             _STD swap(_Dx, _Dz);
         }
 
-        constexpr _Ty _Eps = ::boost::math::tools::epsilon<_Ty>();
+        constexpr _Ty _Eps = ::_Boost::math::tools::epsilon<_Ty>();
         if (_Dx * _Eps >= _Dy && _Dx * _Eps >= _Dz) {
             return _Dx;
         }

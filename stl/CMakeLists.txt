@@ -405,6 +405,10 @@ include_directories(BEFORE
     "${TOOLSET_ROOT_DIR}/crt/src/vcruntime"
     )
 
+add_library(BoostMath INTERFACE)
+target_include_directories(BoostMath INTERFACE "${CMAKE_CURRENT_LIST_DIR}/../3rdparty/BoostMath")
+target_compile_definitions(BoostMath INTERFACE "BOOST_ALL_NO_LIB")
+
 function(add_stl_dlls D_SUFFIX THIS_CONFIG_DEFINITIONS THIS_CONFIG_COMPILE_OPTIONS GL_FLAG THIS_CONFIG_LINK_OPTIONS)
     # msvcp140.dll
     add_library(msvcp${D_SUFFIX}_objects OBJECT ${DLL_SOURCES} ${SOURCES})
@@ -441,9 +445,9 @@ function(add_stl_dlls D_SUFFIX THIS_CONFIG_DEFINITIONS THIS_CONFIG_COMPILE_OPTIO
 
     # msvcp140_2.dll (the special math satellite)
     add_library(msvcp_2${D_SUFFIX}_objects OBJECT ${SOURCES_SATELLITE_2})
+    target_link_libraries(msvcp_2${D_SUFFIX}_objects PRIVATE BoostMath)
     target_compile_definitions(msvcp_2${D_SUFFIX}_objects PRIVATE "_BUILDING_SATELLITE_2;_DLL;${THIS_CONFIG_DEFINITIONS}")
     target_compile_options(msvcp_2${D_SUFFIX}_objects PRIVATE "${THIS_CONFIG_COMPILE_OPTIONS};${GL_FLAG};/EHsc")
-    target_link_libraries(msvcp_2${D_SUFFIX}_objects PRIVATE Boost::headers Boost::disable_autolinking)
 
     add_library(msvcp_2${D_SUFFIX} SHARED)
     target_link_libraries(msvcp_2${D_SUFFIX} PRIVATE msvcp_2${D_SUFFIX}_objects msvcp${D_SUFFIX}_implib_objects "msvcp${D_SUFFIX}" "${TOOLSET_LIB}/vcruntime${D_SUFFIX}.lib" "${TOOLSET_LIB}/msvcrt${D_SUFFIX}.lib" "ucrt${D_SUFFIX}.lib")
@@ -481,9 +485,9 @@ function(add_stl_statics FLAVOR_SUFFIX THIS_CONFIG_DEFINITIONS THIS_CONFIG_COMPI
     target_compile_options(libcpmt${FLAVOR_SUFFIX}_eha PRIVATE "${THIS_CONFIG_COMPILE_OPTIONS};/EHa")
 
     add_library(libcpmt${FLAVOR_SUFFIX} STATIC ${HEADERS} ${IMPLIB_SOURCES} ${SOURCES} ${STATIC_SOURCES})
+    target_link_libraries(libcpmt${FLAVOR_SUFFIX} PRIVATE BoostMath)
     target_compile_definitions(libcpmt${FLAVOR_SUFFIX} PRIVATE "${THIS_CONFIG_DEFINITIONS}")
     target_compile_options(libcpmt${FLAVOR_SUFFIX} PRIVATE "${THIS_CONFIG_COMPILE_OPTIONS};/EHsc")
-    target_link_libraries(libcpmt${FLAVOR_SUFFIX} PRIVATE Boost::headers Boost::disable_autolinking libcpmt${FLAVOR_SUFFIX}_eha)
 endfunction()
 
 add_stl_statics("" "_ITERATOR_DEBUG_LEVEL=0" "${VCLIBS_RELEASE_OPTIONS}")

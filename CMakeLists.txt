@@ -5,13 +5,6 @@ cmake_minimum_required(VERSION 3.16)
 set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)
 project(msvc_standard_libraries LANGUAGES CXX)
 
-find_package(Boost REQUIRED)
-
-set(VCLIBS_MIN_BOOST_VERSION 1.70.0)
-if("${Boost_VERSION}" VERSION_LESS "${VCLIBS_MIN_BOOST_VERSION}")
-    message(FATAL_ERROR "Detected Boost version is too old (older than ${VCLIBS_MIN_BOOST_VERSION}).")
-endif()
-
 option(BUILD_TESTING "Enable testing" ON)
 set(VCLIBS_SUFFIX "_oss" CACHE STRING "suffix for built DLL names to avoid conflicts with distributed DLLs")
 
