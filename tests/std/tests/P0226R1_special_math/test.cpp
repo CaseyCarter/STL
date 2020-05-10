@@ -26,18 +26,18 @@
 #define BOOST_MATH_OVERFLOW_ERROR_POLICY ignore_error
 
 #pragma warning(disable : 4793) // 's': function compiled as native:
-//#pragma warning(disable : 6326) // Potential comparison of a constant with another constant.
+#pragma warning(disable : 6326) // Potential comparison of a constant with another constant.
 
 #pragma warning(push)
 #pragma warning(disable : 4061) // enumerator '%s' in switch of enum '%s' is not explicitly handled by a case label
 #pragma warning(disable : 4189) // '%s': local variable is initialized but not referenced
 #pragma warning(disable : 4265) // '%s': class has virtual functions, but destructor is not virtual
-//#pragma warning(disable : 4310) // cast truncates constant value
+#pragma warning(disable : 4310) // cast truncates constant value
 #pragma warning(disable : 4365) // '=': conversion from '%s' to '%s', signed/unsigned mismatch
-//#pragma warning(disable : 4619) // #pragma warning: there is no warning number '%d'
+#pragma warning(disable : 4619) // #pragma warning: there is no warning number '%d'
 #pragma warning(disable : 4640) // '%s': construction of local static object is not thread-safe
-//#pragma warning(disable : 4643) // Forward declaring '%s' in namespace std is not permitted by the C++ Standard
-//#pragma warning(disable : 4702) // unreachable code
+#pragma warning(disable : 4643) // Forward declaring '%s' in namespace std is not permitted by the C++ Standard
+#pragma warning(disable : 4702) // unreachable code
 #pragma warning(disable : 6011) // Dereferencing NULL pointer '%s'
 #pragma warning(disable : 6031) // Return value ignored: '%s'
 #pragma warning(disable : 6246) // Local declaration of '%s' hides declaration of the same name in outer scope
@@ -49,11 +49,11 @@
 #pragma warning(disable : 6387) // '%s' could be '0':  this does not adhere to the specification for the function '%s'
 
 #ifdef __clang__
-//#pragma clang diagnostic ignored "-Wc++11-narrowing"
+#pragma clang diagnostic ignored "-Wc++11-narrowing"
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
 #pragma clang diagnostic ignored "-Wliteral-range"
-//#pragma clang diagnostic ignored "-Wsign-compare"
-//#pragma clang diagnostic ignored "-Wunused-parameter"
+#pragma clang diagnostic ignored "-Wsign-compare"
+#pragma clang diagnostic ignored "-Wunused-parameter"
 #pragma clang diagnostic ignored "-Wunused-variable"
 #endif // __clang__
 
