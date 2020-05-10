@@ -2370,7 +2370,8 @@ namespace sph_legendre {
             {12u, 9u, T(1.2526740048597213573e+00L), T(1.6345318775827433200e-01L)},
             {12u, 11u, T(3.4514086936267113215e-01L), T(-1.7356572716347566947e-05L)},
         }};
-        auto const tester                                                                       = [](T tolerance) {
+
+        auto const tester = [](T tolerance) {
             return [tolerance](auto const& datum) {
                 auto const l        = std::get<0>(datum);
                 auto const m        = std::get<1>(datum);
