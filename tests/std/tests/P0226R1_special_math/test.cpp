@@ -7,8 +7,6 @@
 //  Boost Software License, Version 1.0. (See accompanying file
 //  LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
-#define _HAS_STREAM_INSERTION_OPERATORS_DELETED_IN_CXX20 1 // TRANSITION, https://github.com/boostorg/test/issues/249
-
 #include <algorithm>
 #include <array>
 #include <cerrno>
@@ -27,19 +25,19 @@
 #define BOOST_MATH_DOMAIN_ERROR_POLICY   errno_on_error
 #define BOOST_MATH_OVERFLOW_ERROR_POLICY ignore_error
 
-#pragma warning(disable : 4365) // '=': conversion from '%s' to '%s', signed/unsigned mismatch
 #pragma warning(disable : 4793) // 's': function compiled as native:
-#pragma warning(disable : 6326) // Potential comparison of a constant with another constant.
+//#pragma warning(disable : 6326) // Potential comparison of a constant with another constant.
 
 #pragma warning(push)
 #pragma warning(disable : 4061) // enumerator '%s' in switch of enum '%s' is not explicitly handled by a case label
 #pragma warning(disable : 4189) // '%s': local variable is initialized but not referenced
 #pragma warning(disable : 4265) // '%s': class has virtual functions, but destructor is not virtual
-#pragma warning(disable : 4310) // cast truncates constant value
-#pragma warning(disable : 4619) // #pragma warning: there is no warning number '%d'
+//#pragma warning(disable : 4310) // cast truncates constant value
+#pragma warning(disable : 4365) // '=': conversion from '%s' to '%s', signed/unsigned mismatch
+//#pragma warning(disable : 4619) // #pragma warning: there is no warning number '%d'
 #pragma warning(disable : 4640) // '%s': construction of local static object is not thread-safe
-#pragma warning(disable : 4643) // Forward declaring '%s' in namespace std is not permitted by the C++ Standard
-#pragma warning(disable : 4702) // unreachable code
+//#pragma warning(disable : 4643) // Forward declaring '%s' in namespace std is not permitted by the C++ Standard
+//#pragma warning(disable : 4702) // unreachable code
 #pragma warning(disable : 6011) // Dereferencing NULL pointer '%s'
 #pragma warning(disable : 6031) // Return value ignored: '%s'
 #pragma warning(disable : 6246) // Local declaration of '%s' hides declaration of the same name in outer scope
@@ -51,11 +49,11 @@
 #pragma warning(disable : 6387) // '%s' could be '0':  this does not adhere to the specification for the function '%s'
 
 #ifdef __clang__
-#pragma clang diagnostic ignored "-Wc++11-narrowing"
+//#pragma clang diagnostic ignored "-Wc++11-narrowing"
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
 #pragma clang diagnostic ignored "-Wliteral-range"
-#pragma clang diagnostic ignored "-Wsign-compare"
-#pragma clang diagnostic ignored "-Wunused-parameter"
+//#pragma clang diagnostic ignored "-Wsign-compare"
+//#pragma clang diagnostic ignored "-Wunused-parameter"
 #pragma clang diagnostic ignored "-Wunused-variable"
 #endif // __clang__
 
@@ -1376,20 +1374,16 @@ namespace ellint_2 {
         }};
         // End extract
 
-        auto const tester = [](T tolerance) {
-            return [tolerance](auto const& datum) {
-                auto const actual = test_fn<T>(datum[1], datum[0]);
-                if (!(actual == datum[2])) { // +/-inf is equal to, but not "close" to, +/-inf
-                    BOOST_CHECK_CLOSE_FRACTION(actual, datum[2], tolerance);
-                }
-            };
+        auto const tester = [](auto const& datum) {
+            auto const actual = test_fn<T>(datum[1], datum[0]);
+            if (!(actual == datum[2])) { // +/-inf is equal to, but not "close" to, +/-inf
+                BOOST_CHECK_CLOSE_FRACTION(actual, datum[2], 8 * eps<T>);
+            }
         };
 
-#if 0 // FIXME
-        ::for_each(data1, tester(static_cast<T>(1.5) * eps<T>));
-        ::for_each(ellint_e2_data, tester(static_cast<T>(2.5) * eps<T>));
-        ::for_each(small_angles, tester(static_cast<T>(1.25) * eps<T>));
-#endif
+        ::for_each(data1, tester);
+        ::for_each(ellint_e2_data, tester);
+        ::for_each(small_angles, tester);
     }
 
     BOOST_AUTO_TEST_CASE_TEMPLATE(test_ellint_2_boundaries, T, fptypes) {
