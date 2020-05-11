@@ -1,11 +1,7 @@
+// Copyright John Maddock 2006.
+// Copyright Paul A. Bristow 2007, 2009
 // Copyright (c) Microsoft Corporation.
 // SPDX-License-Identifier: (Apache-2.0 WITH LLVM-exception AND BSL-1.0)
-
-//  Portions of this file are extracted from Boost Math, and are
-//  (C) Copyright John Maddock 2007.
-//  Use, modification and distribution are subject to the
-//  Boost Software License, Version 1.0. (See accompanying file
-//  LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
 #include <algorithm>
 #include <array>
@@ -58,7 +54,7 @@
 #endif // __clang__
 
 #include <boost/array.hpp>
-#include <boost/math/tools/precision.hpp>
+#include <boost/boost/libs/math/tools/precision.hpp>
 #include <boost/mpl/list.hpp>
 #include <boost/test/included/unit_test.hpp>
 
@@ -124,7 +120,7 @@ namespace assoc_laguerre {
     constexpr auto test_fn<long double> = std::assoc_laguerrel;
 
     BOOST_AUTO_TEST_CASE_TEMPLATE(test_assoc_laguerre, T, fptypes) {
-#include <libs/math/test/laguerre3.ipp>
+#include <libs/boost/libs/math/test/laguerre3.ipp>
 
         for (auto const& datum : laguerre3) {
             unsigned const n  = std::lround(datum[0]);
@@ -138,7 +134,12 @@ namespace assoc_laguerre {
 
     BOOST_AUTO_TEST_CASE_TEMPLATE(test_assoc_laguerre_spots, T, fptypes) {
         auto const tolerance = eps<T> * 100;
-        // Extracted from math\test\test_laguerre.hpp lines 132-137
+        // Extracted from boost/libs/math/test/test_laguerre.hpp lines 132-137
+        // Copyright John Maddock 2006.
+        // Copyright Paul A. Bristow 2007, 2009
+        //  Use, modification and distribution are subject to the
+        //  Boost Software License, Version 1.0. (See accompanying file
+        //  LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
         BOOST_CHECK_CLOSE_FRACTION(test_fn<T>(4, 5, static_cast<T>(0.5L)),
             static_cast<T>(88.31510416666666666666666666666666666667L), tolerance);
         BOOST_CHECK_CLOSE_FRACTION(test_fn<T>(10, 0, static_cast<T>(2.5L)),
@@ -172,7 +173,7 @@ namespace assoc_legendre {
     constexpr auto test_fn<long double> = std::assoc_legendrel;
 
     BOOST_AUTO_TEST_CASE_TEMPLATE(test_assoc_legendre, T, fptypes) {
-#include <libs/math/test/assoc_legendre_p.ipp>
+#include <libs/boost/libs/math/test/assoc_legendre_p.ipp>
 
         for (auto const& datum : assoc_legendre_p) {
             auto const l      = static_cast<unsigned const>(datum[0]);
@@ -191,8 +192,12 @@ namespace assoc_legendre {
     BOOST_AUTO_TEST_CASE_TEMPLATE(test_assoc_legendre_spots, T, fptypes) {
         auto const tolerance = eps<T> * 100;
 
-        // Extracted from math\test\test_legendre.hpp lines 156-179:
-        // (Condon-Shortley phase removed)
+        // Extracted from boost/libs/math/test/test_legendre.hpp lines 156-179 (Condon-Shortley phase removed):
+        // Copyright John Maddock 2006.
+        // Copyright Paul A. Bristow 2007, 2009
+        //  Use, modification and distribution are subject to the
+        //  Boost Software License, Version 1.0. (See accompanying file
+        //  LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
         BOOST_CHECK_CLOSE_FRACTION(test_fn<T>(4u, 2u, static_cast<T>(0.5L)),
             static_cast<T>(4.218750000000000000000000000000000000000L), tolerance);
         BOOST_CHECK_CLOSE_FRACTION(test_fn<T>(-4u, 2u, static_cast<T>(0.5L)),
@@ -265,9 +270,9 @@ namespace beta {
     constexpr auto test_fn<long double> = std::betal;
 
     BOOST_AUTO_TEST_CASE_TEMPLATE(test_beta, T, fptypes) {
-#include <libs/math/test/beta_exp_data.ipp>
-#include <libs/math/test/beta_med_data.ipp>
-#include <libs/math/test/beta_small_data.ipp>
+#include <libs/boost/libs/math/test/beta_exp_data.ipp>
+#include <libs/boost/libs/math/test/beta_med_data.ipp>
+#include <libs/boost/libs/math/test/beta_small_data.ipp>
 
         auto const tester = [](T tolerance) {
             return [tolerance](auto const& datum) {
@@ -282,7 +287,12 @@ namespace beta {
     }
 
     BOOST_AUTO_TEST_CASE_TEMPLATE(test_beta_spots, T, fptypes) {
-        // Extracted from math\test\test_beta.hpp lines 93-101:
+        // Extracted from boost/libs/math/test/test_beta.hpp lines 93-101:
+        // Copyright John Maddock 2006.
+        // Copyright Paul A. Bristow 2007, 2009
+        //  Use, modification and distribution are subject to the
+        //  Boost Software License, Version 1.0. (See accompanying file
+        //  LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
         auto const tolerance = eps<T> * 20;
         auto const small     = eps<T> / 1024;
 
@@ -331,7 +341,7 @@ namespace comp_ellint_1 {
     constexpr auto test_fn<long double> = std::comp_ellint_1l;
 
     BOOST_AUTO_TEST_CASE_TEMPLATE(test_comp_ellint_1, T, fptypes) {
-        // Extracted from math\test\test_ellint_1.hpp lines 121-131:
+        // Extracted from boost/libs/math/test/test_ellint_1.hpp lines 121-131: // HERE
         static constexpr _Boost::array<_Boost::array<typename table_type<T>::type, 2>, 9> data2 = {{
             {{SC_(0.0), SC_(1.5707963267948966192313216916397514420985846996876)}},
             {{SC_(0.125), SC_(1.5769867712158131421244030532288080803822271060839)}},
@@ -345,7 +355,7 @@ namespace comp_ellint_1 {
         }};
         // End extract
 
-#include <libs/math/test/ellint_k_data.ipp>
+#include <libs/boost/libs/math/test/ellint_k_data.ipp>
 
         auto const tester = [](T tolerance) {
             return [tolerance](auto const& datum) {
@@ -389,7 +399,7 @@ namespace comp_ellint_2 {
     constexpr auto test_fn<long double> = std::comp_ellint_2l;
 
     BOOST_AUTO_TEST_CASE_TEMPLATE(test_comp_ellint_2, T, fptypes) {
-        // Extracted from math\test\test_ellint_2.hpp lines 110-121:
+        // Extracted from boost/libs/math/test/test_ellint_2.hpp lines 110-121:
         static constexpr _Boost::array<_Boost::array<typename table_type<T>::type, 2>, 10> data2 = {{
             {{SC_(-1.0), SC_(1.0)}},
             {{SC_(0.0), SC_(1.5707963267948966192313216916397514420985846996876)}},
@@ -404,7 +414,7 @@ namespace comp_ellint_2 {
         }};
         // End extract
 
-#include <libs/math/test/ellint_e_data.ipp>
+#include <libs/boost/libs/math/test/ellint_e_data.ipp>
 
         auto const tester = [](T tolerance) {
             return [tolerance](auto const& datum) {
@@ -448,7 +458,7 @@ namespace comp_ellint_3 {
     constexpr auto test_fn<long double> = std::comp_ellint_3l;
 
     BOOST_AUTO_TEST_CASE_TEMPLATE(test_comp_ellint_3, T, fptypes) {
-        // Extracted from math\test\test_ellint_3.hpp lines 188-207:
+        // Extracted from boost/libs/math/test/test_ellint_3.hpp lines 188-207:
         static constexpr _Boost::array<_Boost::array<typename table_type<T>::type, 3>, 17> data2 = {{
             {{SC_(0.0), SC_(0.2), SC_(1.586867847454166237308008033828114192951)}},
             {{SC_(0.0), SC_(0.4), SC_(1.639999865864511206865258329748601457626)}},
@@ -488,7 +498,7 @@ namespace comp_ellint_3 {
         }};
         // End extract
 
-#include <libs/math/test/ellint_pi2_data.ipp>
+#include <libs/boost/libs/math/test/ellint_pi2_data.ipp>
 
         auto const tester = [](T tolerance) {
             return [tolerance](auto const& datum) {
@@ -541,7 +551,7 @@ namespace cyl_bessel_i {
     constexpr auto test_fn<long double> = std::cyl_bessel_il;
 
     BOOST_AUTO_TEST_CASE_TEMPLATE(test_cyl_bessel_i, T, fptypes) {
-        // Extracted from math\test\test_bessel_i.hpp lines 104-160:
+        // Extracted from boost/libs/math/test/test_bessel_i.hpp lines 104-160:
         static constexpr _Boost::array<_Boost::array<typename table_type<T>::type, 3>, 10> i0_data      = {{
             {{SC_(0.0), SC_(0.0), SC_(1.0)}},
             {{SC_(0.0), SC_(1.0), SC_(1.26606587775200833559824462521471753760767031135496220680814)}},
@@ -616,8 +626,8 @@ namespace cyl_bessel_i {
         }};
         // End extract
 
-#include <libs/math/test/bessel_i_data.ipp>
-#include <libs/math/test/bessel_i_int_data.ipp>
+#include <libs/boost/libs/math/test/bessel_i_data.ipp>
+#include <libs/boost/libs/math/test/bessel_i_int_data.ipp>
 
         auto const tester = [](T tolerance) {
             return [tolerance](auto const& datum) {
@@ -666,7 +676,7 @@ namespace cyl_bessel_j {
     constexpr auto test_fn<long double> = std::cyl_bessel_jl;
 
     BOOST_AUTO_TEST_CASE_TEMPLATE(test_cyl_bessel_j, T, fptypes) {
-        // Extracted from math\test\test_bessel_j.hpp lines 140-200:
+        // Extracted from boost/libs/math/test/test_bessel_j.hpp lines 140-200:
         static constexpr _Boost::array<_Boost::array<typename table_type<T>::type, 3>, 8> j0_data   = {{
             {{SC_(0.0), SC_(0.0), SC_(1.0)}},
             {{SC_(0.0), SC_(1.0), SC_(0.7651976865579665514497175261026632209093)}},
@@ -736,7 +746,7 @@ namespace cyl_bessel_j {
         }};
         // End extract
 
-        // Extracted from math\test\test_bessel_j.hpp lines 213-236:
+        // Extracted from boost/libs/math/test/test_bessel_j.hpp lines 213-236:
         static constexpr _Boost::array<_Boost::array<typename table_type<T>::type, 3>, 20> jv_data = {{
             {{SC_(22.5), SC_(0.0), SC_(0.0)}},
             {{SC_(2.3994140625) /*2457.0 / 1024*/, SC_(0.0009765625) /* 1 / 1024*/,
@@ -776,7 +786,7 @@ namespace cyl_bessel_j {
         }};
         // End extract
 
-        // Extracted from math\test\test_bessel_j.hpp lines 238-244:
+        // Extracted from boost/libs/math/test/test_bessel_j.hpp lines 238-244:
         static constexpr _Boost::array<_Boost::array<typename table_type<T>::type, 3>, 4> jv_large_data = {{
             // Bug report https://svn.boost.org/trac/boost/ticket/5560:
             {{SC_(-0.5),
@@ -789,9 +799,9 @@ namespace cyl_bessel_j {
         }};
         // End extract
 
-#include <libs/math/test/bessel_j_data.ipp>
-#include <libs/math/test/bessel_j_int_data.ipp>
-#include <libs/math/test/bessel_j_large_data.ipp>
+#include <libs/boost/libs/math/test/bessel_j_data.ipp>
+#include <libs/boost/libs/math/test/bessel_j_int_data.ipp>
+#include <libs/boost/libs/math/test/bessel_j_large_data.ipp>
 
         auto const tester = [](T tolerance) {
             return [tolerance](auto const& datum) {
@@ -815,7 +825,7 @@ namespace cyl_bessel_j {
         ::for_each(bessel_j_data, tester(10 * eps<T>));
         ::for_each(bessel_j_large_data, tester(60 * eps<T>));
 
-        // Extracted from math\test\test_bessel_j.hpp lines 263-265:
+        // Extracted from boost/libs/math/test/test_bessel_j.hpp lines 263-265:
         BOOST_CHECK_EQUAL(test_fn<T>(0, T(0)), T(1));
         BOOST_CHECK_EQUAL(test_fn<T>(1, T(0)), T(0));
         BOOST_CHECK_EQUAL(test_fn<T>(100000, T(0)), T(0));
@@ -831,7 +841,7 @@ namespace cyl_bessel_j {
 
         // domain is x >= 0
 
-        // Extracted from math\test\test_bessel_j.hpp lines 270-272:
+        // Extracted from boost/libs/math/test/test_bessel_j.hpp lines 270-272:
         BOOST_CHECK(std::isnan(test_fn<T>(T(-2.5), T(0))));
         BOOST_CHECK(assert_domain_error());
         BOOST_CHECK(std::isnan(test_fn<T>(T(-2.5), T(-2))));
@@ -853,7 +863,7 @@ namespace cyl_bessel_k {
     constexpr auto test_fn<long double> = std::cyl_bessel_kl;
 
     BOOST_AUTO_TEST_CASE_TEMPLATE(test_cyl_bessel_k, T, fptypes) {
-        // Extracted from math\test\test_bessel_k.hpp lines 104-157:
+        // Extracted from boost/libs/math/test/test_bessel_k.hpp lines 104-157:
         static constexpr _Boost::array<_Boost::array<typename table_type<T>::type, 3>, 9> k0_data       = {{
             {{SC_(0.0), SC_(1.0), SC_(0.421024438240708333335627379212609036136219748226660472298970)}},
             {{SC_(0.0), SC_(2.0), SC_(0.113893872749533435652719574932481832998326624388808882892530)}},
@@ -939,8 +949,8 @@ namespace cyl_bessel_k {
         }};
         // End extract
 
-#include <libs/math/test/bessel_k_data.ipp>
-#include <libs/math/test/bessel_k_int_data.ipp>
+#include <libs/boost/libs/math/test/bessel_k_data.ipp>
+#include <libs/boost/libs/math/test/bessel_k_int_data.ipp>
 
         auto const tester = [](T tolerance) {
             return [tolerance](auto const& datum) {
@@ -971,7 +981,7 @@ namespace cyl_bessel_k {
 
         // domain is x >= 0
 
-        // Extracted from math\test\test_bessel_j.hpp lines 270-272: (yes, the domains are the same)
+        // Extracted from boost/libs/math/test/test_bessel_j.hpp lines 270-272: (yes, the domains are the same)
         BOOST_CHECK(std::isnan(test_fn<T>(T(-2.5), T(0))));
         BOOST_CHECK(assert_domain_error());
         BOOST_CHECK(std::isnan(test_fn<T>(T(-2.5), T(-2))));
@@ -993,7 +1003,7 @@ namespace cyl_neumann {
     constexpr auto test_fn<long double> = std::cyl_neumannl;
 
     BOOST_AUTO_TEST_CASE_TEMPLATE(test_cyl_neumann, T, fptypes) {
-        // Extracted from math\test\test_bessel_y.hpp lines 139-196:
+        // Extracted from boost/libs/math/test/test_bessel_y.hpp lines 139-196:
         static constexpr _Boost::array<_Boost::array<typename table_type<T>::type, 3>, 9> y0_data       = {{
             {{SC_(0.0), SC_(1.0), SC_(0.0882569642156769579829267660235151628278175230906755467110438)}},
             {{SC_(0.0), SC_(2.0), SC_(0.510375672649745119596606592727157873268139227085846135571839)}},
@@ -1070,9 +1080,9 @@ namespace cyl_neumann {
         }};
         // End extract
 
-#include <libs/math/test/bessel_y01_data.ipp>
-#include <libs/math/test/bessel_yn_data.ipp>
-#include <libs/math/test/bessel_yv_data.ipp>
+#include <libs/boost/libs/math/test/bessel_y01_data.ipp>
+#include <libs/boost/libs/math/test/bessel_yn_data.ipp>
+#include <libs/boost/libs/math/test/bessel_yv_data.ipp>
 
         auto const tester = [](T tolerance) {
             return [tolerance](auto const& datum) {
@@ -1104,7 +1114,7 @@ namespace cyl_neumann {
 
         // domain is x >= 0
 
-        // Extracted from math\test\test_bessel_j.hpp lines 270-272: (yes, the domains are the same)
+        // Extracted from boost/libs/math/test/test_bessel_j.hpp lines 270-272: (yes, the domains are the same)
         BOOST_CHECK(std::isnan(test_fn<T>(T(-2.5), T(0))));
         BOOST_CHECK(assert_domain_error());
         BOOST_CHECK(std::isnan(test_fn<T>(T(-2.5), T(-2))));
@@ -1126,7 +1136,7 @@ namespace ellint_1 {
     constexpr auto test_fn<long double> = std::ellint_1l;
 
     BOOST_AUTO_TEST_CASE_TEMPLATE(test_ellint_1, T, fptypes) {
-        // Extracted from math\test\test_ellint_1.hpp lines 87-111:
+        // Extracted from boost/libs/math/test/test_ellint_1.hpp lines 87-111:
         static constexpr _Boost::array<_Boost::array<typename table_type<T>::type, 3>, 22> data1 = {{
             {{SC_(0.0), SC_(0.0), SC_(0.0)}},
             {{SC_(-10.0), SC_(0.0), SC_(-10.0)}},
@@ -1160,7 +1170,7 @@ namespace ellint_1 {
         }};
         // End extract
 
-#include <libs/math/test/ellint_f_data.ipp>
+#include <libs/boost/libs/math/test/ellint_f_data.ipp>
 
         auto const tester = [](T tolerance) {
             return [tolerance](auto const& datum) {
@@ -1207,7 +1217,7 @@ namespace ellint_2 {
     constexpr auto test_fn<long double> = std::ellint_2l;
 
     BOOST_AUTO_TEST_CASE_TEMPLATE(test_ellint_2, T, fptypes) {
-        // Extracted from math\test\test_ellint_2.hpp lines 87-100:
+        // Extracted from boost/libs/math/test/test_ellint_2.hpp lines 87-100:
         static constexpr _Boost::array<_Boost::array<typename table_type<T>::type, 3>, 12> data1 = {{
             {{SC_(0.0), SC_(0.0), SC_(0.0)}},
             {{SC_(-10.0), SC_(0.0), SC_(-10.0)}},
@@ -1226,9 +1236,9 @@ namespace ellint_2 {
         }};
         // End extract
 
-#include <libs/math/test/ellint_e2_data.ipp>
+#include <libs/boost/libs/math/test/ellint_e2_data.ipp>
 
-        // Extracted from math\test\test_ellint_2.hpp lines 129-131:
+        // Extracted from boost/libs/math/test/test_ellint_2.hpp lines 129-131:
         static constexpr _Boost::array<_Boost::array<typename table_type<T>::type, 3>, 72> small_angles = {{
             {{SC_(0.00097656250000000000000000000000000000000000000000000), SC_(0.5),
                 SC_(0.00097656246119489873806295171767681128826061680891539)}},
@@ -1421,7 +1431,7 @@ namespace ellint_3 {
     constexpr auto test_fn<long double> = std::ellint_3l;
 
     BOOST_AUTO_TEST_CASE_TEMPLATE(test_ellint_3, T, fptypes) {
-        // Extracted from math\test\test_ellint_3.hpp lines 90-175:
+        // Extracted from boost/libs/math/test/test_ellint_3.hpp lines 90-175:
         static constexpr _Boost::array<_Boost::array<typename table_type<T>::type, 4>, 70> data1 = {{
             {{SC_(1.0), SC_(-1.0), SC_(0.0), SC_(-1.557407724654902230506974807458360173087)}},
             {{SC_(0.0), SC_(-4.0), SC_(0.4), SC_(-4.153623371196831087495427530365430979011)}},
@@ -1597,8 +1607,8 @@ namespace ellint_3 {
         }};
         // End extract
 
-#include <libs/math/test/ellint_pi3_data.ipp>
-#include <libs/math/test/ellint_pi3_large_data.ipp>
+#include <libs/boost/libs/math/test/ellint_pi3_data.ipp>
+#include <libs/boost/libs/math/test/ellint_pi3_large_data.ipp>
 
         auto const tester = [](T tolerance) {
             return [tolerance](auto const& datum) {
@@ -1625,7 +1635,7 @@ namespace ellint_3 {
         BOOST_CHECK(std::isnan(test_fn<T>(static_cast<T>(1), static_cast<T>(1), qNaN<T>)));
         BOOST_CHECK(assert_not_domain_error());
 
-        // Extracted from math\test\test_ellint_3.hpp lines 216-217 and 221-223:
+        // Extracted from boost/libs/math/test/test_ellint_3.hpp lines 216-217 and 221-223:
         BOOST_CHECK(std::isnan(test_fn<T>(T(2.1), T(-1), T(0.5))));
         BOOST_CHECK(assert_domain_error());
         BOOST_CHECK(std::isnan(test_fn<T>(T(0.5), T(20), T(1.5))));
@@ -1665,8 +1675,8 @@ namespace expint {
             };
         };
 
-#include <libs/math/test/expinti_data.ipp>
-#include <libs/math/test/expinti_data_double.ipp>
+#include <libs/boost/libs/math/test/expinti_data.ipp>
+#include <libs/boost/libs/math/test/expinti_data_double.ipp>
 
         ::for_each(expinti_data, tester(2 * eps<T>));
 
@@ -1676,7 +1686,7 @@ namespace expint {
 
         auto const tolerance = eps<T>;
 
-        // Extracted from math\test\test_expint.hpp lines 182-192:
+        // Extracted from boost/libs/math/test/test_expint.hpp lines 182-192:
         BOOST_CHECK_CLOSE_FRACTION(test_fn<T>(static_cast<T>(1) / 1024),
             static_cast<T>(-6.35327933972759151358547423727042905862963067106751711596065L), tolerance);
         BOOST_CHECK_CLOSE_FRACTION(test_fn<T>(static_cast<T>(0.125)),
@@ -1722,7 +1732,7 @@ namespace hermite {
     constexpr auto test_fn<long double> = std::hermitel;
 
     BOOST_AUTO_TEST_CASE_TEMPLATE(test_hermite, T, fptypes) {
-#include <libs/math/test/hermite.ipp>
+#include <libs/boost/libs/math/test/hermite.ipp>
 
         for (auto const& datum : hermite) {
             unsigned const n  = std::lround(datum[0]);
@@ -1735,7 +1745,7 @@ namespace hermite {
 
     BOOST_AUTO_TEST_CASE_TEMPLATE(test_hermite_spots, T, fptypes) {
         auto const tolerance = 2 * eps<T>;
-        // Extracted from math\test\test_hermite.hpp lines 87-92 and 98-104:
+        // Extracted from boost/libs/math/test/test_hermite.hpp lines 87-92 and 98-104:
         BOOST_CHECK_CLOSE_FRACTION(test_fn<T>(0, static_cast<T>(1)), static_cast<T>(1.L), tolerance);
         BOOST_CHECK_CLOSE_FRACTION(test_fn<T>(1, static_cast<T>(1)), static_cast<T>(2.L), tolerance);
         BOOST_CHECK_CLOSE_FRACTION(test_fn<T>(1, static_cast<T>(2)), static_cast<T>(4.L), tolerance);
@@ -1868,7 +1878,7 @@ namespace laguerre {
     constexpr auto test_fn<long double> = std::laguerrel;
 
     BOOST_AUTO_TEST_CASE_TEMPLATE(test_laguerre, T, fptypes) {
-#include <libs/math/test/laguerre2.ipp>
+#include <libs/boost/libs/math/test/laguerre2.ipp>
 
         for (auto const& datum : laguerre2) {
             unsigned const n  = std::lround(datum[0]);
@@ -1880,7 +1890,7 @@ namespace laguerre {
     }
 
     BOOST_AUTO_TEST_CASE_TEMPLATE(test_laguerre_spots, T, fptypes) {
-        // Extracted from math\test\test_laguerre.hpp lines 113-130:
+        // Extracted from boost/libs/math/test/test_laguerre.hpp lines 113-130:
         constexpr auto tolerance = eps<T> * 100;
         BOOST_CHECK_CLOSE_FRACTION(test_fn<T>(1, static_cast<T>(0.5L)), static_cast<T>(0.5L), tolerance);
         BOOST_CHECK_CLOSE_FRACTION(test_fn<T>(4, static_cast<T>(0.5L)),
@@ -1933,8 +1943,8 @@ namespace legendre {
     constexpr auto test_fn<long double> = std::legendrel;
 
     BOOST_AUTO_TEST_CASE_TEMPLATE(test_legendre, T, fptypes) {
-#include <libs/math/test/legendre_p.ipp>
-#include <libs/math/test/legendre_p_large.ipp>
+#include <libs/boost/libs/math/test/legendre_p.ipp>
+#include <libs/boost/libs/math/test/legendre_p_large.ipp>
 
         auto test_one_value = [](auto const& datum) {
             unsigned const l  = std::lround(datum[0]);
@@ -1951,7 +1961,7 @@ namespace legendre {
 #pragma warning(push)
 #pragma warning(disable : 4146) // unary minus operator applied to unsigned type, result still unsigned
     BOOST_AUTO_TEST_CASE_TEMPLATE(test_legendre_spots, T, fptypes) {
-        // Extracted from math\test\test_legendre.hpp lines 146-154:
+        // Extracted from boost/libs/math/test/test_legendre.hpp lines 146-154:
         constexpr auto tolerance = eps<T> * 100;
         BOOST_CHECK_CLOSE_FRACTION(test_fn<T>(1u, static_cast<T>(0.5L)), static_cast<T>(0.5L), tolerance);
         BOOST_CHECK_CLOSE_FRACTION(test_fn<T>(-1u, static_cast<T>(0.5L)), static_cast<T>(1L), tolerance);
@@ -2008,12 +2018,12 @@ namespace riemann_zeta {
             };
         };
 
-#include <libs/math/test/zeta_1_below_data.ipp>
-#include <libs/math/test/zeta_1_up_data.ipp>
-#include <libs/math/test/zeta_data.ipp>
-#include <libs/math/test/zeta_neg_data.ipp>
+#include <libs/boost/libs/math/test/zeta_1_below_data.ipp>
+#include <libs/boost/libs/math/test/zeta_1_up_data.ipp>
+#include <libs/boost/libs/math/test/zeta_data.ipp>
+#include <libs/boost/libs/math/test/zeta_neg_data.ipp>
 
-        // Extracted from math\test\test_zeta.hpp lines 74-77:
+        // Extracted from boost/libs/math/test/test_zeta.hpp lines 74-77:
         static constexpr _Boost::array<_Boost::array<typename table_type<T>::type, 2>, 90> integer_data = {{
             {{SC_(2.0), SC_(1.6449340668482264364724151666460252)}},
             {{SC_(3.0), SC_(1.2020569031595942853997381615114500)}},
@@ -2114,7 +2124,7 @@ namespace riemann_zeta {
         ::for_each(zeta_1_below_data, tester(eps<T>));
         ::for_each(integer_data, tester(10 * eps<T>));
 
-        // Extracted from math\test\test_zeta.hpp lines 92-172:
+        // Extracted from boost/libs/math/test/test_zeta.hpp lines 92-172:
         constexpr auto tolerance = 5 * eps<T>;
 
         BOOST_CHECK_CLOSE_FRACTION(test_fn<T>(static_cast<T>(0.125)),
@@ -2262,7 +2272,7 @@ namespace sph_bessel {
     constexpr auto test_fn<long double> = std::sph_bessell;
 
     BOOST_AUTO_TEST_CASE_TEMPLATE(test_sph_bessel, T, fptypes) {
-#include <libs/math/test/sph_bessel_data.ipp>
+#include <libs/boost/libs/math/test/sph_bessel_data.ipp>
 
         auto const tester = [](T tolerance) {
             return [tolerance](auto const& datum) {
@@ -2276,7 +2286,7 @@ namespace sph_bessel {
 
         ::for_each(sph_bessel_data, tester(250 * eps<T>));
 
-        // Extracted from math\test\test_bessel_j.hpp lines 263-365:
+        // Extracted from boost/libs/math/test/test_bessel_j.hpp lines 263-365:
         BOOST_CHECK_EQUAL(test_fn<T>(0, T(0)), T(1));
         BOOST_CHECK_EQUAL(test_fn<T>(1, T(0)), T(0));
         BOOST_CHECK_EQUAL(test_fn<T>(100000, T(0)), T(0));
@@ -2392,7 +2402,7 @@ namespace sph_legendre {
         auto const tolerance = 2 * eps<T>;
         ::for_each(sph_legendre_data, tester(tolerance * 200));
 
-        // Extracted from math\test\test_spherical_harmonic.hpp line 133:
+        // Extracted from boost/libs/math/test/test_spherical_harmonic.hpp line 133:
         BOOST_CHECK_CLOSE_FRACTION(test_fn<T>(3u, 2u, static_cast<T>(0.5)),
             static_cast<T>(0.2061460599687871330692286791802688341213L), tolerance);
         // End extract
@@ -2419,7 +2429,7 @@ namespace sph_neumann {
     constexpr auto test_fn<long double> = std::sph_neumannl;
 
     BOOST_AUTO_TEST_CASE_TEMPLATE(test_sph_neumann, T, fptypes) {
-#include <libs/math/test/sph_neumann_data.ipp>
+#include <libs/boost/libs/math/test/sph_neumann_data.ipp>
 
         auto const tester = [](T tolerance) {
             return [tolerance](auto const& datum) {
