@@ -94,6 +94,10 @@ bool assert_not_domain_error() {
     return std::exchange(errno, 0) == 0;
 }
 
+#if _HAS_CXX20
+using std::ranges::equal;
+using std::ranges::for_each;
+#else
 template <class Range, class Fn>
 void for_each(Range&& rng, Fn f) {
     using std::begin;
@@ -107,6 +111,7 @@ bool equal(Range1&& r1, Range2&& r2) {
     using std::end;
     return std::equal(begin(r1), end(r1), begin(r2), end(r2));
 }
+#endif
 
 namespace assoc_laguerre {
     template <class>
