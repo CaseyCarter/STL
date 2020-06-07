@@ -5,6 +5,7 @@
 #define TEST_NAME "<thread>"
 
 #define _HAS_AUTO_PTR_ETC 1
+#define _SILENCE_XTIME_DEPRECATION_WARNING
 
 #include "tdefs.h"
 #include <iostream>

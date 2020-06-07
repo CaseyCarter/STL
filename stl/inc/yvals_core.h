@@ -983,7 +983,18 @@
 #define _CXX20_DEPRECATE_MOVE_ITERATOR_ARROW
 #endif // ^^^ warning disabled ^^^
 
-// next warning number: STL4032
+#ifndef _SILENCE_XTIME_DEPRECATION_WARNING
+#define _DEPRECATE_XTIME                                                                  \
+    [[deprecated("warning STL4032: "                                                      \
+                 "This extension which uses the STL-internal xtime type is deprecated "   \
+                 "and WILL BE REMOVED. "                                                  \
+                 "You can define _SILENCE_XTIME_DEPRECATION_WARNING to acknowledge that " \
+                 "you have received this warning.")]]
+#else // ^^^ warning enabled / warning disabled vvv
+#define _DEPRECATE_XTIME
+#endif // ^^^ warning disabled ^^^
+
+// next warning number: STL4033
 
 // P0619R4 Removing C++17-Deprecated Features
 #ifndef _HAS_FEATURES_REMOVED_IN_CXX20
@@ -1140,7 +1151,7 @@
 #define __cpp_lib_bit_cast                      201806L
 
 #ifdef __clang__ // TRANSITION, VSO-1020212
-// a future MSVC update will embed CPU feature detection into <bit> intrinsics
+                 // a future MSVC update will embed CPU feature detection into <bit> intrinsics
 #define __cpp_lib_bitops 201907L
 #endif // __clang__
 
@@ -1225,7 +1236,8 @@ compiler option, or define _ALLOW_RTCc_IN_STL to acknowledge that you have recei
 #define _STD       ::std::
 #define _RANGES    ::std::ranges::
 
-// We use the stdext (standard extension) namespace to contain extensions that are not part of the current standard
+// We use the stdext (standard extension) namespace to contain extensions that are not part of the
+// current standard
 #define _STDEXT_BEGIN namespace stdext {
 #define _STDEXT_END   }
 #define _STDEXT       ::stdext::

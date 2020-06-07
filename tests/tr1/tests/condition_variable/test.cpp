@@ -4,6 +4,8 @@
 // test <condition_variable> header, C++
 #define TEST_NAME "<condition_variable>"
 
+#define _SILENCE_XTIME_DEPRECATION_WARNING
+
 #include "tdefs.h"
 #include <chrono>
 #include <condition_variable>

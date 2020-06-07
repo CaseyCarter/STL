@@ -147,7 +147,7 @@ namespace this_thread {
         _Thrd_yield();
     }
 
-    inline void sleep_until(const xtime* _Abs_time) {
+    _DEPRECATE_XTIME inline void sleep_until(const xtime* _Abs_time) {
         _Thrd_sleep(_Abs_time);
     }
 

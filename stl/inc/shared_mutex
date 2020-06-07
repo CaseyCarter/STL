@@ -191,8 +191,9 @@ public:
         return _Try_lock_shared_until(_Abs_time);
     }
 
-    _NODISCARD bool try_lock_shared_until(const xtime* _Abs_time) { // try to lock non-exclusive until absolute time
-        return _Try_lock_shared_until(_Abs_time);
+    _DEPRECATE_XTIME _NODISCARD bool try_lock_shared_until(const xtime* _Abs_time) {
+        // try to lock non-exclusive until absolute time
+        return _Try_lock_shared_until(_Abs_time); // FIXME
     }
 
     void unlock_shared() { // unlock non-exclusive
