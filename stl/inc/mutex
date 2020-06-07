@@ -684,11 +684,11 @@ public:
 private:
     aligned_storage_t<_Cnd_internal_imp_size, _Cnd_internal_imp_alignment> _Cnd_storage;
 
-    _Cnd_t _Mycnd() noexcept { // get pointer to _Cnd_internal_imp_t inside _Cnd_storage
+    _NODISCARD _Cnd_t _Mycnd() noexcept { // get pointer to _Cnd_internal_imp_t inside _Cnd_storage
         return reinterpret_cast<_Cnd_t>(&_Cnd_storage);
     }
 
-    cv_status _Wait_until(unique_lock<mutex>& _Lck, const xtime* _Abs_time) {
+    _NODISCARD cv_status _Wait_until(unique_lock<mutex>& _Lck, const xtime* _Abs_time) {
         if (!_Mtx_current_owns(_Lck.mutex()->_Mymtx())) {
             _Throw_Cpp_error(_OPERATION_NOT_PERMITTED);
         }
@@ -709,7 +709,7 @@ private:
     friend class recursive_timed_mutex;
 
     template <class _Predicate>
-    bool _Wait_until1(unique_lock<mutex>& _Lck, const xtime* _Abs_time, _Predicate& _Pred) {
+    _NODISCARD bool _Wait_until1(unique_lock<mutex>& _Lck, const xtime* _Abs_time, _Predicate& _Pred) {
         // wait for signal with timeout and check predicate
         while (!_Pred()) {
             if (_Wait_until(_Lck, _Abs_time) == cv_status::timeout) {
@@ -721,7 +721,7 @@ private:
     }
 
     template <class _Clock, class _Duration, class _Predicate>
-    bool _Wait_until1(
+    _NODISCARD bool _Wait_until1(
         unique_lock<mutex>& _Lck, const chrono::time_point<_Clock, _Duration>& _Abs_time, _Predicate& _Pred) {
         while (!_Pred()) {
             const auto _Now = _Clock::now();
@@ -731,7 +731,7 @@ private:
 
             _CSTD xtime _Tgt;
             const bool _Clamped = _To_xtime_10_day_clamped(_Tgt, _Abs_time - _Now);
-            if (wait_until(_Lck, &_Tgt) == cv_status::timeout && !_Clamped) {
+            if (_Wait_until(_Lck, &_Tgt) == cv_status::timeout && !_Clamped) {
                 return _Pred();
             }
         }
@@ -889,6 +889,30 @@ public:
         return try_lock_until(chrono::steady_clock::now() + _Rel_time);
     }
 
+    template <class _Clock, class _Duration>
+    _NODISCARD bool try_lock_until(const chrono::time_point<_Clock, _Duration>& _Abs_time) {
+        // try to lock the mutex with timeout
+        return _Try_lock_until(_Abs_time);
+    }
+
+    _DEPRECATE_XTIME _NODISCARD bool try_lock_until(const xtime* _Abs_time) { // try to lock the mutex with timeout
+        return _Try_lock_until(_Abs_time);
+    }
+
+private:
+#if !_HAS_IF_CONSTEXPR
+    template <class _Time, class _Predicate>
+    _NODISCARD bool _Try_lock_wait_dispatch(false_type, unique_lock<mutex>& _Lock, _Time _Abs_time, _Predicate& _Pred) {
+        return _My_cond.wait_until(_Lock, _Abs_time, _Pred);
+    }
+
+    template <class _Predicate>
+    _NODISCARD bool _Try_lock_wait_dispatch(
+        true_type, unique_lock<mutex>& _Lock, const xtime* _Abs_time, _Predicate& _Pred) {
+        return _My_cond._Wait_until1(_Lock, _Abs_time, _Pred);
+    }
+#endif // !_HAS_IF_CONSTEXPR
+
     template <class _Time>
     _NODISCARD bool _Try_lock_until(_Time _Abs_time) { // try to lock the mutex with timeout
         const thread::id _Tid = this_thread::get_id();
@@ -904,18 +928,22 @@ public:
             return true;
         }
 
+        _UInt_is_zero _Pred{_My_locked};
+        constexpr bool _Is_xtime = is_same_v<_Time, const xtime*>;
 #if _HAS_IF_CONSTEXPR
-        if constexpr (is_same_v<_Time, const xtime*>) {
-            if (!_My_cond._Wait_until(_Lock, _Abs_time, _UInt_is_zero{_My_locked})) {
+        if constexpr (_Is_xtime) {
+            if (!_My_cond._Wait_until1(_Lock, _Abs_time, _Pred)) {
                 return false;
             }
         } else {
-            if (!_My_cond.wait_until(_Lock, _Abs_time, _UInt_is_zero{_My_locked})) {
+            if (!_My_cond.wait_until(_Lock, _Abs_time, _Pred)) {
                 return false;
             }
         }
 #else
-
+        if (!_Try_lock_wait_dispatch(bool_constant<_Is_xtime>{}, _Lock, _Abs_time, _Pred)) {
+            return false;
+        }
 #endif // _HAS_IF_CONSTEXPR
 
         _My_locked = 1;
@@ -924,17 +952,6 @@ public:
         return true;
     }
 
-    template <class _Clock, class _Duration>
-    _NODISCARD bool try_lock_until(const chrono::time_point<_Clock, _Duration>& _Abs_time) {
-        // try to lock the mutex with timeout
-        return _Try_lock_until(_Abs_time);
-    }
-
-    _DEPRECATE_XTIME _NODISCARD bool try_lock_until(const xtime* _Abs_time) { // try to lock the mutex with timeout
-        return _Try_lock_until(_Abs_time);
-    }
-
-private:
     mutex _My_mutex;
     condition_variable _My_cond;
     unsigned int _My_locked;
