@@ -223,6 +223,27 @@ namespace ranges {
 #ifdef __clang__
 #pragma clang diagnostic pop
 #endif // __clang__
+
+    // FUNCTION TEMPLATE ranges::_Idl_distance
+    template <input_or_output_iterator _It, sentinel_for<_It> _Se>
+    _NODISCARD constexpr auto _Idl_distance(const _It& _First, const _Se& _Last) {
+        // tries to get the distance between _First and _Last
+        if constexpr (sized_sentinel_for<_Se, _It>) {
+            return _Last - _First;
+        } else {
+            return _Distance_unknown{};
+        }
+    }
+
+    template <range _Rng>
+    _NODISCARD constexpr auto _Idl_distance(_Rng&& _Range) {
+        // tries to get the extent of _Range
+        if constexpr (sized_range<_Rng>) {
+            return static_cast<range_difference_t<_Rng>>(_RANGES size(_Range));
+        } else {
+            return _Distance_unknown{};
+        }
+    }
 } // namespace ranges
 #endif // __cpp_lib_concepts
 
@@ -277,25 +298,68 @@ namespace ranges {
     public:
         using _Not_quite_object::_Not_quite_object;
 
-        template <input_iterator _It, sentinel_for<_It> _Se, class _Pj = identity,
-            indirectly_unary_invocable<projected<_It, _Pj>> _Fn>
-        constexpr for_each_result<_It, _Fn> operator()(_It _First, _Se _Last, _Fn _Func, _Pj _Proj = {}) const {
+        template <input_iterator _It, sentinel_for<_It> _Se, indirectly_unary_invocable<projected<_It, identity>> _Fn>
+        constexpr for_each_result<_It, _Fn> operator()(_It _First, _Se _Last, _Fn _Func) const {
             _Adl_verify_range(_First, _Last);
-            auto _UFirst      = _Get_unwrapped(_STD move(_First));
-            const auto _ULast = _Get_unwrapped(_STD move(_Last));
-            for (; _UFirst != _ULast; ++_UFirst) {
-                _STD invoke(_Func, _STD invoke(_Proj, *_UFirst));
-            }
-
-            _Seek_wrapped(_First, _STD move(_UFirst));
-            return {_STD move(_First), _STD move(_Func)};
+            auto _UResult = _For_each_unchecked(
+                _Get_unwrapped(_STD move(_First)), _Get_unwrapped(_Last), _STD move(_Func), identity{});
+            _Seek_wrapped(_First, _STD move(_UResult.in));
+            return {_STD move(_First), _STD move(_UResult.fun)};
         }
 
-        template <input_range _Rng, class _Pj = identity,
-            indirectly_unary_invocable<projected<iterator_t<_Rng>, _Pj>> _Fn>
+        template <input_iterator _It, sentinel_for<_It> _Se, class _Pj,
+            indirectly_unary_invocable<projected<_It, _Pj>> _Fn>
+        constexpr for_each_result<_It, _Fn> operator()(_It _First, _Se _Last, _Fn _Func, _Pj _Proj) const {
+            _Adl_verify_range(_First, _Last);
+            auto _UResult = _For_each_unchecked(
+                _Get_unwrapped(_STD move(_First)), _Get_unwrapped(_Last), _STD move(_Func), _Pass_fn(_Proj));
+            _Seek_wrapped(_First, _STD move(_UResult.in));
+            return {_STD move(_First), _STD move(_UResult.fun)};
+        }
+
+        template <input_range _Rng, indirectly_unary_invocable<projected<iterator_t<_Rng>, identity>> _Fn>
+        constexpr for_each_result<borrowed_iterator_t<_Rng>, _Fn> operator()(_Rng&& _Range, _Fn _Func) const {
+            auto _First   = _RANGES begin(_Range);
+            auto _UResult = _For_each_unchecked(
+                _Get_unwrapped(_STD move(_First)), _Get_unwrapped(_RANGES end(_Range)), _STD move(_Func), identity{});
+            _Seek_wrapped(_First, _STD move(_UResult.in));
+            return {_STD move(_First), _STD move(_UResult.fun)};
+        }
+
+        template <input_range _Rng, class _Pj, indirectly_unary_invocable<projected<iterator_t<_Rng>, _Pj>> _Fn>
         constexpr for_each_result<borrowed_iterator_t<_Rng>, _Fn> operator()(
-            _Rng&& _Range, _Fn _Func, _Pj _Proj = {}) const {
-            return (*this)(_RANGES begin(_Range), _RANGES end(_Range), _STD move(_Func), _Pass_fn(_Proj));
+            _Rng&& _Range, _Fn _Func, _Pj _Proj) const {
+            auto _First   = _RANGES begin(_Range);
+            auto _UResult = _For_each_unchecked(_Get_unwrapped(_STD move(_First)), _Get_unwrapped(_RANGES end(_Range)),
+                _STD move(_Func), _Pass_fn(_Proj));
+            _Seek_wrapped(_First, _STD move(_UResult.in));
+            return {_STD move(_First), _STD move(_UResult.fun)};
+        }
+
+    private:
+        template <class _It, class _Se, class _Fn, class _Pj>
+        static constexpr for_each_result<_It, _Fn> _For_each_unchecked(_It _First, _Se _Last, _Fn _Func, _Pj _Proj) {
+            _STL_INTERNAL_STATIC_ASSERT(input_iterator<_It>);
+            _STL_INTERNAL_STATIC_ASSERT(sentinel_for<_Se, _It>);
+            _STL_INTERNAL_STATIC_ASSERT(indirectly_unary_invocable<_Fn, projected<_It, _Pj>>);
+
+            for (; _First != _Last; ++_First) {
+                if constexpr (is_same_v<_Pj, identity>) {
+                    if constexpr (is_member_pointer_v<_Fn>) {
+                        _STD invoke(_Func, *_First);
+                    } else {
+                        _Func(*_First);
+                    }
+                } else {
+                    if constexpr (is_member_pointer_v<_Fn>) {
+                        _STD invoke(_Func, _STD invoke(_Proj, *_First));
+                    } else {
+                        _Func(_STD invoke(_Proj, *_First));
+                    }
+                }
+            }
+
+            return {_STD move(_First), _STD move(_Func)};
         }
     };
 
@@ -310,16 +374,52 @@ namespace ranges {
     public:
         using _Not_quite_object::_Not_quite_object;
 
-        template <input_iterator _It, class _Pj = identity, indirectly_unary_invocable<projected<_It, _Pj>> _Fn>
+        template <input_iterator _It, indirectly_unary_invocable<projected<_It, identity>> _Fn>
+        constexpr for_each_n_result<_It, _Fn> operator()(_It _First, iter_difference_t<_It> _Count, _Fn _Func) const {
+            if (_Count > 0) {
+                auto _UResult = _For_each_n_unchecked(
+                    _Get_unwrapped_n(_STD move(_First), _Count), _Count, _STD move(_Func), identity{});
+                _Seek_wrapped(_First, _STD move(_UResult.in));
+            }
+
+            return {_STD move(_First), identity{}};
+        }
+
+        template <input_iterator _It, class _Pj, indirectly_unary_invocable<projected<_It, _Pj>> _Fn>
         constexpr for_each_n_result<_It, _Fn> operator()(
-            _It _First, iter_difference_t<_It> _Count, _Fn _Func, _Pj _Proj = {}) const {
-            if (0 < _Count) {
+            _It _First, iter_difference_t<_It> _Count, _Fn _Func, _Pj _Proj) const {
+            if (_Count <= 0) {
+                return {_STD move(_First), _STD move(_Func)};
+            }
+
+            auto _UResult = _For_each_n_unchecked(
+                _Get_unwrapped_n(_STD move(_First), _Count), _Count, _STD move(_Func), _Pass_fn(_Proj));
+            _Seek_wrapped(_First, _STD move(_UResult.in));
+            return {_STD move(_First), _STD move(_UResult.fun)};
+        }
+
+    private:
+        template <input_iterator _It, class _Pj, indirectly_unary_invocable<projected<_It, _Pj>> _Fn>
+        _NODISCARD static constexpr for_each_n_result<_It, _Fn> _For_each_n_unchecked(
+            _It _First, iter_difference_t<_It> _Count, _Fn _Func, _Pj _Proj) {
+            if (_Count > 0) {
                 auto _UFirst = _Get_unwrapped_n(_STD move(_First), _Count);
                 do {
-                    _STD invoke(_Func, _STD invoke(_Proj, *_UFirst));
-                    --_Count;
+                    if constexpr (is_same_v<_Pj, identity>) {
+                        if constexpr (is_member_pointer_v<_Fn>) {
+                            _STD invoke(_Func, *_UFirst);
+                        } else {
+                            _Func(*_UFirst);
+                        }
+                    } else {
+                        if constexpr (is_member_pointer_v<_Fn>) {
+                            _STD invoke(_Func, _STD invoke(_Proj, *_UFirst));
+                        } else {
+                            _Func(_STD invoke(_Proj, *_UFirst));
+                        }
+                    }
                     ++_UFirst;
-                } while (0 < _Count);
+                } while (--_Count > 0);
 
                 _Seek_wrapped(_First, _STD move(_UFirst));
             }
@@ -340,15 +440,8 @@ namespace ranges {
             requires indirect_binary_predicate<ranges::equal_to, projected<_It, _Pj>, const _Ty*>
         _NODISCARD constexpr _It operator()(_It _First, _Se _Last, const _Ty& _Val, _Pj _Proj = {}) const {
             _Adl_verify_range(_First, _Last);
-            // Performance note: investigate using _Find_unchecked when same_as<_Pj, identity>
-            auto _UFirst      = _Get_unwrapped(_STD move(_First));
-            const auto _ULast = _Get_unwrapped(_STD move(_Last));
-            for (; _UFirst != _ULast; ++_UFirst) {
-                if (_STD invoke(_Proj, *_UFirst) == _Val) {
-                    break;
-                }
-            }
-
+            auto _UFirst = _Find_unchecked(
+                _Get_unwrapped(_STD move(_First)), _Get_unwrapped(_STD move(_Last)), _Val, _Pass_fn(_Proj));
             _Seek_wrapped(_First, _STD move(_UFirst));
             return _First;
         }
@@ -357,9 +450,60 @@ namespace ranges {
             requires indirect_binary_predicate<ranges::equal_to, projected<iterator_t<_Rng>, _Pj>, const _Ty*>
         _NODISCARD constexpr borrowed_iterator_t<_Rng> operator()(
             _Rng&& _Range, const _Ty& _Val, _Pj _Proj = {}) const {
-            return (*this)(_RANGES begin(_Range), _RANGES end(_Range), _Val, _Pass_fn(_Proj));
+            auto _First = _RANGES begin(_Range);
+            auto _UFirst = _Find_unchecked(
+                _Get_unwrapped(_STD move(_First)), _Get_unwrapped(_RANGES end(_Range)), _Val, _Pass_fn(_Proj));
+            _Seek_wrapped(_First, _STD move(_UFirst));
+            return _First;
         }
         // clang-format on
+    private:
+        template <class _It, class _Se, class _Ty, class _Pj>
+        _NODISCARD static constexpr _It _Find_unchecked(_It _First, const _Se _Last, const _Ty& _Val, _Pj _Proj) {
+            _STL_INTERNAL_STATIC_ASSERT(input_iterator<_It>);
+            _STL_INTERNAL_STATIC_ASSERT(sentinel_for<_Se, _It>);
+            _STL_INTERNAL_STATIC_ASSERT(indirect_binary_predicate<ranges::equal_to, projected<_It, _Pj>, const _Ty*>);
+
+            constexpr bool _Memchr_opt =
+                is_same_v<_Pj, identity> && is_integral_v<_Ty> && contiguous_iterator<_It> //
+                && sized_sentinel_for<_Se, _It> && _Is_any_of_v<iter_value_t<_It>, char, signed char, unsigned char>;
+            if constexpr (_Memchr_opt) {
+                if (!_Within_limits<iter_value_t<_It>>(_Val)) {
+                    return _RANGES next(_First, _Last);
+                }
+
+#ifdef __cpp_lib_is_constant_evaluated
+                if (!_STD is_constant_evaluated()) {
+#endif // __cpp_lib_is_constant_evaluated
+                    auto _Count            = _Last - _First;
+                    const auto _First_addr = _STD to_address(_First);
+                    const auto _Found_addr =
+                        _CSTD memchr(_First_addr, static_cast<unsigned char>(_Val), static_cast<size_t>(_Count));
+                    if (_Found_addr) {
+                        _Count = static_cast<decltype(_First_addr)>(_Found_addr) - _First_addr;
+                    }
+
+                    _First += _Count;
+                    return _First;
+#ifdef __cpp_lib_is_constant_evaluated
+                }
+#endif // __cpp_lib_is_constant_evaluated
+            }
+
+            for (; _First != _Last; ++_First) {
+                if constexpr (is_same_v<_Pj, identity>) {
+                    if (*_First == _Val) {
+                        break;
+                    }
+                } else {
+                    if (_STD invoke(_Proj, *_First) == _Val) {
+                        break;
+                    }
+                }
+            }
+
+            return _First;
+        }
     };
 
     inline constexpr _Find_fn find{_Not_quite_object::_Construct_tag{}};
@@ -384,14 +528,8 @@ namespace ranges {
             indirect_unary_predicate<projected<_It, _Pj>> _Pr>
         _NODISCARD constexpr _It operator()(_It _First, _Se _Last, _Pr _Pred, _Pj _Proj = {}) const {
             _Adl_verify_range(_First, _Last);
-            auto _UFirst      = _Get_unwrapped(_STD move(_First));
-            const auto _ULast = _Get_unwrapped(_STD move(_Last));
-            for (; _UFirst != _ULast; ++_UFirst) {
-                if (_STD invoke(_Pred, _STD invoke(_Proj, *_UFirst))) {
-                    break;
-                }
-            }
-
+            auto _UFirst = _Find_if_unchecked(
+                _Get_unwrapped(_STD move(_First)), _Get_unwrapped(_STD move(_Last)), _Pass_fn(_Pred), _Pass_fn(_Proj));
             _Seek_wrapped(_First, _STD move(_UFirst));
             return _First;
         }
@@ -399,9 +537,46 @@ namespace ranges {
         template <input_range _Rng, class _Pj = identity,
             indirect_unary_predicate<projected<iterator_t<_Rng>, _Pj>> _Pr>
         _NODISCARD constexpr borrowed_iterator_t<_Rng> operator()(_Rng&& _Range, _Pr _Pred, _Pj _Proj = {}) const {
-            return (*this)(_RANGES begin(_Range), _RANGES end(_Range), _Pass_fn(_Pred), _Pass_fn(_Proj));
+            auto _First = _RANGES begin(_Range);
+            auto _UFirst = _Find_if_unchecked(_Get_unwrapped(_STD move(_First)), _Get_unwrapped(_RANGES end(_Range)),
+                _Pass_fn(_Pred), _Pass_fn(_Proj));
+            _Seek_wrapped(_First, _STD move(_UFirst));
+            return _First;
         }
         // clang-format on
+    private:
+        template <class _It, class _Se, class _Pr, class _Pj>
+        _NODISCARD static constexpr _It _Find_if_unchecked(_It _First, const _Se _Last, _Pr _Pred, _Pj _Proj) {
+            _STL_INTERNAL_STATIC_ASSERT(input_iterator<_It>);
+            _STL_INTERNAL_STATIC_ASSERT(sentinel_for<_Se, _It>);
+            _STL_INTERNAL_STATIC_ASSERT(indirect_unary_predicate<_Pr, projected<_It, _Pj>>);
+
+            for (; _First != _Last; ++_First) {
+                if constexpr (is_same_v<_Pj, identity>) {
+                    if constexpr (is_member_pointer_v<_Pr>) {
+                        if (_STD invoke(_Pred, *_First)) {
+                            break;
+                        }
+                    } else {
+                        if (_Pred(*_First)) {
+                            break;
+                        }
+                    }
+                } else {
+                    if constexpr (is_member_pointer_v<_Pr>) {
+                        if (_STD invoke(_Pred, _STD invoke(_Proj, *_First))) {
+                            break;
+                        }
+                    } else {
+                        if (_Pred(_STD invoke(_Proj, *_First))) {
+                            break;
+                        }
+                    }
+                }
+            }
+
+            return _First;
+        }
     };
 
     inline constexpr _Find_if_fn find_if{_Not_quite_object::_Construct_tag{}};
