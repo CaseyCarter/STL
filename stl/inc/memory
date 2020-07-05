@@ -513,9 +513,19 @@ public:
     virtual ~_Ref_count_base() noexcept {} // TRANSITION, should be non-virtual
 
     bool _Incref_nz() noexcept { // increment use count if not zero, return true if successful
+#ifdef __clang__
+        _Atomic_counter_t _Count = __atomic_load_n(&_Uses, __ATOMIC_RELAXED);
+        while (_Count != 0) {
+            const bool _Success =
+                __atomic_compare_exchange_n(&_Uses, &_Count, _Count + 1, true, __ATOMIC_RELAXED, __ATOMIC_RELAXED);
+            if (_Success) {
+                return true;
+            }
+        }
+#else // ^^^ Clang / Other vvv
         auto& _Volatile_uses = reinterpret_cast<volatile long&>(_Uses);
 #ifdef _M_CEE_PURE
-        long _Count = *_Atomic_address_as<const long>(&_Volatile_uses);
+        long _Count          = *_Atomic_address_as<const long>(&_Volatile_uses);
 #else
         long _Count = __iso_volatile_load32(reinterpret_cast<volatile int*>(&_Volatile_uses));
 #endif
@@ -527,6 +537,7 @@ public:
 
             _Count = _Old_value;
         }
+#endif // __clang__
 
         return false;
     }
@@ -553,7 +564,11 @@ public:
     }
 
     long _Use_count() const noexcept {
+#ifdef __clang__
+        return static_cast<long>(__atomic_load_n(&_Uses, __ATOMIC_RELAXED));
+#else
         return static_cast<long>(_Uses);
+#endif // __clang__
     }
 
     virtual void* _Get_deleter(const type_info&) const noexcept {

@@ -43,8 +43,13 @@ _STL_DISABLE_CLANG_WARNINGS
 #error Unsupported hardware
 #endif // hardware
 
+#ifdef __clang__
+#define _MT_INCR(x) __atomic_add_fetch(&x, 1, __ATOMIC_RELAXED)
+#define _MT_DECR(x) __atomic_sub_fetch(&x, 1, __ATOMIC_ACQ_REL)
+#else // ^^^ Clang / Other vvv
 #define _MT_INCR(x) _INTRIN_RELAXED(_InterlockedIncrement)(reinterpret_cast<volatile long*>(&x))
 #define _MT_DECR(x) _INTRIN_ACQ_REL(_InterlockedDecrement)(reinterpret_cast<volatile long*>(&x))
+#endif // __clang__
 
 _STD_BEGIN
 
@@ -83,6 +88,15 @@ enum memory_order {
     memory_order_seq_cst
 };
 #endif // _HAS_CXX20
+
+#ifdef __clang__
+static_assert(static_cast<int>(memory_order_relaxed) == __ATOMIC_RELAXED);
+static_assert(static_cast<int>(memory_order_consume) == __ATOMIC_CONSUME);
+static_assert(static_cast<int>(memory_order_acquire) == __ATOMIC_ACQUIRE);
+static_assert(static_cast<int>(memory_order_release) == __ATOMIC_RELEASE);
+static_assert(static_cast<int>(memory_order_acq_rel) == __ATOMIC_ACQ_REL);
+static_assert(static_cast<int>(memory_order_seq_cst) == __ATOMIC_SEQ_CST);
+#endif // __clang__
 
 using _Atomic_counter_t = unsigned long;
 
