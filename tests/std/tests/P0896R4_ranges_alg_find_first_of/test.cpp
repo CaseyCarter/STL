@@ -90,4 +90,4 @@ struct instantiator {
     }
 };
 
-template void test_in_fwd<instantiator, const int, const int>();
+template void input_range_forward_range_permutations<instantiator, const int, const int>();

@@ -341,12 +341,12 @@ int main() {
     STATIC_ASSERT((init_list_constexpr_tests(), true));
     init_list_constexpr_tests();
 
-    STATIC_ASSERT((test_fwd<mm_element_empty, const P>(), true));
-    test_fwd<mm_element_empty, const P>();
+    STATIC_ASSERT((forward_range_permutations<mm_element_empty, const P>(), true));
+    forward_range_permutations<mm_element_empty, const P>();
 
     STATIC_ASSERT((mm_element_constexpr_tests(), true));
-    test_fwd<mm_element, const P>();
+    forward_range_permutations<mm_element, const P>();
 
     STATIC_ASSERT((mm_constexpr_tests(), true));
-    test_in<mm, const P>();
+    input_range_permutations<mm, const P>();
 }

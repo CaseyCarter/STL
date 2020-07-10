@@ -56,4 +56,4 @@ struct instantiator {
     }
 };
 
-template void test_in_write<instantiator, const int, int>();
+template void input_range_writable_iterator_permutations<instantiator, const int, int>();

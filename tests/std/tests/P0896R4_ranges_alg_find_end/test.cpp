@@ -106,4 +106,4 @@ struct instantiator {
     }
 };
 
-template void test_fwd_fwd<instantiator, const int, const int>();
+template void forward_range_forward_range_permutations<instantiator, const int, const int>();

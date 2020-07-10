@@ -205,15 +205,15 @@ struct push_and_pop_heap_test {
 };
 
 int main() {
-    STATIC_ASSERT((test_random<empty_ranges, P>(), true));
-    test_random<empty_ranges, P>();
+    STATIC_ASSERT((random_range_permutations<empty_ranges, P>(), true));
+    random_range_permutations<empty_ranges, P>();
 
-    STATIC_ASSERT((test_random<is_heap_test, P>(), true));
-    test_random<is_heap_test, P>();
+    STATIC_ASSERT((random_range_permutations<is_heap_test, P>(), true));
+    random_range_permutations<is_heap_test, P>();
 
-    STATIC_ASSERT((test_random<make_and_sort_heap_test, P>(), true));
-    test_random<make_and_sort_heap_test, P>();
+    STATIC_ASSERT((random_range_permutations<make_and_sort_heap_test, P>(), true));
+    random_range_permutations<make_and_sort_heap_test, P>();
 
-    STATIC_ASSERT((test_random<push_and_pop_heap_test, P>(), true));
-    test_random<push_and_pop_heap_test, P>();
+    STATIC_ASSERT((random_range_permutations<push_and_pop_heap_test, P>(), true));
+    random_range_permutations<push_and_pop_heap_test, P>();
 }

@@ -39,4 +39,4 @@ struct instantiator {
     }
 };
 
-template void test_read_write<instantiator, const int, int>();
+template void input_iterator_writable_iterator_permutations<instantiator, const int, int>();

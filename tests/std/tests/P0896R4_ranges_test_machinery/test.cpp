@@ -396,4 +396,4 @@ struct instantiate {
     }
 };
 
-template void test_in_in<instantiate, double, void* const>();
+template void input_range_input_range_permutations<instantiate, double, void* const>();

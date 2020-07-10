@@ -63,4 +63,4 @@ struct instantiator {
     }
 };
 
-template void test_in_in<instantiator, int, int>();
+template void input_range_input_range_permutations<instantiator, int, int>();

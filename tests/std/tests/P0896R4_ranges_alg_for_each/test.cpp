@@ -72,4 +72,4 @@ struct instantiator {
     }
 };
 
-template void test_in<instantiator, const int>();
+template void input_range_permutations<instantiator, const int>();

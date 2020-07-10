@@ -51,4 +51,4 @@ struct instantiator {
     }
 };
 
-template void test_read<instantiator, const int>();
+template void input_iterator_permutations<instantiator, const int>();

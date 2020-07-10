@@ -70,9 +70,9 @@ struct iterator_overloads {
 };
 
 int main() {
-    STATIC_ASSERT((test_fwd<range_overloads, const P>(), true));
-    test_fwd<range_overloads, const P>();
+    STATIC_ASSERT((forward_range_permutations<range_overloads, const P>(), true));
+    forward_range_permutations<range_overloads, const P>();
 
-    STATIC_ASSERT((test_fwd<iterator_overloads, const P>(), true));
-    test_fwd<iterator_overloads, const P>();
+    STATIC_ASSERT((forward_range_permutations<iterator_overloads, const P>(), true));
+    forward_range_permutations<iterator_overloads, const P>();
 }

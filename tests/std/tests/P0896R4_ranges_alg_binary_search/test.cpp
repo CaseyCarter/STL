@@ -169,18 +169,18 @@ struct binary_search_instantiator {
 };
 
 int main() {
-    STATIC_ASSERT((test_fwd<empty_ranges, const P>(), true));
-    test_fwd<empty_ranges, const P>();
+    STATIC_ASSERT((forward_range_permutations<empty_ranges, const P>(), true));
+    forward_range_permutations<empty_ranges, const P>();
 
-    STATIC_ASSERT((test_fwd<lower_bound_instantiator, const P>(), true));
-    test_fwd<lower_bound_instantiator, const P>();
+    STATIC_ASSERT((forward_range_permutations<lower_bound_instantiator, const P>(), true));
+    forward_range_permutations<lower_bound_instantiator, const P>();
 
-    STATIC_ASSERT((test_fwd<upper_bound_instantiator, const P>(), true));
-    test_fwd<upper_bound_instantiator, const P>();
+    STATIC_ASSERT((forward_range_permutations<upper_bound_instantiator, const P>(), true));
+    forward_range_permutations<upper_bound_instantiator, const P>();
 
-    STATIC_ASSERT((test_fwd<equal_range_instantiator, const P>(), true));
-    test_fwd<equal_range_instantiator, const P>();
+    STATIC_ASSERT((forward_range_permutations<equal_range_instantiator, const P>(), true));
+    forward_range_permutations<equal_range_instantiator, const P>();
 
-    STATIC_ASSERT((test_fwd<binary_search_instantiator, const P>(), true));
-    test_fwd<binary_search_instantiator, const P>();
+    STATIC_ASSERT((forward_range_permutations<binary_search_instantiator, const P>(), true));
+    forward_range_permutations<binary_search_instantiator, const P>();
 }

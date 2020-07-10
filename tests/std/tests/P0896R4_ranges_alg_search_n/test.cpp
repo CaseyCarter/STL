@@ -130,6 +130,6 @@ struct instantiator {
 
 int main() {
     using Elem = const P;
-    STATIC_ASSERT((test_fwd<instantiator, Elem>(), true));
-    test_fwd<instantiator, Elem>();
+    STATIC_ASSERT((forward_range_permutations<instantiator, Elem>(), true));
+    forward_range_permutations<instantiator, Elem>();
 }

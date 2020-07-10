@@ -88,7 +88,7 @@ namespace test {
     enum class IsWrapped : bool { no, yes };
 
     template <class T>
-    [[nodiscard]] constexpr bool to_bool(T const t) noexcept {
+    [[nodiscard]] constexpr bool to_bool(const T t) noexcept {
         STATIC_ASSERT(std::is_enum_v<T> && std::same_as<std::underlying_type_t<T>, bool>);
         return static_cast<bool>(t);
     }
@@ -118,7 +118,7 @@ namespace test {
         static constexpr bool _Unwrap_when_unverified = true;
 
         // clang-format off
-        constexpr void _Seek_to(unwrap const& s) noexcept requires (to_bool(Wrapped)) {
+        constexpr void _Seek_to(const unwrap& s) noexcept requires (to_bool(Wrapped)) {
             ptr_ = s.peek();
         }
         // clang-format on
@@ -126,32 +126,32 @@ namespace test {
 
     // clang-format off
     template <class T, class U>
-    concept CanEq = requires(T const& t, U const& u) {
+    concept CanEq = requires(const T& t, const U& u) {
         { t == u } -> convertible_to<bool>;
     };
 
     template <class T, class U>
-    concept CanNEq = requires(T const& t, U const& u) {
+    concept CanNEq = requires(const T& t, const U& u) {
         { t != u } -> convertible_to<bool>;
     };
 
     template <class T, class U>
-    concept CanLt = requires(T const& t, U const& u) {
+    concept CanLt = requires(const T& t, const U& u) {
         { t < u } -> convertible_to<bool>;
     };
 
     template <class T, class U>
-    concept CanLtE = requires(T const& t, U const& u) {
+    concept CanLtE = requires(const T& t, const U& u) {
         { t <= u } -> convertible_to<bool>;
     };
 
     template <class T, class U>
-    concept CanGt = requires(T const& t, U const& u) {
+    concept CanGt = requires(const T& t, const U& u) {
         { t > u } -> convertible_to<bool>;
     };
 
     template <class T, class U>
-    concept CanGtE = requires(T const& t, U const& u) {
+    concept CanGtE = requires(const T& t, const U& u) {
         { t >= u } -> convertible_to<bool>;
     };
     // clang-format on
@@ -164,9 +164,9 @@ namespace test {
 
     public:
         constexpr explicit proxy_reference(Element& ref) : ref_{ref} {}
-        proxy_reference(proxy_reference const&) = default;
+        proxy_reference(const proxy_reference&) = default;
 
-        constexpr proxy_reference const& operator=(proxy_reference const& that) const
+        constexpr const proxy_reference& operator=(const proxy_reference& that) const
             requires assignable_from<Element&, Element&> {
             ref_ = that.ref_;
             return *this;
@@ -178,7 +178,7 @@ namespace test {
         }
         // clang-format on
 
-        constexpr void operator=(Value const& val) const requires assignable_from<Element&, Value const&> {
+        constexpr void operator=(const Value& val) const requires assignable_from<Element&, const Value&> {
             ref_ = val;
         }
 
@@ -208,40 +208,40 @@ namespace test {
         }
 
         // clang-format off
-        friend constexpr boolish operator==(proxy_reference ref, Value const& val) requires CanEq<Element, Value> {
+        friend constexpr boolish operator==(proxy_reference ref, const Value& val) requires CanEq<Element, Value> {
             return {ref.ref_ == val};
         }
-        friend constexpr boolish operator==(Value const& val, proxy_reference ref) requires CanEq<Element, Value> {
+        friend constexpr boolish operator==(const Value& val, proxy_reference ref) requires CanEq<Element, Value> {
             return {ref.ref_ == val};
         }
-        friend constexpr boolish operator!=(proxy_reference ref, Value const& val) requires CanNEq<Element, Value> {
+        friend constexpr boolish operator!=(proxy_reference ref, const Value& val) requires CanNEq<Element, Value> {
             return {ref.ref_ != val};
         }
-        friend constexpr boolish operator!=(Value const& val, proxy_reference ref) requires CanNEq<Element, Value> {
+        friend constexpr boolish operator!=(const Value& val, proxy_reference ref) requires CanNEq<Element, Value> {
             return {ref.ref_ != val};
         }
-        friend constexpr boolish operator<(Value const& val, proxy_reference ref) requires CanLt<Value, Element> {
+        friend constexpr boolish operator<(const Value& val, proxy_reference ref) requires CanLt<Value, Element> {
             return {val < ref.ref_};
         }
-        friend constexpr boolish operator<(proxy_reference ref, Value const& val) requires CanLt<Element, Value> {
+        friend constexpr boolish operator<(proxy_reference ref, const Value& val) requires CanLt<Element, Value> {
             return {ref.ref_ < val};
         }
-        friend constexpr boolish operator>(Value const& val, proxy_reference ref) requires CanGt<Value, Element> {
+        friend constexpr boolish operator>(const Value& val, proxy_reference ref) requires CanGt<Value, Element> {
             return {val > ref.ref_};
         }
-        friend constexpr boolish operator>(proxy_reference ref, Value const& val) requires CanGt<Element, Value> {
+        friend constexpr boolish operator>(proxy_reference ref, const Value& val) requires CanGt<Element, Value> {
             return {ref.ref_ > val};
         }
-        friend constexpr boolish operator<=(Value const& val, proxy_reference ref) requires CanLtE<Value, Element> {
+        friend constexpr boolish operator<=(const Value& val, proxy_reference ref) requires CanLtE<Value, Element> {
             return {val <= ref.ref_};
         }
-        friend constexpr boolish operator<=(proxy_reference ref, Value const& val) requires CanLtE<Element, Value> {
+        friend constexpr boolish operator<=(proxy_reference ref, const Value& val) requires CanLtE<Element, Value> {
             return {ref.ref_ <= val};
         }
-        friend constexpr boolish operator>=(Value const& val, proxy_reference ref) requires CanGtE<Value, Element> {
+        friend constexpr boolish operator>=(const Value& val, proxy_reference ref) requires CanGtE<Value, Element> {
             return {val >= ref.ref_};
         }
-        friend constexpr boolish operator>=(proxy_reference ref, Value const& val) requires CanGtE<Element, Value> {
+        friend constexpr boolish operator>=(proxy_reference ref, const Value& val) requires CanGtE<Element, Value> {
             return {ref.ref_ >= val};
         }
         // clang-format on
@@ -291,18 +291,18 @@ namespace test {
             return ReferenceType{*ptr_};
         }
 
-        [[nodiscard]] constexpr boolish operator==(sentinel<Element, Wrapped> const& s) const noexcept {
+        [[nodiscard]] constexpr boolish operator==(const sentinel<Element, Wrapped>& s) const noexcept {
             return boolish{ptr_ == s.peek()};
         }
         [[nodiscard]] friend constexpr boolish operator==(
-            sentinel<Element, Wrapped> const& s, iterator const& i) noexcept {
+            const sentinel<Element, Wrapped>& s, const iterator& i) noexcept {
             return i == s;
         }
-        [[nodiscard]] constexpr boolish operator!=(sentinel<Element, Wrapped> const& s) const noexcept {
+        [[nodiscard]] constexpr boolish operator!=(const sentinel<Element, Wrapped>& s) const noexcept {
             return !(*this == s);
         }
         [[nodiscard]] friend constexpr boolish operator!=(
-            sentinel<Element, Wrapped> const& s, iterator const& i) noexcept {
+            const sentinel<Element, Wrapped>& s, const iterator& i) noexcept {
             return !(i == s);
         }
 
@@ -323,20 +323,20 @@ namespace test {
             STATIC_ASSERT(always_false<Category>);
         }
 
-        friend void iter_swap(iterator const&, iterator const&) {
+        friend void iter_swap(const iterator&, const iterator&) {
             STATIC_ASSERT(always_false<Category>);
         }
 
-        void operator<(iterator const&) const {
+        void operator<(const iterator&) const {
             STATIC_ASSERT(always_false<Category>);
         }
-        void operator>(iterator const&) const {
+        void operator>(const iterator&) const {
             STATIC_ASSERT(always_false<Category>);
         }
-        void operator<=(iterator const&) const {
+        void operator<=(const iterator&) const {
             STATIC_ASSERT(always_false<Category>);
         }
-        void operator>=(iterator const&) const {
+        void operator>=(const iterator&) const {
             STATIC_ASSERT(always_false<Category>);
         }
 
@@ -345,22 +345,22 @@ namespace test {
             ++ptr_;
         }
 
-        [[nodiscard]] constexpr friend std::remove_cv_t<Element> iter_move(iterator const& i)
+        [[nodiscard]] constexpr friend std::remove_cv_t<Element> iter_move(const iterator& i)
             requires at_least<input> && std::constructible_from<std::remove_cv_t<Element>, Element> {
             return std::move(*i.ptr_);
         }
 
-        constexpr friend void iter_swap(iterator const& x, iterator const& y) requires at_least<input> {
+        constexpr friend void iter_swap(const iterator& x, const iterator& y) requires at_least<input> {
             ranges::iter_swap(x.ptr_, y.ptr_);
         }
 
         // sentinel operations (implied by forward iterator):
-        iterator(iterator const&) requires (to_bool(Eq)) = default;
-        iterator& operator=(iterator const&) requires (to_bool(Eq)) = default;
-        [[nodiscard]] constexpr boolish operator==(iterator const& that) const noexcept requires (to_bool(Eq)) {
+        iterator(const iterator&) requires (to_bool(Eq)) = default;
+        iterator& operator=(const iterator&) requires (to_bool(Eq)) = default;
+        [[nodiscard]] constexpr boolish operator==(const iterator& that) const noexcept requires (to_bool(Eq)) {
             return {ptr_ == that.ptr_};
         }
-        [[nodiscard]] constexpr boolish operator!=(iterator const& that) const noexcept requires (to_bool(Eq)) {
+        [[nodiscard]] constexpr boolish operator!=(const iterator& that) const noexcept requires (to_bool(Eq)) {
             return !(*this == that);
         }
 
@@ -376,37 +376,37 @@ namespace test {
         }
 
         // random-access iterator operations:
-        [[nodiscard]] constexpr boolish operator<(iterator const& that) const noexcept requires at_least<random> {
+        [[nodiscard]] constexpr boolish operator<(const iterator& that) const noexcept requires at_least<random> {
             return {ptr_ < that.ptr_};
         }
-        [[nodiscard]] constexpr boolish operator>(iterator const& that) const noexcept requires at_least<random> {
+        [[nodiscard]] constexpr boolish operator>(const iterator& that) const noexcept requires at_least<random> {
             return that < *this;
         }
-        [[nodiscard]] constexpr boolish operator<=(iterator const& that) const noexcept requires at_least<random> {
+        [[nodiscard]] constexpr boolish operator<=(const iterator& that) const noexcept requires at_least<random> {
             return !(that < *this);
         }
-        [[nodiscard]] constexpr boolish operator>=(iterator const& that) const noexcept requires at_least<random> {
+        [[nodiscard]] constexpr boolish operator>=(const iterator& that) const noexcept requires at_least<random> {
             return !(*this < that);
         }
-        [[nodiscard]] constexpr ReferenceType operator[](ptrdiff_t const n) const& noexcept requires at_least<random> {
+        [[nodiscard]] constexpr ReferenceType operator[](const ptrdiff_t n) const& noexcept requires at_least<random> {
             return ReferenceType{ptr_[n]};
         }
-        constexpr iterator& operator+=(ptrdiff_t const n) & noexcept requires at_least<random> {
+        constexpr iterator& operator+=(const ptrdiff_t n) & noexcept requires at_least<random> {
             ptr_ += n;
             return *this;
         }
-        constexpr iterator& operator-=(ptrdiff_t const n) & noexcept requires at_least<random> {
+        constexpr iterator& operator-=(const ptrdiff_t n) & noexcept requires at_least<random> {
             ptr_ -= n;
             return *this;
         }
-        [[nodiscard]] constexpr iterator operator+(ptrdiff_t const n) const noexcept requires at_least<random> {
+        [[nodiscard]] constexpr iterator operator+(const ptrdiff_t n) const noexcept requires at_least<random> {
             return iterator{ptr_ + n};
         }
-        [[nodiscard]] friend constexpr iterator operator+(ptrdiff_t const n, iterator const& i) noexcept
+        [[nodiscard]] friend constexpr iterator operator+(const ptrdiff_t n, const iterator& i) noexcept
             requires at_least<random> {
             return i + n;
         }
-        [[nodiscard]] constexpr iterator operator-(ptrdiff_t const n) const noexcept requires at_least<random> {
+        [[nodiscard]] constexpr iterator operator-(const ptrdiff_t n) const noexcept requires at_least<random> {
             return iterator{ptr_ - n};
         }
 
@@ -416,16 +416,16 @@ namespace test {
         }
 
         // sized_sentinel_for operations:
-        [[nodiscard]] constexpr ptrdiff_t operator-(iterator const& that) const noexcept
+        [[nodiscard]] constexpr ptrdiff_t operator-(const iterator& that) const noexcept
             requires (to_bool(Diff) && to_bool(Eq)) || at_least<random> {
             return ptr_ - that.ptr_;
         }
-        [[nodiscard]] constexpr ptrdiff_t operator-(sentinel<Element, Wrapped> const& s) const noexcept
+        [[nodiscard]] constexpr ptrdiff_t operator-(const sentinel<Element, Wrapped>& s) const noexcept
             requires (to_bool(Diff)) {
             return ptr_ - s.peek();
         }
         [[nodiscard]] friend constexpr ptrdiff_t operator-(
-            sentinel<Element, Wrapped> const& s, iterator const& i) noexcept requires (to_bool(Diff)) {
+            const sentinel<Element, Wrapped>& s, const iterator& i) noexcept requires (to_bool(Diff)) {
             return -(i - s);
         }
 
@@ -444,7 +444,7 @@ namespace test {
 
         static constexpr bool _Unwrap_when_unverified = true;
 
-        constexpr void _Seek_to(unwrap const& i) noexcept requires (to_bool(Wrapped) && to_bool(Eq)) {
+        constexpr void _Seek_to(const unwrap& i) noexcept requires (to_bool(Wrapped) && to_bool(Eq)) {
             ptr_ = i.peek();
         }
 
@@ -476,7 +476,7 @@ struct std::pointer_traits<::test::iterator<std::contiguous_iterator_tag, Elemen
     using element_type    = Element;
     using difference_type = ptrdiff_t;
 
-    [[nodiscard]] static constexpr element_type* to_address(pointer const& x) noexcept {
+    [[nodiscard]] static constexpr element_type* to_address(const pointer& x) noexcept {
         return x.peek();
     }
 };
@@ -511,8 +511,8 @@ namespace test {
         range() = default;
         constexpr explicit range(span<Element> elements) noexcept : elements_{elements} {}
 
-        range(range const&) = delete;
-        range& operator=(range const&) = delete;
+        range(const range&) = delete;
+        range& operator=(const range&) = delete;
 
         [[nodiscard]] constexpr I begin() const noexcept {
             if constexpr (!derived_from<Category, fwd>) {
@@ -553,7 +553,7 @@ namespace test {
             STATIC_ASSERT(always_false<Category>);
         }
         template <class T>
-        friend void operator,(range const&, T&&) {
+        friend void operator,(const range&, T&&) {
             STATIC_ASSERT(always_false<Category>);
         }
     };
@@ -907,62 +907,57 @@ struct with_input_iterators {
 };
 
 template <class Instantiator, class Element>
-constexpr void test_out() {
+constexpr void output_range_permutations() {
     with_output_ranges<Instantiator, Element>::call();
 }
 
 template <class Instantiator, class Element>
-constexpr void test_in() {
+constexpr void input_range_permutations() {
     with_input_ranges<Instantiator, Element>::call();
 }
 
 template <class Instantiator, class Element>
-constexpr void test_fwd() {
+constexpr void forward_range_permutations() {
     with_forward_ranges<Instantiator, Element>::call();
 }
 
 template <class Instantiator, class Element>
-constexpr void test_bidi() {
+constexpr void bidi_range_permutations() {
     with_bidirectional_ranges<Instantiator, Element>::call();
 }
 
 template <class Instantiator, class Element>
-constexpr void test_random() {
+constexpr void random_range_permutations() {
     with_random_ranges<Instantiator, Element>::call();
 }
 
-template <class Instantiator, class Element>
-constexpr void test_contiguous() {
-    with_contiguous_ranges<Instantiator, Element>::call();
-}
-
 template <class Instantiator, class Element1, class Element2>
-constexpr void test_in_in() {
+constexpr void input_range_input_range_permutations() {
     with_input_ranges<with_input_ranges<Instantiator, Element2>, Element1>::call();
 }
 
 template <class Instantiator, class Element1, class Element2>
-constexpr void test_in_fwd() {
+constexpr void input_range_forward_range_permutations() {
     with_input_ranges<with_forward_ranges<Instantiator, Element2>, Element1>::call();
 }
 
 template <class Instantiator, class Element1, class Element2>
-constexpr void test_fwd_fwd() {
+constexpr void forward_range_forward_range_permutations() {
     with_forward_ranges<with_forward_ranges<Instantiator, Element2>, Element1>::call();
 }
 
 template <class Instantiator, class Element1, class Element2>
-constexpr void test_in_write() {
+constexpr void input_range_writable_iterator_permutations() {
     with_input_ranges<with_writable_iterators<Instantiator, Element2>, Element1>::call();
 }
 
 template <class Instantiator, class Element>
-constexpr void test_read() {
+constexpr void input_iterator_permutations() {
     with_input_iterators<Instantiator, Element>::call();
 }
 
 template <class Instantiator, class Element1, class Element2>
-constexpr void test_read_write() {
+constexpr void input_iterator_writable_iterator_permutations() {
     with_input_iterators<with_writable_iterators<Instantiator, Element2>, Element1>::call();
 }
 

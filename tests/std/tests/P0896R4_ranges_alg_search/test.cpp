@@ -116,8 +116,9 @@ using Elem2 = const int;
 
 #ifdef TEST_EVERYTHING
 int main() {
-    // No constexpr test here; the test_fwd_fwd call exceeds the maximum number of steps in a constexpr computation.
-    test_fwd_fwd<instantiator, Elem1, Elem2>();
+    // No constexpr test here; the forward_range_forward_range_permutations call exceeds the maximum number of steps in
+    // a constexpr computation.
+    forward_range_forward_range_permutations<instantiator, Elem1, Elem2>();
 }
 #else // ^^^ test all range combinations // test only interesting range combos vvv
 template <class Elem, test::Sized IsSized>
