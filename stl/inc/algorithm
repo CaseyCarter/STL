@@ -5493,18 +5493,13 @@ void _Random_shuffle1(_RanIt _First, _RanIt _Last, _RngFn& _RngFunc) {
     _Adl_verify_range(_First, _Last);
     auto _UFirst      = _Get_unwrapped(_First);
     const auto _ULast = _Get_unwrapped(_Last);
-    if (_UFirst == _ULast) {
-        return;
-    }
 
-    using _Diff         = _Iter_diff_t<_RanIt>;
-    auto _UTarget       = _UFirst;
-    _Diff _Target_index = 1;
-    for (; ++_UTarget != _ULast; ++_Target_index) { // randomly place an element from [_First, _Target] at _Target
-        _Diff _Off = _RngFunc(static_cast<_Diff>(_Target_index + 1));
-        _STL_ASSERT(0 <= _Off && _Off <= _Target_index, "random value out of range");
-        if (_Off != _Target_index) { // avoid self-move-assignment
-            _STD iter_swap(_UTarget, _UFirst + _Off);
+    for (_Iter_diff_t<_RanIt> _Count = _ULast - _UFirst; _Count > 1; --_Count, (void) ++_UFirst) {
+        // uniformly select element from [_UFirst, _ULast) to place at _UFirst
+        const _Iter_diff_t<_RanIt> _Off = _RngFunc(_Count);
+        _STL_ASSERT(0 <= _Off && _Off < _Count, "random value out of range");
+        if (_Off != 0) { // avoid self-swap
+            _STD iter_swap(_UFirst, _UFirst + _Off);
         }
     }
 }
@@ -5556,19 +5551,18 @@ namespace ranges {
             if (_First == _Last) {
                 return _First;
             }
-            using _Diff = iter_difference_t<_It>;
 
-            auto _Target        = _First;
-            _Diff _Target_index = 1;
-            for (; ++_Target != _Last; ++_Target_index) {
-                // randomly place an element from [_First, _Target] at _Target
-                const _Diff _Off = _Func(_Target_index + 1);
-                _STL_ASSERT(0 <= _Off && _Off <= _Target_index, "random value out of range");
-                if (_Off != _Target_index) { // avoid self-move-assignment
-                    _RANGES iter_swap(_Target, _First + _Off);
+            using _Diff = iter_difference_t<_It>;
+            _Diff _Count = 1;
+            while (++_First != _Last) { // uniformly select element from [_First - _Count, _First] to place at _First
+                const _Diff _Off = _Func(++_Count);
+                _STL_ASSERT(0 <= _Off && _Off < _Count, "random value out of range");
+                if (_Off != 0) { // avoid self-move-assignment
+                    _RANGES iter_swap(_First, _First - _Off);
                 }
             }
-            return _Target;
+
+            return _First;
         }
     };
 
