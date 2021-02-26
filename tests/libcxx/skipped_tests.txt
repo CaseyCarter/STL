@@ -17,13 +17,6 @@ utilities\smartptr\unique.ptr\unique.ptr.class\unique.ptr.ctor\null.pass.cpp
 # allocator<const T>.
 utilities\memory\default.allocator\allocator.ctor.pass.cpp
 
-# path::value_type is char assumptions
-input.output\file.streams\fstreams\filebuf.members\open_path.pass.cpp
-input.output\file.streams\fstreams\fstream.cons\path.pass.cpp
-input.output\file.streams\fstreams\fstream.members\open_path.pass.cpp
-input.output\file.streams\fstreams\ofstream.cons\path.pass.cpp
-input.output\file.streams\fstreams\ofstream.members\open_path.pass.cpp
-
 # This test is passing non-BidirectionalIterators to std::prev.
 # LWG-3197 "std::prev should not require BidirectionalIterator" (New)
 iterators\iterator.primitives\iterator.operations\prev.pass.cpp
@@ -308,6 +301,13 @@ utilities\variant\variant.variant\variant.ctor\T.pass.cpp
 # C++20 P0645R10 "<format> Text Formatting"
 language.support\support.limits\support.limits.general\format.version.pass.cpp
 utilities\format\format.error\format.error.pass.cpp
+utilities\format\format.formatter\format.parse.ctx\advance_to.pass.cpp
+utilities\format\format.formatter\format.parse.ctx\begin.pass.cpp
+utilities\format\format.formatter\format.parse.ctx\check_arg_id.pass.cpp
+utilities\format\format.formatter\format.parse.ctx\ctor.pass.cpp
+utilities\format\format.formatter\format.parse.ctx\end.pass.cpp
+utilities\format\format.formatter\format.parse.ctx\next_arg_id.pass.cpp
+utilities\format\format.formatter\format.parse.ctx\types.compile.pass.cpp
 
 # C++20 P0784R7 "More constexpr containers"
 utilities\memory\allocator.traits\allocator.traits.members\construct.pass.cpp
@@ -384,6 +384,9 @@ numerics\numeric.ops\inclusive.scan\inclusive_scan_op_init.pass.cpp
 numerics\numeric.ops\transform.exclusive.scan\transform_exclusive_scan_init_bop_uop.pass.cpp
 numerics\numeric.ops\transform.inclusive.scan\transform_inclusive_scan_bop_uop.pass.cpp
 numerics\numeric.ops\transform.inclusive.scan\transform_inclusive_scan_bop_uop_init.pass.cpp
+
+# DevCom-952724 "MSVC allows default-initialized const int in new-expression"
+concepts\concept.default.init\default_initializable.compile.pass.cpp
 
 
 # *** CLANG COMPILER BUGS ***
@@ -841,6 +844,9 @@ localization\locale.categories\category.ctype\locale.codecvt\locale.codecvt.memb
 # Likely STL bug in <chrono>: "result type of conditional expression is ambiguous"
 utilities\time\time.duration\time.duration.alg\abs.pass.cpp
 
+# Likely STL bug in <atomic>
+atomics\atomics.types.generic\copy_semantics_traits.pass.cpp
+
 
 # *** NOT YET ANALYZED ***
 # Not yet analyzed. Asserting about alloc_count.
@@ -893,6 +899,10 @@ re\re.alg\re.alg.search\awk.locale.pass.cpp
 re\re.alg\re.alg.search\basic.locale.pass.cpp
 re\re.alg\re.alg.search\ecma.locale.pass.cpp
 re\re.alg\re.alg.search\extended.locale.pass.cpp
+
+# Not yet analyzed. (Our tuple<T, U...> inherits from tuple<U...>, and IIRC there's a C++20 change
+# that would make this work which Clang presumably doesn't yet implement.)
+std/utilities/tuple/tuple.tuple/tuple.assign/derived_from_tuple_like.pass.cpp:1 FAIL
 
 
 # *** SKIPPED FOR MSVC-INTERNAL CONTEST ONLY ***
