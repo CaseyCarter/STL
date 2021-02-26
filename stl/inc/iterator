@@ -1637,7 +1637,8 @@ public:
     }
 
     constexpr unchecked_array_iterator& operator-=(const difference_type _Off) noexcept {
-        return *this += -_Off;
+        *this += -_Off;
+        return *this;
     }
 
     _NODISCARD constexpr unchecked_array_iterator operator-(const difference_type _Off) const noexcept {

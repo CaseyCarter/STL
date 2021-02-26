@@ -2012,17 +2012,18 @@ public:
 
     _NODISCARD _CONSTEXPR20_CONTAINER _String_const_iterator operator+(const difference_type _Off) const noexcept {
         _String_const_iterator _Tmp = *this;
-        _Tmp += _Off; // TRANSITION, LLVM-49342
+        _Tmp += _Off;
         return _Tmp;
     }
 
     _CONSTEXPR20_CONTAINER _String_const_iterator& operator-=(const difference_type _Off) noexcept {
-        return *this += -_Off;
+        *this += -_Off;
+        return *this;
     }
 
     _NODISCARD _CONSTEXPR20_CONTAINER _String_const_iterator operator-(const difference_type _Off) const noexcept {
         _String_const_iterator _Tmp = *this;
-        _Tmp -= _Off; // TRANSITION, LLVM-49342
+        _Tmp -= _Off;
         return _Tmp;
     }
 
@@ -2101,8 +2102,11 @@ public:
 
 template <class _Mystr>
 _NODISCARD _CONSTEXPR20_CONTAINER _String_const_iterator<_Mystr> operator+(
-    typename _String_const_iterator<_Mystr>::difference_type _Off, _String_const_iterator<_Mystr> _Next) noexcept {
-    return _Next += _Off;
+    typename _String_const_iterator<_Mystr>::difference_type _Off,
+    const _String_const_iterator<_Mystr>& _Next) noexcept {
+    auto _Tmp = _Next;
+    _Tmp += _Off;
+    return _Tmp;
 }
 
 #if _HAS_CXX20
@@ -2193,7 +2197,7 @@ public:
 
     _NODISCARD _CONSTEXPR20_CONTAINER _String_iterator operator+(const difference_type _Off) const noexcept {
         _String_iterator _Tmp = *this;
-        _Tmp += _Off; // TRANSITION, LLVM-49342
+        _Tmp += _Off;
         return _Tmp;
     }
 
@@ -2206,7 +2210,7 @@ public:
 
     _NODISCARD _CONSTEXPR20_CONTAINER _String_iterator operator-(const difference_type _Off) const noexcept {
         _String_iterator _Tmp = *this;
-        _Tmp -= _Off; // TRANSITION, LLVM-49342
+        _Tmp -= _Off;
         return _Tmp;
     }
 
@@ -2223,8 +2227,10 @@ public:
 
 template <class _Mystr>
 _NODISCARD _CONSTEXPR20_CONTAINER _String_iterator<_Mystr> operator+(
-    typename _String_iterator<_Mystr>::difference_type _Off, _String_iterator<_Mystr> _Next) noexcept {
-    return _Next += _Off;
+    typename _String_iterator<_Mystr>::difference_type _Off, const _String_iterator<_Mystr>& _Next) noexcept {
+    auto _Tmp = _Next;
+    _Tmp += _Off;
+    return _Tmp;
 }
 
 #if _HAS_CXX20

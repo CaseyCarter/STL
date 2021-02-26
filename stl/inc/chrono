@@ -1027,7 +1027,8 @@ namespace chrono {
             : _Weekday{static_cast<unsigned char>(_Weekday_from_days(_Local_day.time_since_epoch().count()))} {}
 
         constexpr weekday& operator++() noexcept {
-            return *this += days{1};
+            *this += days{1};
+            return *this;
         }
         constexpr weekday operator++(int) noexcept {
             weekday _Temp{*this};
@@ -1035,7 +1036,8 @@ namespace chrono {
             return _Temp;
         }
         constexpr weekday& operator--() noexcept {
-            return *this -= days{1};
+            *this -= days{1};
+            return *this;
         }
         constexpr weekday operator--(int) noexcept {
             weekday _Temp{*this};

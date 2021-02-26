@@ -605,7 +605,8 @@ struct _Circ_buf { // holds historical values for generators
     }
 
     size_t _Base(size_t _Ix = 0) const {
-        return (_Ix += _Idx) < _Nw ? (_Ix + _Nw) : (_Ix - _Nw);
+        _Ix += _Idx;
+        return _Ix < _Nw ? (_Ix + _Nw) : (_Ix - _Nw);
     }
 
     unsigned int _Idx;
