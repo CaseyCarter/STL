@@ -399,6 +399,15 @@ std/depr/depr.c.headers/tgmath_h.pass.cpp:1 FAIL
 # LLVM-48606 "Clang rejects creation of struct with mutable member during constant evaluation"
 std/language.support/support.limits/support.limits.general/vector.version.pass.cpp:1 FAIL
 
+# LLVM-49342: -Wdangling false positives:
+std/iterators/predef.iterators/reverse.iterators/reverse.iter.ops/reverse.iter.op+=/difference_type.pass.cpp:1 FAIL
+std/iterators/predef.iterators/reverse.iterators/reverse.iter.ops/reverse.iter.op-=/difference_type.pass.cpp:1 FAIL
+std/iterators/predef.iterators/reverse.iterators/reverse.iter.ops/reverse.iter.op=/reverse_iterator.pass.cpp:1 FAIL
+
+# Unfiled (Regression?): Assertion failed: idx < size(), file C:\src\llvm_package_1200-rc2\llvm-project\llvm\include\llvm/ADT/SmallVector.h, line 281
+std/algorithms/alg.sorting/alg.sort/sort/sort_constexpr.pass.cpp:1 FAIL
+std/algorithms/alg.sorting/alg.sort/sort/sort_constexpr_comp.pass.cpp:1 FAIL
+
 
 # *** CLANG ISSUES, NOT YET ANALYZED ***
 # Clang doesn't enable sized deallocation by default. Should we add -fsized-deallocation or do something else?
@@ -899,10 +908,6 @@ std/re/re.alg/re.alg.search/awk.locale.pass.cpp FAIL
 std/re/re.alg/re.alg.search/basic.locale.pass.cpp FAIL
 std/re/re.alg/re.alg.search/ecma.locale.pass.cpp FAIL
 std/re/re.alg/re.alg.search/extended.locale.pass.cpp FAIL
-
-# Not yet analyzed. (Our tuple<T, U...> inherits from tuple<U...>, and IIRC there's a C++20 change
-# that would make this work which Clang presumably doesn't yet implement.)
-std/utilities/tuple/tuple.tuple/tuple.assign/derived_from_tuple_like.pass.cpp:1 FAIL
 
 
 # *** XFAILs WHICH PASS ***

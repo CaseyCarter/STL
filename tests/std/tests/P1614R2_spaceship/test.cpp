@@ -918,7 +918,8 @@ void ordering_test_cases() {
         optional_test<0, 0, 1>();
         static_assert(optional_test<0, 0, 1>());
 
-#if defined(__cpp_nontype_template_args) && __cpp_nontype_template_args >= 201911
+#if defined(__cpp_nontype_template_args) && __cpp_nontype_template_args >= 201911 \
+    && !defined(__clang__) // TRANSITION, LLVM-49369
         optional_test<0.0, 0.0, 1.0>();
         static_assert(optional_test<0.0, 0.0, 1.0>());
 #endif

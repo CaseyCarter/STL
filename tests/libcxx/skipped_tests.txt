@@ -399,6 +399,15 @@ depr\depr.c.headers\tgmath_h.pass.cpp
 # LLVM-48606 "Clang rejects creation of struct with mutable member during constant evaluation"
 language.support\support.limits\support.limits.general\vector.version.pass.cpp
 
+# LLVM-49342: -Wdangling false positives:
+iterators\predef.iterators\reverse.iterators\reverse.iter.ops\reverse.iter.op+=\difference_type.pass.cpp
+iterators\predef.iterators\reverse.iterators\reverse.iter.ops\reverse.iter.op-=\difference_type.pass.cpp
+iterators\predef.iterators\reverse.iterators\reverse.iter.ops\reverse.iter.op=\reverse_iterator.pass.cpp
+
+# Unfiled (Regression?): Assertion failed: idx < size(), file C:\src\llvm_package_1200-rc2\llvm-project\llvm\include\llvm/ADT/SmallVector.h, line 281
+algorithms\alg.sorting\alg.sort\sort\sort_constexpr.pass.cpp
+algorithms\alg.sorting\alg.sort\sort\sort_constexpr_comp.pass.cpp
+
 
 # *** CLANG ISSUES, NOT YET ANALYZED ***
 # Clang doesn't enable sized deallocation by default. Should we add -fsized-deallocation or do something else?
