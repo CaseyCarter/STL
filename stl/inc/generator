@@ -1,0 +1,171 @@
+// generator standard header
+
+// Copyright (c) Microsoft Corporation.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
+#pragma once
+#ifndef _GENERATOR_
+#define _GENERATOR_
+#include <yvals_core.h>
+#if _STL_COMPILER_PREPROCESSOR
+
+#if !_HAS_STD_BYTE || !_HAS_CXX23 || !defined(__cpp_impl_coroutine)
+#pragma message("The contents of <generator> are available only in c++latest mode with coroutine and std::byte support")
+#else // ^^^ no coroutine support / coroutines vvv
+
+#include <coroutine>
+#include <ranges>
+#include <xmemory>
+
+#pragma pack(push, _CRT_PACKING)
+#pragma warning(push, _STL_WARNING_LEVEL)
+#pragma warning(disable : _STL_DISABLED_WARNINGS)
+_STL_DISABLE_CLANG_WARNINGS
+#pragma push_macro("new")
+#undef new
+
+_STD_BEGIN
+
+template <class _Ref, class _Value = remove_cvref_t<_Ref>, class _Alloc = allocator<byte>>
+class generator {
+public:
+    struct promise_type { // FIXME
+        const _Ty* _Value; // FIXME
+
+        generator get_return_object() noexcept {
+            return generator(coroutine_handle<promise_type>::from_promise(*this));
+        }
+
+        suspend_always initial_suspend() noexcept {
+            return {};
+        }
+
+        suspend_always final_suspend() noexcept {
+            return {};
+        }
+
+#ifndef _KERNEL_MODE
+#ifdef _CPPUNWIND
+        void unhandled_exception() {
+            throw;
+        }
+#else // ^^^ defined(_CPPUNWIND) / !defined(_CPPUNWIND) vvv
+        void unhandled_exception() noexcept {}
+#endif // _CPPUNWIND
+#endif // _KERNEL_MODE
+
+        suspend_always yield_value(const _Ty& _Val) noexcept {
+            _Value = _STD addressof(_Val);
+            return {};
+        }
+
+        void return_void() noexcept {}
+
+        template <class _Uty>
+        _Uty&& await_transform(_Uty&& _Whatever) {
+            static_assert(
+                _Always_false<_Uty>, "co_await is not supported in coroutines of type std::experimental::generator");
+            return _STD forward<_Uty>(_Whatever);
+        }
+
+        using _Alloc_char = _Rebind_alloc_t<_Alloc, char>;
+        static_assert(is_same_v<char*, typename allocator_traits<_Alloc_char>::pointer>,
+            "generator does not support allocators with fancy pointer types");
+        static_assert(allocator_traits<_Alloc_char>::is_always_equal::value && is_default_constructible_v<_Alloc_char>,
+            "generator supports only stateless allocators");
+
+        static void* operator new(size_t _Size) {
+            _Alloc_char _Al{};
+            return allocator_traits<_Alloc_char>::allocate(_Al, _Size);
+        }
+
+        static void operator delete(void* _Ptr, size_t _Size) noexcept {
+            _Alloc_char _Al{};
+            return allocator_traits<_Alloc_char>::deallocate(_Al, static_cast<char*>(_Ptr), _Size);
+        }
+    };
+
+    generator(const generator&) = delete;
+
+    generator(generator&& _Right) noexcept
+        : _Coro(_STD exchange(_Right._Coro, {})), _Started(_STD exchange(_Right._Started, false)) {}
+
+    ~generator() {
+        if (_Coro) {
+            _Coro.destroy();
+        }
+    }
+
+    generator& operator=(const generator&) = delete;
+
+    generator& operator=(generator&& _Right) noexcept {
+        _Coro  = _STD exchange(_Right._Coro, {});
+        _Start = _STD exchange(_Right._Started, false);
+        return *this;
+    }
+
+    _NODISCARD auto begin() {
+        if (_Coro) {
+            _Coro.resume();
+            if (_Coro.done()) {
+                return {};
+            }
+        }
+
+        return _Iterator{_Coro};
+    }
+
+    _NODISCARD default_sentinel_t end() const noexcept {
+        return {};
+    }
+
+private:
+    struct _Iterator {
+        using iterator_category = input_iterator_tag;
+        using difference_type   = ptrdiff_t;
+        using value_type        = _Ty;
+        using reference         = const _Ty&;
+
+        coroutine_handle<promise_type> _Coro;
+
+        explicit _Iterator(coroutine_handle<promise_type> _Coro_) noexcept : _Coro(_Coro_) {}
+
+        _NODISCARD reference operator*() const noexcept {
+            return *_Coro.promise()._Value;
+        }
+
+        _Iterator& operator++() {
+            _Coro.resume();
+            if (_Coro.done()) {
+                _Coro = nullptr;
+            }
+
+            return *this;
+        }
+
+        void operator++(int) {
+            ++*this;
+        }
+
+        _NODISCARD bool operator==(const _Iterator& _Right) const noexcept = default;
+    };
+
+    explicit generator(coroutine_handle<promise_type> _Coro_) noexcept : _Coro(_Coro_) {}
+
+    coroutine_handle<promise_type> _Coro;
+    bool _Started = false;
+};
+
+template <class _Ref, class _Value, class _Alloc>
+inline constexpr bool ranges::enable_view<generator<_Ref, _Value, _Alloc>> = true;
+
+_STD_END
+
+#pragma pop_macro("new")
+_STL_RESTORE_CLANG_WARNINGS
+#pragma warning(pop)
+#pragma pack(pop)
+
+#endif // !_HAS_CXX23 || !defined(__cpp_impl_coroutine)
+#endif // _STL_COMPILER_PREPROCESSOR
+#endif // _GENERATOR_

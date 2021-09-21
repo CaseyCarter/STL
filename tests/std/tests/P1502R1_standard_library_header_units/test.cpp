@@ -34,6 +34,7 @@ import <forward_list>;
 import <fstream>;
 import <functional>;
 import <future>;
+import <generator>;
 import <initializer_list>;
 import <iomanip>;
 import <ios>;
@@ -341,6 +342,17 @@ int main() {
         assert(f.get() == 1729);
     }
 #endif // ^^^ no workaround ^^^
+
+    {
+        puts("Testing <generator>.");
+        constexpr int bound = 42;
+        auto some_ints      = [](int hi) -> generator<int> {
+            for (int i = 0; i < hi; ++i) {
+                co_yield i;
+            }
+        }(bound);
+        assert(ranges::equal(some_ints, views::iota(0, bound)));
+    }
 
     {
         puts("Testing <initializer_list>.");
