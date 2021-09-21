@@ -772,6 +772,20 @@ STATIC_ASSERT(__cpp_lib_gcd_lcm == 201606L);
 #endif
 #endif
 
+#if _HAS_CXX23 && _HAS_STD_BYTE && !defined(__clang__) && !defined(__EDG__) // TRANSITION, clang/EDG coroutine support
+#ifndef __cpp_lib_generator
+#error __cpp_lib_generator is not defined
+#elif __cpp_lib_generator != 202100L
+#error __cpp_lib_generator is not 202100L
+#else
+STATIC_ASSERT(__cpp_lib_generator == 202100L);
+#endif
+#else
+#ifdef __cpp_lib_generator
+#error __cpp_lib_generator is defined
+#endif
+#endif
+
 #ifndef __cpp_lib_generic_associative_lookup
 #error __cpp_lib_generic_associative_lookup is not defined
 #elif __cpp_lib_generic_associative_lookup != 201304L
