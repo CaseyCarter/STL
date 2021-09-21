@@ -18,6 +18,7 @@
 #include <span>
 #include <string_view>
 #include <tuple>
+#include <xmemory>
 
 #pragma pack(push, _CRT_PACKING)
 #pragma warning(push, _STL_WARNING_LEVEL)
@@ -4930,6 +4931,38 @@ namespace ranges {
         inline constexpr _Chunk_by_fn chunk_by;
     } // namespace views
 #endif // _HAS_CXX23
+
+#if _HAS_STD_BYTE
+    template <input_range _Rng, class _Alloc = allocator<byte>>
+    struct elements_of {
+    private:
+        /* [[no_unique_address]] */ _Alloc _Al;
+        _Rng&& _Range;
+
+    public:
+        explicit constexpr elements_of(_Rng&& _Range_) noexcept requires default_initializable<_Alloc>
+            : _Range(_STD forward<_Rng>(_Range_)) {}
+
+        explicit constexpr elements_of(_Rng&& _Range_, _Alloc _Al_) noexcept
+            : _Al(_STD move(_Al_)), _Range(_STD forward<_Rng>(_Range_)) {}
+
+        constexpr elements_of(elements_of&&) = default;
+        elements_of(const elements_of&)      = delete;
+
+        constexpr _Rng&& range() noexcept {
+            return _STD forward<_Rng>(_Range);
+        }
+        constexpr _Alloc get_allocator() const noexcept {
+            return _Al;
+        }
+    };
+
+    template <class _Rng>
+    elements_of(_Rng&&) -> elements_of<_Rng>;
+
+    template <class _Rng, class _Alloc>
+    elements_of(_Rng&&, _Alloc) -> elements_of<_Rng, _Alloc>;
+#endif // _HAS_STD_BYTE
 } // namespace ranges
 
 namespace views = ranges::views;
