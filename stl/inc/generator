@@ -26,11 +26,15 @@ _STL_DISABLE_CLANG_WARNINGS
 
 _STD_BEGIN
 
-template <class _Ref, class _Value = remove_cvref_t<_Ref>, class _Alloc = allocator<byte>>
+template <class _Ty>
+using _Generator_ref_t = conditional_t<is_reference_v<_Ty>, _Ty, const _Ty&>;
+
+template <class _Ty, class _Value = remove_cvref_t<_Ty>, class _Alloc = void>
+// FIXME requires common_reference_with<_Generator_ref_t<_Ty> &&, Value&>
 class generator {
 public:
     struct promise_type { // FIXME
-        const _Ty* _Value; // FIXME
+        add_pointer_t<_Generator_ref_t<_Ty>> _Ptr;
 
         generator get_return_object() noexcept {
             return generator(coroutine_handle<promise_type>::from_promise(*this));
