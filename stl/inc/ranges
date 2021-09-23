@@ -4930,9 +4930,8 @@ namespace ranges {
 
         inline constexpr _Chunk_by_fn chunk_by;
     } // namespace views
-#endif // _HAS_CXX23
 
-#if _HAS_STD_BYTE
+#ifdef __cpp_lib_byte
     template <input_range _Rng, class _Alloc = allocator<byte>>
     struct elements_of {
     private:
@@ -4962,7 +4961,8 @@ namespace ranges {
 
     template <class _Rng, class _Alloc>
     elements_of(_Rng&&, _Alloc) -> elements_of<_Rng, _Alloc>;
-#endif // _HAS_STD_BYTE
+#endif // __cpp_lib_byte
+#endif // _HAS_CXX23
 } // namespace ranges
 
 namespace views = ranges::views;

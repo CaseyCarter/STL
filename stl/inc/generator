@@ -9,7 +9,7 @@
 #include <yvals_core.h>
 #if _STL_COMPILER_PREPROCESSOR
 
-#if !_HAS_STD_BYTE || !_HAS_CXX23 || !defined(__cpp_impl_coroutine)
+#if !_HAS_CXX23 || !defined(__cpp_lib_byte) || !defined(__cpp_impl_coroutine)
 #pragma message("The contents of <generator> are available only in c++latest mode with coroutine and std::byte support")
 #else // ^^^ no coroutine support / coroutines vvv
 
@@ -170,6 +170,6 @@ _STL_RESTORE_CLANG_WARNINGS
 #pragma warning(pop)
 #pragma pack(pop)
 
-#endif // !_HAS_CXX23 || !defined(__cpp_impl_coroutine)
+#endif // !_HAS_CXX23 || !defined(__cpp_lib_byte) || !defined(__cpp_impl_coroutine)
 #endif // _STL_COMPILER_PREPROCESSOR
 #endif // _GENERATOR_

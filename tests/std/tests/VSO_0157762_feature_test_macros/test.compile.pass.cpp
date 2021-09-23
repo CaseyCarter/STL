@@ -772,7 +772,8 @@ STATIC_ASSERT(__cpp_lib_gcd_lcm == 201606L);
 #endif
 #endif
 
-#if _HAS_CXX23 && _HAS_STD_BYTE && !defined(__clang__) && !defined(__EDG__) // TRANSITION, clang/EDG coroutine support
+#if _HAS_CXX23 && defined(__cpp_lib_byte) && !defined(__clang__) \
+    && !defined(__EDG__) // TRANSITION, clang/EDG coroutine support
 #ifndef __cpp_lib_generator
 #error __cpp_lib_generator is not defined
 #elif __cpp_lib_generator != 202100L

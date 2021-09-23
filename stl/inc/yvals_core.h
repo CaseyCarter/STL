@@ -1412,9 +1412,9 @@
 #define __cpp_lib_string_resize_and_overwrite 202110L
 #define __cpp_lib_to_underlying               202102L
 
-#if _HAS_STD_BYTE && defined(__cpp_impl_coroutine) && defined(__cpp_lib_concepts)
+#if defined(__cpp_lib_byte) && defined(__cpp_impl_coroutine) && defined(__cpp_lib_concepts)
 #define __cpp_lib_generator 202200L
-#endif // _HAS_STD_BYTE && defined(__cpp_impl_coroutine) && defined(__cpp_lib_concepts)
+#endif // defined(__cpp_lib_byte) && defined(__cpp_impl_coroutine) && defined(__cpp_lib_concepts)
 #endif // _HAS_CXX23
 
 // macros with language mode sensitivity
