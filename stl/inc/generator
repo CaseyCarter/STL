@@ -66,10 +66,8 @@ public:
         void return_void() noexcept {}
 
         template <class _Uty>
-        _Uty&& await_transform(_Uty&& _Whatever) {
-            static_assert(
-                _Always_false<_Uty>, "co_await is not supported in coroutines of type std::experimental::generator");
-            return _STD forward<_Uty>(_Whatever);
+        void await_transform(_Uty&&) {
+            static_assert(_Always_false<_Uty>, "co_await is not supported in coroutines of type std::generator");
         }
 
         using _Alloc_char = _Rebind_alloc_t<_Alloc, char>;
