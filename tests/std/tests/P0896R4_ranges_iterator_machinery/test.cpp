@@ -1,9 +1,8 @@
 // Copyright (c) Microsoft Corporation.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-#include <assert.h>
+#include <cassert>
 #include <compare>
-#include <concepts>
 #include <iterator>
 #include <list>
 #include <string>
@@ -13,13 +12,14 @@
 
 #define STATIC_ASSERT(...) static_assert(__VA_ARGS__, #__VA_ARGS__)
 
-namespace ranges = std::ranges;
+using namespace std;
 
 template <class>
 inline constexpr bool always_false = false;
 
 template <class T>
 using reference_to = T&;
+
 template <class T>
 concept can_reference = requires {
     typename reference_to<T>;
@@ -77,13 +77,13 @@ struct derives_from : Types... {};
 
 template <class T>
 struct dereferences_to {
-    using value_type = std::remove_cvref_t<T>;
+    using value_type = remove_cvref_t<T>;
     T operator*() const;
 };
 
 struct my_iterator {
-    using iterator_concept  = std::forward_iterator_tag;
-    using iterator_category = std::input_iterator_tag;
+    using iterator_concept  = forward_iterator_tag;
+    using iterator_category = input_iterator_tag;
     using value_type        = char;
     using difference_type   = long;
     using pointer           = void;
@@ -112,7 +112,7 @@ concept has_member_value_type = requires {
 };
 template <class T>
 concept has_iter_value = requires {
-    typename std::iter_value_t<T>;
+    typename iter_value_t<T>;
 };
 
 template <class T>
@@ -121,17 +121,17 @@ concept has_member_difference_type = requires {
 };
 template <class T>
 concept has_iter_diff = requires {
-    typename std::iter_difference_t<T>;
+    typename iter_difference_t<T>;
 };
 
 template <class T>
 struct arrow_base {
     T operator->() const;
-    std::strong_ordering operator<=>(arrow_base const&) const = default;
+    strong_ordering operator<=>(arrow_base const&) const = default;
 };
 
 struct sentinel_base {
-    bool operator==(std::default_sentinel_t) const;
+    bool operator==(default_sentinel_t) const;
 };
 
 struct simple_input_iter {
@@ -187,7 +187,7 @@ struct simple_random_iter : Base {
     simple_random_iter& operator--();
     simple_random_iter operator--(int);
 
-    std::strong_ordering operator<=>(simple_random_iter const&) const;
+    strong_ordering operator<=>(simple_random_iter const&) const;
 
     value_type const& operator[](D) const;
     simple_random_iter& operator-=(D);
@@ -214,7 +214,7 @@ public:
     simple_contiguous_iter& operator--();
     simple_contiguous_iter operator--(int);
 
-    std::strong_ordering operator<=>(simple_contiguous_iter const&) const;
+    strong_ordering operator<=>(simple_contiguous_iter const&) const;
 
     V const& operator[](D) const;
     simple_contiguous_iter& operator-=(D);
@@ -228,7 +228,7 @@ public:
 };
 
 template <class Base>
-struct std::indirectly_readable_traits<simple_contiguous_iter<Base>> {
+struct indirectly_readable_traits<simple_contiguous_iter<Base>> {
     using value_type = double;
 };
 
@@ -250,7 +250,7 @@ struct proxy_iterator {
     constexpr reference operator[](int) const noexcept;
 
     bool operator==(proxy_iterator) const;
-    std::strong_ordering operator<=>(proxy_iterator const&) const;
+    strong_ordering operator<=>(proxy_iterator const&) const;
 
     proxy_iterator& operator++();
     proxy_iterator operator++(int);
@@ -285,8 +285,8 @@ struct proxy_iterator {
 
     int* pcount_ = nullptr;
 };
-STATIC_ASSERT(std::random_access_iterator<proxy_iterator<0>>);
-STATIC_ASSERT(std::indirectly_swappable<proxy_iterator<0>, proxy_iterator<1>>);
+STATIC_ASSERT(random_access_iterator<proxy_iterator<0>>);
+STATIC_ASSERT(indirectly_swappable<proxy_iterator<0>, proxy_iterator<1>>);
 
 #pragma warning(push)
 #pragma warning(disable : 4624) // '%s': destructor was implicitly defined as deleted
@@ -299,13 +299,13 @@ STATIC_ASSERT(std::indirectly_swappable<proxy_iterator<0>, proxy_iterator<1>>);
 // resulting in test failure. Conversely, if meow enforces an unspecified requirement then (ideally)
 // meow_archetype<meow_archetype_max> will incorrectly not satisfy the concept resulting in test failure.
 
-template <std::size_t>
+template <size_t>
 struct destructible_archetype {};
 template <>
 struct destructible_archetype<0> {
     ~destructible_archetype() = delete;
 };
-inline constexpr std::size_t destructible_archetype_max = 1;
+inline constexpr size_t destructible_archetype_max = 1;
 
 // clang-format off
 #define COPYABLE_OPS(prefix)                                                    \
@@ -316,15 +316,15 @@ inline constexpr std::size_t destructible_archetype_max = 1;
     prefix##_archetype& operator=(prefix##_archetype&&) requires (I == 4) = delete
 // clang-format on
 
-template <std::size_t I>
+template <size_t I>
 struct semiregular_archetype : destructible_archetype<I> {
     semiregular_archetype() requires(I != 5);
     COPYABLE_OPS(semiregular);
 };
 
-inline constexpr std::size_t semiregular_archetype_max = 6;
+inline constexpr size_t semiregular_archetype_max = 6;
 
-template <std::size_t>
+template <size_t>
 struct weakly_incrementable_archetype_dt {
     using difference_type = int;
 };
@@ -339,7 +339,7 @@ struct weakly_incrementable_archetype_dt<7> {
     using difference_type = unsigned int;
 };
 
-template <std::size_t I, class Derived, class Post = void>
+template <size_t I, class Derived, class Post = void>
 struct increment_ops {
     // clang-format off
     void operator++() requires (I == 8);
@@ -349,7 +349,7 @@ struct increment_ops {
     // clang-format on
 };
 
-template <std::size_t I>
+template <size_t I>
 struct weakly_incrementable_archetype : destructible_archetype<I>,
                                         weakly_incrementable_archetype_dt<I>,
                                         increment_ops<I, weakly_incrementable_archetype<I>, void> {
@@ -362,9 +362,9 @@ struct weakly_incrementable_archetype : destructible_archetype<I>,
     // clang-format on
 };
 
-inline constexpr std::size_t weakly_incrementable_archetype_max = 11;
+inline constexpr size_t weakly_incrementable_archetype_max = 11;
 
-template <std::size_t I>
+template <size_t I>
 struct incrementable_archetype : weakly_incrementable_archetype<I>,
                                  increment_ops<I, incrementable_archetype<I>, incrementable_archetype<I>> {
     incrementable_archetype() requires(I != 11);
@@ -378,9 +378,9 @@ struct incrementable_archetype : weakly_incrementable_archetype<I>,
     // clang-format on
 };
 
-inline constexpr std::size_t incrementable_archetype_max = 14;
+inline constexpr size_t incrementable_archetype_max = 14;
 
-template <std::size_t I>
+template <size_t I>
 struct iterator_archetype : weakly_incrementable_archetype<I> {
     COPYABLE_OPS(iterator);
 
@@ -393,54 +393,54 @@ struct iterator_archetype : weakly_incrementable_archetype<I> {
     // clang-format on
 };
 
-inline constexpr std::size_t iterator_archetype_max = 12;
+inline constexpr size_t iterator_archetype_max = 12;
 
-template <std::size_t I>
+template <size_t I>
 struct sentinel_archetype : semiregular_archetype<I> {
     sentinel_archetype() requires(I != 5);
     COPYABLE_OPS(sentinel);
 
     // clang-format off
-    template <std::size_t J>
+    template <size_t J>
         requires (I != 6)
     bool operator==(iterator_archetype<J> const&) const;
     // clang-format on
 };
 
-inline constexpr std::size_t sentinel_archetype_max = 7;
+inline constexpr size_t sentinel_archetype_max = 7;
 
-template <std::size_t I>
+template <size_t I>
 struct sized_sentinel_archetype : sentinel_archetype<I> {
     sized_sentinel_archetype() requires(I != 5);
     COPYABLE_OPS(sized_sentinel);
 };
 
 // clang-format off
-template <std::size_t I, std::size_t J>
+template <size_t I, size_t J>
     requires (I == 8)
 double operator-(sized_sentinel_archetype<I> const&, iterator_archetype<J> const&);
 
-template <std::size_t I, std::size_t J>
+template <size_t I, size_t J>
     requires (I < 7 || I >= 9)
-std::iter_difference_t<iterator_archetype<J>> operator-(
+iter_difference_t<iterator_archetype<J>> operator-(
     sized_sentinel_archetype<I> const&, iterator_archetype<J> const&);
 
-template <std::size_t I, std::size_t J>
+template <size_t I, size_t J>
     requires (I == 9)
 double operator-(iterator_archetype<J> const&, sized_sentinel_archetype<I> const&);
 
-template <std::size_t I, std::size_t J>
+template <size_t I, size_t J>
     requires (I < 9 || I >= 11)
-std::iter_difference_t<iterator_archetype<J>> operator-(
+iter_difference_t<iterator_archetype<J>> operator-(
     iterator_archetype<J> const&, sized_sentinel_archetype<I> const&);
 // clang-format on
 
 template <class I>
-inline constexpr bool std::disable_sized_sentinel_for<sized_sentinel_archetype<11>, I> = true;
+inline constexpr bool disable_sized_sentinel_for<sized_sentinel_archetype<11>, I> = true;
 
-inline constexpr std::size_t sized_sentinel_archetype_max = 12;
+inline constexpr size_t sized_sentinel_archetype_max = 12;
 
-template <std::size_t I>
+template <size_t I>
 struct output_iterator_archetype : iterator_archetype<I>,
                                    increment_ops<I, output_iterator_archetype<I>, output_iterator_archetype<I>&> {
     COPYABLE_OPS(output_iterator);
@@ -456,9 +456,9 @@ struct output_iterator_archetype : iterator_archetype<I>,
     // clang-format on
 };
 
-inline constexpr std::size_t output_iterator_archetype_max = 13;
+inline constexpr size_t output_iterator_archetype_max = 13;
 
-template <std::size_t>
+template <size_t>
 struct input_iterator_archetype_types {
     using value_type = int;
 };
@@ -479,7 +479,7 @@ struct input_iterator_archetype_types<15> {
     using value_type       = int;
 };
 
-template <std::size_t I>
+template <size_t I>
 struct input_iterator_archetype : iterator_archetype<I>,
                                   input_iterator_archetype_types<I>,
                                   increment_ops<I, input_iterator_archetype<I>, void> {
@@ -493,9 +493,9 @@ struct input_iterator_archetype : iterator_archetype<I>,
     // clang-format on
 };
 
-inline constexpr std::size_t input_iterator_archetype_max = 16;
+inline constexpr size_t input_iterator_archetype_max = 16;
 
-template <std::size_t I>
+template <size_t I>
 struct forward_iterator_archetype : input_iterator_archetype<I>,
                                     increment_ops<I, forward_iterator_archetype<I>, forward_iterator_archetype<I>> {
     forward_iterator_archetype() requires(I != 16);
@@ -508,9 +508,9 @@ struct forward_iterator_archetype : input_iterator_archetype<I>,
     // clang-format on
 };
 
-inline constexpr std::size_t forward_iterator_archetype_max = 19;
+inline constexpr size_t forward_iterator_archetype_max = 19;
 
-template <std::size_t I, class Derived>
+template <size_t I, class Derived>
 struct decrement_ops {
     // clang-format off
     void operator--() requires (I == 19);
@@ -520,7 +520,7 @@ struct decrement_ops {
     // clang-format on
 };
 
-template <std::size_t I>
+template <size_t I>
 struct bidi_iterator_archetype : forward_iterator_archetype<I>,
                                  increment_ops<I, bidi_iterator_archetype<I>, bidi_iterator_archetype<I>>,
                                  decrement_ops<I, bidi_iterator_archetype<I>> {
@@ -529,9 +529,9 @@ struct bidi_iterator_archetype : forward_iterator_archetype<I>,
     using increment_ops<I, bidi_iterator_archetype<I>, bidi_iterator_archetype<I>>::operator++;
 };
 
-inline constexpr std::size_t bidi_iterator_archetype_max = 22;
+inline constexpr size_t bidi_iterator_archetype_max = 22;
 
-template <std::size_t I>
+template <size_t I>
 struct random_iterator_archetype : bidi_iterator_archetype<I>,
                                    increment_ops<I, random_iterator_archetype<I>, random_iterator_archetype<I>>,
                                    decrement_ops<I, random_iterator_archetype<I>> {
@@ -541,7 +541,7 @@ struct random_iterator_archetype : bidi_iterator_archetype<I>,
     using decrement_ops<I, random_iterator_archetype<I>>::operator--;
 
     // clang-format off
-    std::strong_ordering operator<=>(random_iterator_archetype const&) const requires (I != 22);
+    strong_ordering operator<=>(random_iterator_archetype const&) const requires (I != 22);
 
     int operator-(random_iterator_archetype const&) const requires (I != 5 && I != 23);
 
@@ -558,29 +558,29 @@ struct random_iterator_archetype : bidi_iterator_archetype<I>,
     // clang-format on
 };
 
-inline constexpr std::size_t random_iterator_archetype_max = 31;
+inline constexpr size_t random_iterator_archetype_max = 31;
 
-template <std::size_t I>
+template <size_t I>
 struct contig_iterator_archetype_types : random_iterator_archetype<I> {
-    using iterator_concept  = std::contiguous_iterator_tag;
-    using iterator_category = std::random_access_iterator_tag;
+    using iterator_concept  = contiguous_iterator_tag;
+    using iterator_category = random_access_iterator_tag;
 };
 // clang-format off
-template <std::size_t I>
+template <size_t I>
     requires (I == 14 || I == 15 || I == 31)
 struct contig_iterator_archetype_types<I> : random_iterator_archetype<I> {};
 // clang-format on
 template <>
 struct contig_iterator_archetype_types<32> : random_iterator_archetype<32> {
-    using iterator_category = std::random_access_iterator_tag;
+    using iterator_category = random_access_iterator_tag;
 };
 template <>
 struct contig_iterator_archetype_types<33> : random_iterator_archetype<33> {
-    using iterator_concept  = std::input_iterator_tag;
-    using iterator_category = std::random_access_iterator_tag;
+    using iterator_concept  = input_iterator_tag;
+    using iterator_category = random_access_iterator_tag;
 };
 
-template <std::size_t I>
+template <size_t I>
 struct contig_iterator_archetype : increment_ops<I, contig_iterator_archetype<I>, contig_iterator_archetype<I>>,
                                    decrement_ops<I, contig_iterator_archetype<I>>,
                                    contig_iterator_archetype_types<I> {
@@ -601,8 +601,8 @@ struct contig_iterator_archetype : increment_ops<I, contig_iterator_archetype<I>
     // clang-format on
 };
 
-template <std::size_t I>
-struct std::pointer_traits<contig_iterator_archetype<I>> {
+template <size_t I>
+struct pointer_traits<contig_iterator_archetype<I>> {
     using pointer         = contig_iterator_archetype<I>;
     using element_type    = int;
     using difference_type = iter_difference_t<pointer>;
@@ -611,7 +611,7 @@ struct std::pointer_traits<contig_iterator_archetype<I>> {
     static element_type* to_address(const pointer&);
 };
 
-inline constexpr std::size_t contig_iterator_archetype_max = 34;
+inline constexpr size_t contig_iterator_archetype_max = 34;
 
 #pragma warning(pop)
 
@@ -634,8 +634,6 @@ struct iter_concept_example {
 };
 
 namespace iterator_synopsis_test {
-    using std::iter_reference_t, std::same_as;
-
     // Validate iter_reference_t
     template <class T>
     concept can_iter_ref = requires {
@@ -677,8 +675,6 @@ namespace incrementable_traits_test {
 #pragma warning(disable : 4180) // qualifier applied to function type has no meaning; ignored
     template <class T, class D = no_such_type>
     constexpr bool test_difference() {
-        using std::incrementable_traits, std::iter_difference_t, std::same_as;
-
         if constexpr (same_as<D, no_such_type>) {
             STATIC_ASSERT(!has_member_difference_type<incrementable_traits<T>>);
             STATIC_ASSERT(!has_member_difference_type<incrementable_traits<T const>>);
@@ -706,10 +702,10 @@ namespace incrementable_traits_test {
     STATIC_ASSERT(!test_difference<int(int) const>());
     STATIC_ASSERT(!test_difference<int (*)(int)>());
 
-    STATIC_ASSERT(test_difference<int*, std::ptrdiff_t>());
-    STATIC_ASSERT(test_difference<int const*, std::ptrdiff_t>());
-    STATIC_ASSERT(test_difference<int[], std::ptrdiff_t>());
-    STATIC_ASSERT(test_difference<int[4], std::ptrdiff_t>());
+    STATIC_ASSERT(test_difference<int*, ptrdiff_t>());
+    STATIC_ASSERT(test_difference<int const*, ptrdiff_t>());
+    STATIC_ASSERT(test_difference<int[], ptrdiff_t>());
+    STATIC_ASSERT(test_difference<int[4], ptrdiff_t>());
     STATIC_ASSERT(test_difference<int, int>());
     STATIC_ASSERT(test_difference<unsigned int, int>());
     STATIC_ASSERT(test_difference<with_difference_type<long>, long>());
@@ -733,8 +729,6 @@ namespace indirectly_readable_traits_test {
 #pragma warning(disable : 4180) // qualifier applied to function type has no meaning; ignored
     template <class T, class V = no_such_type>
     constexpr bool test_value() noexcept {
-        using std::indirectly_readable_traits, std::iter_value_t, std::same_as;
-
         if constexpr (same_as<V, no_such_type>) {
             STATIC_ASSERT(!has_member_value_type<indirectly_readable_traits<T>>);
             STATIC_ASSERT(!has_member_value_type<indirectly_readable_traits<T const>>);
@@ -783,11 +777,6 @@ namespace indirectly_readable_traits_test {
 } // namespace indirectly_readable_traits_test
 
 namespace iterator_traits_test {
-    using std::incrementable_traits, std::indirectly_readable_traits, std::iterator_traits, std::iter_value_t,
-        std::iter_difference_t, std::same_as, std::output_iterator_tag, std::input_iterator_tag,
-        std::forward_iterator_tag, std::bidirectional_iterator_tag, std::random_access_iterator_tag,
-        std::contiguous_iterator_tag;
-
     template <class T>
     struct with_iter_concept {
         using iterator_concept = T;
@@ -992,11 +981,11 @@ namespace iterator_traits_test {
     STATIC_ASSERT(has_empty_traits<int(int) const>);
 
     // N4820 [iterator.traits]/5: "iterator_traits is specialized for pointers..."
-    STATIC_ASSERT(check<int*, contiguous_iterator_tag, random_access_iterator_tag, int, std::ptrdiff_t, int*, int&>());
-    STATIC_ASSERT(check<int const*, contiguous_iterator_tag, random_access_iterator_tag, int, std::ptrdiff_t,
-        int const*, int const&>());
-    STATIC_ASSERT(check<int (*)[4], contiguous_iterator_tag, random_access_iterator_tag, int[4], std::ptrdiff_t,
-        int (*)[4], int (&)[4]>());
+    STATIC_ASSERT(check<int*, contiguous_iterator_tag, random_access_iterator_tag, int, ptrdiff_t, int*, int&>());
+    STATIC_ASSERT(check<int const*, contiguous_iterator_tag, random_access_iterator_tag, int, ptrdiff_t, int const*,
+        int const&>());
+    STATIC_ASSERT(check<int (*)[4], contiguous_iterator_tag, random_access_iterator_tag, int[4], ptrdiff_t, int (*)[4],
+        int (&)[4]>());
     // pointers to non-object types are not iterators
     STATIC_ASSERT(has_empty_traits<int (*)(int)>);
     STATIC_ASSERT(has_empty_traits<void*>);
@@ -1005,11 +994,9 @@ namespace iterator_traits_test {
 } // namespace iterator_traits_test
 
 namespace iterator_cust_move_test {
-    using std::iter_rvalue_reference_t, std::same_as;
-
     template <class T>
     concept can_iter_move = requires(T&& t) {
-        ranges::iter_move(std::forward<T>(t));
+        ranges::iter_move(forward<T>(t));
     };
     template <class T>
     concept can_iter_rvalue_ref = requires {
@@ -1045,7 +1032,7 @@ namespace iterator_cust_move_test {
     STATIC_ASSERT(static_cast<int>(ranges::iter_move(E1::x)) == 0);
     STATIC_ASSERT(noexcept(ranges::iter_move(E1::x)));
 
-    // N4820 [iterator.cust.move]/1.2.1 "if *E is an lvalue, std::move(*E)"
+    // N4820 [iterator.cust.move]/1.2.1 "if *E is an lvalue, move(*E)"
     static constexpr int some_ints[] = {0, 1, 2, 3};
     STATIC_ASSERT(same_as<iter_rvalue_reference_t<int*>, int&&>);
     STATIC_ASSERT(ranges::iter_move(&some_ints[1]) == 1);
@@ -1117,12 +1104,9 @@ namespace iterator_cust_move_test {
 } // namespace iterator_cust_move_test
 
 namespace iterator_cust_swap_test {
-    using std::indirectly_movable_storable, std::iter_reference_t, std::indirectly_readable, std::remove_reference_t,
-        std::same_as, std::swappable_with;
-
     template <class T, class U>
     concept can_iter_swap = requires(T&& t, U&& u) {
-        ranges::iter_swap(std::forward<T>(t), std::forward<U>(u));
+        ranges::iter_swap(forward<T>(t), forward<U>(u));
     };
 
     // N4820 [iterator.cust.swap]/4.1: "(void)iter_swap(E1, E2), if that expression is valid, with..."
@@ -1132,7 +1116,7 @@ namespace iterator_cust_swap_test {
 
         template <class T, class U = T>
         concept bullet1 = requires(T && t, U && u) {
-            iter_swap(std::forward<T>(t), std::forward<U>(u));
+            iter_swap(forward<T>(t), forward<U>(u));
         };
     } // namespace adl_barrier
     using adl_barrier::bullet1;
@@ -1202,7 +1186,7 @@ namespace iterator_cust_swap_test {
 } // namespace iterator_cust_swap_test
 
 template <int X, int Y>
-struct std::common_type<iterator_cust_swap_test::swap_proxy_ref<X>, iterator_cust_swap_test::swap_proxy_ref<Y>> {
+struct common_type<iterator_cust_swap_test::swap_proxy_ref<X>, iterator_cust_swap_test::swap_proxy_ref<Y>> {
     using type = int;
 };
 
@@ -1299,8 +1283,6 @@ namespace iterator_cust_swap_test {
 } // namespace iterator_cust_swap_test
 
 namespace iterator_concept_readable_test {
-    using std::indirectly_readable;
-
     STATIC_ASSERT(!indirectly_readable<void>);
     STATIC_ASSERT(!indirectly_readable<void*>);
     STATIC_ASSERT(indirectly_readable<int*>);
@@ -1333,8 +1315,6 @@ namespace iterator_concept_readable_test {
 } // namespace iterator_concept_readable_test
 
 namespace iterator_concept_writable_test {
-    using std::indirectly_writable;
-
     template <class I, class T>
     constexpr bool test_writable() {
 #pragma warning(push)
@@ -1413,8 +1393,6 @@ namespace iterator_concept_writable_test {
 } // namespace iterator_concept_writable_test
 
 namespace iterator_concept_winc_test {
-    using std::weakly_incrementable;
-
     STATIC_ASSERT(!weakly_incrementable<void>);
     STATIC_ASSERT(weakly_incrementable<int>);
     STATIC_ASSERT(weakly_incrementable<unsigned int>);
@@ -1422,20 +1400,17 @@ namespace iterator_concept_winc_test {
     STATIC_ASSERT(weakly_incrementable<int*>);
     STATIC_ASSERT(weakly_incrementable<int const*>);
 
-    template <std::size_t... Is>
-    constexpr bool test(std::index_sequence<Is...>) {
-        STATIC_ASSERT(
-            std::same_as<std::index_sequence<Is...>, std::make_index_sequence<weakly_incrementable_archetype_max>>);
+    template <size_t... Is>
+    constexpr bool test(index_sequence<Is...>) {
+        STATIC_ASSERT(same_as<index_sequence<Is...>, make_index_sequence<weakly_incrementable_archetype_max>>);
         STATIC_ASSERT((!weakly_incrementable<weakly_incrementable_archetype<Is>> && ...));
         STATIC_ASSERT(weakly_incrementable<weakly_incrementable_archetype<weakly_incrementable_archetype_max>>);
         return true;
     }
-    STATIC_ASSERT(test(std::make_index_sequence<weakly_incrementable_archetype_max>{}));
+    STATIC_ASSERT(test(make_index_sequence<weakly_incrementable_archetype_max>{}));
 } // namespace iterator_concept_winc_test
 
 namespace iterator_concept_inc_test {
-    using std::incrementable;
-
     STATIC_ASSERT(!incrementable<void>);
     STATIC_ASSERT(incrementable<int>);
     STATIC_ASSERT(incrementable<unsigned int>);
@@ -1443,38 +1418,34 @@ namespace iterator_concept_inc_test {
     STATIC_ASSERT(incrementable<int*>);
     STATIC_ASSERT(incrementable<int const*>);
 
-    template <std::size_t... Is>
-    constexpr bool test(std::index_sequence<Is...>) {
-        STATIC_ASSERT(std::same_as<std::index_sequence<Is...>, std::make_index_sequence<incrementable_archetype_max>>);
+    template <size_t... Is>
+    constexpr bool test(index_sequence<Is...>) {
+        STATIC_ASSERT(same_as<index_sequence<Is...>, make_index_sequence<incrementable_archetype_max>>);
         STATIC_ASSERT((!incrementable<incrementable_archetype<Is>> && ...));
         STATIC_ASSERT(incrementable<incrementable_archetype<incrementable_archetype_max>>);
         return true;
     }
-    STATIC_ASSERT(test(std::make_index_sequence<incrementable_archetype_max>{}));
+    STATIC_ASSERT(test(make_index_sequence<incrementable_archetype_max>{}));
 } // namespace iterator_concept_inc_test
 
 namespace iterator_concept_iterator_test {
-    using std::input_or_output_iterator;
-
     STATIC_ASSERT(!input_or_output_iterator<void>);
     STATIC_ASSERT(!input_or_output_iterator<int>);
     STATIC_ASSERT(!input_or_output_iterator<void*>);
     STATIC_ASSERT(input_or_output_iterator<int*>);
     STATIC_ASSERT(input_or_output_iterator<int const*>);
 
-    template <std::size_t... Is>
-    constexpr bool test(std::index_sequence<Is...>) {
-        STATIC_ASSERT(std::same_as<std::index_sequence<Is...>, std::make_index_sequence<iterator_archetype_max>>);
+    template <size_t... Is>
+    constexpr bool test(index_sequence<Is...>) {
+        STATIC_ASSERT(same_as<index_sequence<Is...>, make_index_sequence<iterator_archetype_max>>);
         STATIC_ASSERT((!input_or_output_iterator<iterator_archetype<Is>> && ...));
         STATIC_ASSERT(input_or_output_iterator<iterator_archetype<iterator_archetype_max>>);
         return true;
     }
-    STATIC_ASSERT(test(std::make_index_sequence<iterator_archetype_max>{}));
+    STATIC_ASSERT(test(make_index_sequence<iterator_archetype_max>{}));
 } // namespace iterator_concept_iterator_test
 
 namespace iterator_concept_sentinel_test {
-    using std::input_or_output_iterator, std::sentinel_for;
-
     STATIC_ASSERT(sentinel_for<int*, int*>);
     STATIC_ASSERT(sentinel_for<int const*, int const*>);
     STATIC_ASSERT(sentinel_for<int const*, int*>);
@@ -1493,73 +1464,67 @@ namespace iterator_concept_sentinel_test {
     STATIC_ASSERT(input_or_output_iterator<A>);
     STATIC_ASSERT(sentinel_for<A, A>);
 
-    template <std::size_t I, std::size_t J>
+    template <size_t I, size_t J>
     constexpr bool test_one_pair() {
         constexpr bool expected = I >= sentinel_archetype_max && J >= iterator_archetype_max;
         STATIC_ASSERT(sentinel_for<sentinel_archetype<I>, iterator_archetype<J>> == expected);
         return true;
     }
 
-    template <std::size_t I, std::size_t... Js>
-    constexpr bool unpack_iterator(std::index_sequence<Js...>) {
+    template <size_t I, size_t... Js>
+    constexpr bool unpack_iterator(index_sequence<Js...>) {
         return (test_one_pair<I, Js>() && ...);
     }
 
-    template <std::size_t... Is>
-    constexpr bool unpack_sentinel(std::index_sequence<Is...>) {
-        return (unpack_iterator<Is>(std::make_index_sequence<iterator_archetype_max + 1>{}) && ...);
+    template <size_t... Is>
+    constexpr bool unpack_sentinel(index_sequence<Is...>) {
+        return (unpack_iterator<Is>(make_index_sequence<iterator_archetype_max + 1>{}) && ...);
     }
-    STATIC_ASSERT(unpack_sentinel(std::make_index_sequence<sentinel_archetype_max + 1>{}));
+    STATIC_ASSERT(unpack_sentinel(make_index_sequence<sentinel_archetype_max + 1>{}));
 } // namespace iterator_concept_sentinel_test
 
 namespace iterator_concept_sizedsentinel_test {
-    using std::sized_sentinel_for;
-
     STATIC_ASSERT(sized_sentinel_for<int*, int*>);
     STATIC_ASSERT(sized_sentinel_for<int const*, int const*>);
     STATIC_ASSERT(sized_sentinel_for<int const*, int*>);
     STATIC_ASSERT(sized_sentinel_for<int*, int const*>);
     STATIC_ASSERT(!sized_sentinel_for<void*, void*>);
 
-    template <std::size_t I, std::size_t J>
+    template <size_t I, size_t J>
     constexpr bool test_one_pair() {
         constexpr bool expected = I >= sized_sentinel_archetype_max && J >= iterator_archetype_max;
         STATIC_ASSERT(sized_sentinel_for<sized_sentinel_archetype<I>, iterator_archetype<J>> == expected);
         return true;
     }
 
-    template <std::size_t I, std::size_t... Js>
-    constexpr bool unpack_iterator(std::index_sequence<Js...>) {
+    template <size_t I, size_t... Js>
+    constexpr bool unpack_iterator(index_sequence<Js...>) {
         return (test_one_pair<I, Js>() && ...);
     }
 
-    template <std::size_t... Is>
-    constexpr bool unpack_sentinel(std::index_sequence<Is...>) {
-        return (unpack_iterator<Is>(std::make_index_sequence<iterator_archetype_max + 1>{}) && ...);
+    template <size_t... Is>
+    constexpr bool unpack_sentinel(index_sequence<Is...>) {
+        return (unpack_iterator<Is>(make_index_sequence<iterator_archetype_max + 1>{}) && ...);
     }
-    STATIC_ASSERT(unpack_sentinel(std::make_index_sequence<sized_sentinel_archetype_max + 1>{}));
+    STATIC_ASSERT(unpack_sentinel(make_index_sequence<sized_sentinel_archetype_max + 1>{}));
 } // namespace iterator_concept_sizedsentinel_test
 
 namespace iterator_concept_input_test {
-    using std::input_iterator;
-
     STATIC_ASSERT(input_iterator<int*>);
     STATIC_ASSERT(input_iterator<int const*>);
     STATIC_ASSERT(input_iterator<iter_concept_example>);
 
-    template <std::size_t... Is>
-    constexpr bool test(std::index_sequence<Is...>) {
-        STATIC_ASSERT(std::same_as<std::index_sequence<Is...>, std::make_index_sequence<input_iterator_archetype_max>>);
+    template <size_t... Is>
+    constexpr bool test(index_sequence<Is...>) {
+        STATIC_ASSERT(same_as<index_sequence<Is...>, make_index_sequence<input_iterator_archetype_max>>);
         STATIC_ASSERT((!input_iterator<input_iterator_archetype<Is>> && ...));
         STATIC_ASSERT(input_iterator<input_iterator_archetype<input_iterator_archetype_max>>);
         return true;
     }
-    STATIC_ASSERT(test(std::make_index_sequence<input_iterator_archetype_max>{}));
+    STATIC_ASSERT(test(make_index_sequence<input_iterator_archetype_max>{}));
 } // namespace iterator_concept_input_test
 
 namespace iterator_concept_output_test {
-    using std::output_iterator;
-
     STATIC_ASSERT(output_iterator<int*, int>);
     STATIC_ASSERT(output_iterator<int*, int const>);
     STATIC_ASSERT(output_iterator<int*, int&>);
@@ -1569,10 +1534,9 @@ namespace iterator_concept_output_test {
     STATIC_ASSERT(!output_iterator<int const*, int&>);
     STATIC_ASSERT(!output_iterator<int const*, int const&>);
 
-    template <std::size_t... Is>
-    constexpr bool test(std::index_sequence<Is...>) {
-        STATIC_ASSERT(
-            std::same_as<std::index_sequence<Is...>, std::make_index_sequence<output_iterator_archetype_max>>);
+    template <size_t... Is>
+    constexpr bool test(index_sequence<Is...>) {
+        STATIC_ASSERT(same_as<index_sequence<Is...>, make_index_sequence<output_iterator_archetype_max>>);
         STATIC_ASSERT((!output_iterator<output_iterator_archetype<Is>, int> && ...));
         STATIC_ASSERT((!output_iterator<output_iterator_archetype<Is>, int const> && ...));
         STATIC_ASSERT((!output_iterator<output_iterator_archetype<Is>, int&> && ...));
@@ -1583,91 +1547,75 @@ namespace iterator_concept_output_test {
         STATIC_ASSERT(output_iterator<output_iterator_archetype<output_iterator_archetype_max>, int const&>);
         return true;
     }
-    STATIC_ASSERT(test(std::make_index_sequence<output_iterator_archetype_max>{}));
+    STATIC_ASSERT(test(make_index_sequence<output_iterator_archetype_max>{}));
 } // namespace iterator_concept_output_test
 
 namespace iterator_concept_forward_test {
-    using std::forward_iterator;
-
     STATIC_ASSERT(forward_iterator<int*>);
     STATIC_ASSERT(forward_iterator<int const*>);
     STATIC_ASSERT(forward_iterator<iter_concept_example>);
 
-    template <std::size_t... Is>
-    constexpr bool test(std::index_sequence<Is...>) {
-        STATIC_ASSERT(
-            std::same_as<std::index_sequence<Is...>, std::make_index_sequence<forward_iterator_archetype_max>>);
+    template <size_t... Is>
+    constexpr bool test(index_sequence<Is...>) {
+        STATIC_ASSERT(same_as<index_sequence<Is...>, make_index_sequence<forward_iterator_archetype_max>>);
         STATIC_ASSERT((!forward_iterator<forward_iterator_archetype<Is>> && ...));
         STATIC_ASSERT(forward_iterator<forward_iterator_archetype<forward_iterator_archetype_max>>);
         return true;
     }
-    STATIC_ASSERT(test(std::make_index_sequence<forward_iterator_archetype_max>{}));
+    STATIC_ASSERT(test(make_index_sequence<forward_iterator_archetype_max>{}));
 } // namespace iterator_concept_forward_test
 
 namespace iterator_concept_bidir_test {
-    using std::bidirectional_iterator;
-
     STATIC_ASSERT(bidirectional_iterator<int*>);
     STATIC_ASSERT(bidirectional_iterator<int const*>);
     STATIC_ASSERT(bidirectional_iterator<iter_concept_example>);
 
-    template <std::size_t... Is>
-    constexpr bool test(std::index_sequence<Is...>) {
-        STATIC_ASSERT(std::same_as<std::index_sequence<Is...>, std::make_index_sequence<bidi_iterator_archetype_max>>);
+    template <size_t... Is>
+    constexpr bool test(index_sequence<Is...>) {
+        STATIC_ASSERT(same_as<index_sequence<Is...>, make_index_sequence<bidi_iterator_archetype_max>>);
         STATIC_ASSERT((!bidirectional_iterator<bidi_iterator_archetype<Is>> && ...));
         STATIC_ASSERT(bidirectional_iterator<bidi_iterator_archetype<bidi_iterator_archetype_max>>);
         return true;
     }
-    STATIC_ASSERT(test(std::make_index_sequence<bidi_iterator_archetype_max>{}));
+    STATIC_ASSERT(test(make_index_sequence<bidi_iterator_archetype_max>{}));
 } // namespace iterator_concept_bidir_test
 
 namespace iterator_concept_random_access_test {
-    using std::random_access_iterator;
-
     STATIC_ASSERT(random_access_iterator<int*>);
     STATIC_ASSERT(random_access_iterator<int const*>);
     STATIC_ASSERT(!random_access_iterator<iter_concept_example>);
 
-    template <std::size_t... Is>
-    constexpr bool test(std::index_sequence<Is...>) {
-        STATIC_ASSERT(
-            std::same_as<std::index_sequence<Is...>, std::make_index_sequence<random_iterator_archetype_max>>);
+    template <size_t... Is>
+    constexpr bool test(index_sequence<Is...>) {
+        STATIC_ASSERT(same_as<index_sequence<Is...>, make_index_sequence<random_iterator_archetype_max>>);
         STATIC_ASSERT((!random_access_iterator<random_iterator_archetype<Is>> && ...));
         STATIC_ASSERT(random_access_iterator<random_iterator_archetype<random_iterator_archetype_max>>);
         return true;
     }
-    STATIC_ASSERT(test(std::make_index_sequence<random_iterator_archetype_max>{}));
+    STATIC_ASSERT(test(make_index_sequence<random_iterator_archetype_max>{}));
 } // namespace iterator_concept_random_access_test
 
 namespace iterator_concept_contiguous_test {
-    using std::contiguous_iterator;
-
     STATIC_ASSERT(contiguous_iterator<int*>);
     STATIC_ASSERT(contiguous_iterator<int const*>);
     STATIC_ASSERT(!contiguous_iterator<iter_concept_example>);
 
-    template <std::size_t... Is>
-    constexpr bool test(std::index_sequence<Is...>) {
-        STATIC_ASSERT(
-            std::same_as<std::index_sequence<Is...>, std::make_index_sequence<contig_iterator_archetype_max>>);
+    template <size_t... Is>
+    constexpr bool test(index_sequence<Is...>) {
+        STATIC_ASSERT(same_as<index_sequence<Is...>, make_index_sequence<contig_iterator_archetype_max>>);
         STATIC_ASSERT((!contiguous_iterator<contig_iterator_archetype<Is>> && ...));
         STATIC_ASSERT(contiguous_iterator<contig_iterator_archetype<contig_iterator_archetype_max>>);
         return true;
     }
-    STATIC_ASSERT(test(std::make_index_sequence<contig_iterator_archetype_max>{}));
+    STATIC_ASSERT(test(make_index_sequence<contig_iterator_archetype_max>{}));
 } // namespace iterator_concept_contiguous_test
 
 namespace std_iterator_tags_test {
-    using std::bidirectional_iterator_tag, std::contiguous_iterator_tag, std::forward_iterator_tag,
-        std::input_iterator_tag, std::output_iterator_tag, std::random_access_iterator_tag;
-
     template <class T, bool derives_from_output, bool derives_from_input, bool derives_from_forward,
         bool derives_from_bidi, bool derives_from_random, bool derives_from_contiguous>
     constexpr bool test_tag() {
-        using std::derived_from;
-
-        STATIC_ASSERT(std::is_empty_v<T>);
-        STATIC_ASSERT(std::semiregular<T>);
+        STATIC_ASSERT(is_empty_v<T>);
+        STATIC_ASSERT(semiregular<T>);
         (void) T{};
 
         STATIC_ASSERT(derived_from<T, output_iterator_tag> == derives_from_output);
@@ -1696,70 +1644,66 @@ namespace incomplete_test {
     using E = do_not_instantiate<void>;
 
     // Verify that the iterator trait aliases do not cause instantiation of pointee types
-    using V = std::iter_value_t<E*>;
-    using D = std::iter_difference_t<E*>;
-    using R = std::iter_reference_t<E*>;
+    using V = iter_value_t<E*>;
+    using D = iter_difference_t<E*>;
+    using R = iter_reference_t<E*>;
 } // namespace incomplete_test
 
 namespace default_sentinel_test {
-    using std::default_sentinel, std::default_sentinel_t;
-
-    STATIC_ASSERT(std::is_empty_v<default_sentinel_t>);
-    STATIC_ASSERT(std::semiregular<default_sentinel_t>);
-    STATIC_ASSERT(std::same_as<decltype((default_sentinel)), default_sentinel_t const&>);
+    STATIC_ASSERT(is_empty_v<default_sentinel_t>);
+    STATIC_ASSERT(semiregular<default_sentinel_t>);
+    STATIC_ASSERT(same_as<decltype((default_sentinel)), default_sentinel_t const&>);
 
     // All special member functions are implicitly noexcept
-    STATIC_ASSERT(std::is_nothrow_default_constructible_v<default_sentinel_t>);
-    STATIC_ASSERT(std::is_nothrow_copy_constructible_v<default_sentinel_t>);
-    STATIC_ASSERT(std::is_nothrow_move_constructible_v<default_sentinel_t>);
-    STATIC_ASSERT(std::is_nothrow_copy_assignable_v<default_sentinel_t>);
-    STATIC_ASSERT(std::is_nothrow_move_assignable_v<default_sentinel_t>);
+    STATIC_ASSERT(is_nothrow_default_constructible_v<default_sentinel_t>);
+    STATIC_ASSERT(is_nothrow_copy_constructible_v<default_sentinel_t>);
+    STATIC_ASSERT(is_nothrow_move_constructible_v<default_sentinel_t>);
+    STATIC_ASSERT(is_nothrow_copy_assignable_v<default_sentinel_t>);
+    STATIC_ASSERT(is_nothrow_move_assignable_v<default_sentinel_t>);
 
     constexpr bool test() {
         // Validate that default_sentinel_t's special member functions are all constexpr
         default_sentinel_t ds0{}; // default constructor
         default_sentinel_t ds1{default_sentinel}; // copy constructor
-        [[maybe_unused]] default_sentinel_t ds2{std::move(ds0)}; // move constructor
+        [[maybe_unused]] default_sentinel_t ds2{move(ds0)}; // move constructor
         ds0 = default_sentinel; // copy assignment
-        ds1 = std::move(ds0); // move assignment
+        ds1 = move(ds0); // move assignment
         return true;
     }
     STATIC_ASSERT(test());
 } // namespace default_sentinel_test
 
 namespace unreachable_sentinel_test {
-    using std::unreachable_sentinel, std::unreachable_sentinel_t;
-
-    STATIC_ASSERT(std::is_empty_v<unreachable_sentinel_t>);
-    STATIC_ASSERT(std::semiregular<unreachable_sentinel_t>);
-    STATIC_ASSERT(std::same_as<decltype((unreachable_sentinel)), unreachable_sentinel_t const&>);
+    STATIC_ASSERT(is_empty_v<unreachable_sentinel_t>);
+    STATIC_ASSERT(semiregular<unreachable_sentinel_t>);
+    STATIC_ASSERT(same_as<decltype((unreachable_sentinel)), unreachable_sentinel_t const&>);
 
     // All special member functions are implicitly noexcept
-    STATIC_ASSERT(std::is_nothrow_default_constructible_v<unreachable_sentinel_t>);
-    STATIC_ASSERT(std::is_nothrow_copy_constructible_v<unreachable_sentinel_t>);
-    STATIC_ASSERT(std::is_nothrow_move_constructible_v<unreachable_sentinel_t>);
-    STATIC_ASSERT(std::is_nothrow_copy_assignable_v<unreachable_sentinel_t>);
-    STATIC_ASSERT(std::is_nothrow_move_assignable_v<unreachable_sentinel_t>);
+    STATIC_ASSERT(is_nothrow_default_constructible_v<unreachable_sentinel_t>);
+    STATIC_ASSERT(is_nothrow_copy_constructible_v<unreachable_sentinel_t>);
+    STATIC_ASSERT(is_nothrow_move_constructible_v<unreachable_sentinel_t>);
+    STATIC_ASSERT(is_nothrow_copy_assignable_v<unreachable_sentinel_t>);
+    STATIC_ASSERT(is_nothrow_move_assignable_v<unreachable_sentinel_t>);
 
     // clang-format off
     template <class T>
     concept Comparable = requires(T const& t) {
-        { t == unreachable_sentinel } -> std::same_as<bool>;
-        { t != unreachable_sentinel } -> std::same_as<bool>;
-        { unreachable_sentinel == t } -> std::same_as<bool>;
-        { unreachable_sentinel != t } -> std::same_as<bool>;
+        { t == unreachable_sentinel } -> same_as<bool>;
+        { t != unreachable_sentinel } -> same_as<bool>;
+        { unreachable_sentinel == t } -> same_as<bool>;
+        { unreachable_sentinel != t } -> same_as<bool>;
     };
     // clang-format on
 
     STATIC_ASSERT(Comparable<int>);
 
     template <int... Is>
-    constexpr bool test(std::integer_sequence<int, Is...>) {
+    constexpr bool test(integer_sequence<int, Is...>) {
         unreachable_sentinel_t us0{}; // default constructor is (implicitly) constexpr
         unreachable_sentinel_t us1{unreachable_sentinel}; // ditto copy constructor
-        [[maybe_unused]] unreachable_sentinel_t us2{std::move(us0)}; // ditto move constructor
+        [[maybe_unused]] unreachable_sentinel_t us2{move(us0)}; // ditto move constructor
         us0 = unreachable_sentinel; // ditto copy assignment
-        us1 = std::move(us0); // ditto move assignment
+        us1 = move(us0); // ditto move assignment
 
         // == and != are constexpr and noexcept:
         STATIC_ASSERT(!(unreachable_sentinel == 42));
@@ -1779,12 +1723,12 @@ namespace unreachable_sentinel_test {
 
         return true;
     }
-    STATIC_ASSERT(test(std::make_integer_sequence<int, weakly_incrementable_archetype_max>{}));
+    STATIC_ASSERT(test(make_integer_sequence<int, weakly_incrementable_archetype_max>{}));
 
     namespace regress_1029409 {
-        // VSO-1029409 failed because std::unreachable_sentinel_t's hidden friend operator!= is not hidden in permissive
+        // VSO-1029409 failed because unreachable_sentinel_t's hidden friend operator!= is not hidden in permissive
         // mode. Overload resolution for != expressions would therefore try to determine if evil models
-        // std::weakly_incrementable, instantiating the operator- that must not be instantiated.
+        // weakly_incrementable, instantiating the operator- that must not be instantiated.
 
         template <class>
         struct evil {
@@ -1798,7 +1742,7 @@ namespace unreachable_sentinel_test {
             }
         };
 
-        using std_type = std::default_sentinel_t;
+        using std_type = default_sentinel_t;
         STATIC_ASSERT(evil<std_type>{} != evil<std_type>{});
     } // namespace regress_1029409
 } // namespace unreachable_sentinel_test
@@ -1810,7 +1754,7 @@ namespace unwrap_move_only {
     template <class T, bool IsWrapped>
     struct iter {
         using value_type      = T;
-        using difference_type = std::ptrdiff_t;
+        using difference_type = ptrdiff_t;
 
         iter()       = default;
         iter(iter&&) = default;
@@ -1822,45 +1766,41 @@ namespace unwrap_move_only {
         iter& operator++() noexcept;
         void operator++(int) noexcept;
 
-        bool operator==(std::default_sentinel_t const&) const noexcept;
+        bool operator==(default_sentinel_t const&) const noexcept;
 
         static constexpr bool _Unwrap_when_unverified = true;
         iter<T, false> _Unwrapped() && noexcept requires IsWrapped;
         void _Seek_to(iter<T, false>) noexcept requires IsWrapped;
 
-        void _Verify_offset(std::ptrdiff_t) const noexcept requires IsWrapped;
+        void _Verify_offset(ptrdiff_t) const noexcept requires IsWrapped;
     };
-    STATIC_ASSERT(std::input_iterator<iter<int, true>>);
-    STATIC_ASSERT(!has_member_iter_category<std::iterator_traits<iter<int, true>>>);
+    STATIC_ASSERT(input_iterator<iter<int, true>>);
+    STATIC_ASSERT(!has_member_iter_category<iterator_traits<iter<int, true>>>);
 
-    STATIC_ASSERT(!std::_Unwrappable_v<iter<int, true>&>);
-    STATIC_ASSERT(!std::_Unwrappable_v<iter<int, true> const&>);
-    STATIC_ASSERT(std::_Unwrappable_v<iter<int, true>>);
-    STATIC_ASSERT(!std::_Unwrappable_v<iter<int, true> const>);
-    STATIC_ASSERT(std::same_as<std::_Unwrapped_t<iter<int, true>>, iter<int, false>>);
+    STATIC_ASSERT(!_Unwrappable_v<iter<int, true>&>);
+    STATIC_ASSERT(!_Unwrappable_v<iter<int, true> const&>);
+    STATIC_ASSERT(_Unwrappable_v<iter<int, true>>);
+    STATIC_ASSERT(!_Unwrappable_v<iter<int, true> const>);
+    STATIC_ASSERT(same_as<_Unwrapped_t<iter<int, true>>, iter<int, false>>);
 
-    STATIC_ASSERT(!std::_Unwrappable_for_unverified_v<iter<int, true>&>);
-    STATIC_ASSERT(!std::_Unwrappable_for_unverified_v<iter<int, true> const&>);
-    STATIC_ASSERT(std::_Unwrappable_for_unverified_v<iter<int, true>>);
-    STATIC_ASSERT(!std::_Unwrappable_for_unverified_v<iter<int, true> const>);
-    STATIC_ASSERT(std::same_as<std::_Unwrapped_unverified_t<iter<int, true>>, iter<int, false>>);
+    STATIC_ASSERT(!_Unwrappable_for_unverified_v<iter<int, true>&>);
+    STATIC_ASSERT(!_Unwrappable_for_unverified_v<iter<int, true> const&>);
+    STATIC_ASSERT(_Unwrappable_for_unverified_v<iter<int, true>>);
+    STATIC_ASSERT(!_Unwrappable_for_unverified_v<iter<int, true> const>);
+    STATIC_ASSERT(same_as<_Unwrapped_unverified_t<iter<int, true>>, iter<int, false>>);
 
-    STATIC_ASSERT(!std::_Unwrappable_for_offset_v<iter<int, true>&>);
-    STATIC_ASSERT(!std::_Unwrappable_for_offset_v<iter<int, true> const&>);
-    STATIC_ASSERT(std::_Unwrappable_for_offset_v<iter<int, true>>);
-    STATIC_ASSERT(!std::_Unwrappable_for_offset_v<iter<int, true> const>);
+    STATIC_ASSERT(!_Unwrappable_for_offset_v<iter<int, true>&>);
+    STATIC_ASSERT(!_Unwrappable_for_offset_v<iter<int, true> const&>);
+    STATIC_ASSERT(_Unwrappable_for_offset_v<iter<int, true>>);
+    STATIC_ASSERT(!_Unwrappable_for_offset_v<iter<int, true> const>);
 
-    STATIC_ASSERT(!std::_Wrapped_seekable_v<iter<int, true>, iter<int, false>&>);
-    STATIC_ASSERT(!std::_Wrapped_seekable_v<iter<int, true>, iter<int, false> const&>);
-    STATIC_ASSERT(std::_Wrapped_seekable_v<iter<int, true>, iter<int, false>>);
-    STATIC_ASSERT(!std::_Wrapped_seekable_v<iter<int, true>, iter<int, false> const>);
+    STATIC_ASSERT(!_Wrapped_seekable_v<iter<int, true>, iter<int, false>&>);
+    STATIC_ASSERT(!_Wrapped_seekable_v<iter<int, true>, iter<int, false> const&>);
+    STATIC_ASSERT(_Wrapped_seekable_v<iter<int, true>, iter<int, false>>);
+    STATIC_ASSERT(!_Wrapped_seekable_v<iter<int, true>, iter<int, false> const>);
 } // namespace unwrap_move_only
 
 namespace iter_ops {
-    using std::default_sentinel, std::default_sentinel_t;
-    using std::input_iterator_tag, std::forward_iterator_tag, std::bidirectional_iterator_tag,
-        std::random_access_iterator_tag;
-
     struct trace {
         unsigned int compares_;
         unsigned int differences_;
@@ -1885,9 +1825,9 @@ namespace iter_ops {
         using value_type      = int;
         using difference_type = int;
 
-        static constexpr bool is_forward = std::derived_from<Category, forward_iterator_tag>;
-        static constexpr bool is_bidi    = std::derived_from<Category, bidirectional_iterator_tag>;
-        static constexpr bool is_random  = std::derived_from<Category, random_access_iterator_tag>;
+        static constexpr bool is_forward = derived_from<Category, forward_iterator_tag>;
+        static constexpr bool is_bidi    = derived_from<Category, bidirectional_iterator_tag>;
+        static constexpr bool is_random  = derived_from<Category, random_access_iterator_tag>;
         static constexpr bool is_sized   = Sized == sized::yes;
 
         trace_iterator() = default;
@@ -1955,7 +1895,7 @@ namespace iter_ops {
         }
         trace_iterator operator--(int) requires is_bidi;
 
-        std::strong_ordering operator<=>(trace_iterator const&) const requires is_random;
+        strong_ordering operator<=>(trace_iterator const&) const requires is_random;
 
         constexpr trace_iterator& operator+=(int const n) requires is_random {
             ++trace_->seeks_;
@@ -1979,8 +1919,8 @@ namespace iter_ops {
         int pos_      = 0;
     };
 
-    // To model Assignable<trace_iterator</* ... */, assign::yes>&, std::default_sentinel_t>, we must satisfy
-    // common_reference_with<trace_iterator</* ... */, assign::yes> const&, const std::default_sentinel_t&>.
+    // To model Assignable<trace_iterator</* ... */, assign::yes>&, default_sentinel_t>, we must satisfy
+    // common_reference_with<trace_iterator</* ... */, assign::yes> const&, const default_sentinel_t&>.
     // Specializing common_type is the simplest way to do so:
     struct commontype {
         template <class Category, sized Sized>
@@ -1990,37 +1930,35 @@ namespace iter_ops {
 } // namespace iter_ops
 
 template <class Category, ::iter_ops::sized Sized>
-struct std::common_type<::iter_ops::trace_iterator<Category, Sized, ::iter_ops::assign::yes>, std::default_sentinel_t> {
+struct common_type<::iter_ops::trace_iterator<Category, Sized, ::iter_ops::assign::yes>, default_sentinel_t> {
     using type = ::iter_ops::commontype;
 };
 template <class Category, ::iter_ops::sized Sized>
-struct std::common_type<std::default_sentinel_t, ::iter_ops::trace_iterator<Category, Sized, ::iter_ops::assign::yes>> {
+struct common_type<default_sentinel_t, ::iter_ops::trace_iterator<Category, Sized, ::iter_ops::assign::yes>> {
     using type = ::iter_ops::commontype;
 };
 
 namespace iter_ops {
-    using ranges::advance, ranges::distance, ranges::next, ranges::prev;
-
     constexpr bool test_iter_forms() {
         {
-            // Call next(i), validating that ++i is called once
+            // Call ranges::next(i), validating that ++i is called once
             using R = trace_iterator<random_access_iterator_tag>;
             trace t{};
-            R r = next(R{t});
+            R r = ranges::next(R{t});
             assert(r.pos_ == 1 && t == trace{.increments_ = 1});
         }
         {
             // Ditto, move-only iterator
             using I = trace_iterator<input_iterator_tag>;
             trace t{};
-            I i = next(I{t});
+            I i = ranges::next(I{t});
             assert(i.pos_ == 1 && t == trace{.increments_ = 1});
         }
         {
-            // Call prev(i), validating that --i is called once
+            // Call ranges::prev(i), validating that --i is called once
             using R = trace_iterator<random_access_iterator_tag>;
             trace t{};
-            R r = prev(R{t});
+            R r = ranges::prev(R{t});
             assert(r.pos_ == -1 && t == trace{.decrements_ = 1});
         }
 
@@ -2029,34 +1967,34 @@ namespace iter_ops {
     STATIC_ASSERT(test_iter_forms());
 
     constexpr bool test_iter_count_forms() {
-        // Call advance(i, n) / next(i, n) / prev(i, -n) with:
+        // Call ranges::advance(i, n) / ranges::next(i, n) / ranges::prev(i, -n) with:
         {
             // random_access_iterator<I>, validating that i += n is called
             using I = trace_iterator<random_access_iterator_tag>;
             {
                 trace t{};
                 I i{t};
-                advance(i, 42);
+                ranges::advance(i, 42);
                 assert(i.pos_ == 42 && t == trace{.seeks_ = 1});
             }
             {
                 trace t{};
-                I i = next(I{t}, 42);
+                I i = ranges::next(I{t}, 42);
                 assert(i.pos_ == 42 && t == trace{.seeks_ = 1});
             }
             {
                 trace t{};
-                I i = next(I{t}, -42);
+                I i = ranges::next(I{t}, -42);
                 assert(i.pos_ == -42 && t == trace{.seeks_ = 1});
             }
             {
                 trace t{};
-                I i = prev(I{t}, 42);
+                I i = ranges::prev(I{t}, 42);
                 assert(i.pos_ == -42 && t == trace{.seeks_ = 1});
             }
             {
                 trace t{};
-                I i = prev(I{t}, -42);
+                I i = ranges::prev(I{t}, -42);
                 assert(i.pos_ == 42 && t == trace{.seeks_ = 1});
             }
         }
@@ -2066,17 +2004,17 @@ namespace iter_ops {
             {
                 trace t{};
                 I i{t};
-                advance(i, 42);
+                ranges::advance(i, 42);
                 assert(i.pos_ == 42 && t == trace{.increments_ = 42});
             }
             {
                 trace t{};
-                I i = next(I{t}, 42);
+                I i = ranges::next(I{t}, 42);
                 assert(i.pos_ == 42 && t == trace{.increments_ = 42});
             }
             {
                 trace t{};
-                I i = prev(I{t}, -42);
+                I i = ranges::prev(I{t}, -42);
                 assert(i.pos_ == 42 && t == trace{.increments_ = 42});
             }
         }
@@ -2086,17 +2024,17 @@ namespace iter_ops {
             {
                 trace t{};
                 I i{t};
-                advance(i, -42);
+                ranges::advance(i, -42);
                 assert(i.pos_ == -42 && t == trace{.decrements_ = 42});
             }
             {
                 trace t{};
-                I i = next(I{t}, -42);
+                I i = ranges::next(I{t}, -42);
                 assert(i.pos_ == -42 && t == trace{.decrements_ = 42});
             }
             {
                 trace t{};
-                I i = prev(I{t}, 42);
+                I i = ranges::prev(I{t}, 42);
                 assert(i.pos_ == -42 && t == trace{.decrements_ = 42});
             }
         }
@@ -2106,12 +2044,12 @@ namespace iter_ops {
             {
                 trace t{};
                 I i{t};
-                advance(i, 42);
+                ranges::advance(i, 42);
                 assert(i.pos_ == 42 && t == trace{.increments_ = 42});
             }
             {
                 trace t{};
-                I i = next(I{t}, 42);
+                I i = ranges::next(I{t}, 42);
                 assert(i.pos_ == 42 && t == trace{.increments_ = 42});
             }
         }
@@ -2121,17 +2059,17 @@ namespace iter_ops {
             {
                 trace t{};
                 R r{t};
-                advance(r, 0);
+                ranges::advance(r, 0);
                 assert(r.pos_ == 0 && t == trace{.seeks_ = 1});
             }
             {
                 trace t{};
-                R r = next(R{t}, 0);
+                R r = ranges::next(R{t}, 0);
                 assert(r.pos_ == 0 && t == trace{.seeks_ = 1});
             }
             {
                 trace t{};
-                R r = prev(R{t}, 0);
+                R r = ranges::prev(R{t}, 0);
                 assert(r.pos_ == 0 && t == trace{.seeks_ = 1});
             }
         }
@@ -2141,17 +2079,17 @@ namespace iter_ops {
             {
                 trace t{};
                 B b{t};
-                advance(b, 0);
+                ranges::advance(b, 0);
                 assert(b.pos_ == 0 && t == trace{});
             }
             {
                 trace t{};
-                B b = next(B{t}, 0);
+                B b = ranges::next(B{t}, 0);
                 assert(b.pos_ == 0 && t == trace{});
             }
             {
                 trace t{};
-                B b = prev(B{t}, 0);
+                B b = ranges::prev(B{t}, 0);
                 assert(b.pos_ == 0 && t == trace{});
             }
         }
@@ -2161,12 +2099,12 @@ namespace iter_ops {
             {
                 trace t{};
                 I i{t};
-                advance(i, 0);
+                ranges::advance(i, 0);
                 assert(i.pos_ == 0 && t == trace{});
             }
             {
                 trace t{};
-                I i = next(I{t}, 0);
+                I i = ranges::next(I{t}, 0);
                 assert(i.pos_ == 0 && t == trace{});
             }
         }
@@ -2176,19 +2114,19 @@ namespace iter_ops {
     STATIC_ASSERT(test_iter_count_forms());
 
     constexpr bool test_iter_sentinel_forms() {
-        // Call advance(i, s) / next(i, s) with:
+        // Call ranges::advance(i, s) / ranges::next(i, s) with:
         {
             // assignable_from<I&, S>, validating that i = s is called
             using I = trace_iterator<input_iterator_tag, sized::no, assign::yes>;
             {
                 trace t{};
                 I i{t};
-                advance(i, default_sentinel);
+                ranges::advance(i, default_sentinel);
                 assert(i.pos_ == sentinel_position && t == trace{.assignments_ = 1});
             }
             {
                 trace t{};
-                I i = next(I{t}, default_sentinel);
+                I i = ranges::next(I{t}, default_sentinel);
                 assert(i.pos_ == sentinel_position && t == trace{.assignments_ = 1});
             }
         }
@@ -2198,12 +2136,12 @@ namespace iter_ops {
             {
                 trace t{};
                 I i{t};
-                advance(i, default_sentinel);
+                ranges::advance(i, default_sentinel);
                 assert((i.pos_ == sentinel_position && t == trace{.differences_ = 1, .seeks_ = 1}));
             }
             {
                 trace t{};
-                I i = next(I{t}, default_sentinel);
+                I i = ranges::next(I{t}, default_sentinel);
                 assert((i.pos_ == sentinel_position && t == trace{.differences_ = 1, .seeks_ = 1}));
             }
         }
@@ -2213,12 +2151,12 @@ namespace iter_ops {
             {
                 trace t{};
                 I i{t};
-                advance(i, default_sentinel);
+                ranges::advance(i, default_sentinel);
                 assert((i.pos_ == sentinel_position && t == trace{.differences_ = 1, .increments_ = 42}));
             }
             {
                 trace t{};
-                I i = next(I{t}, default_sentinel);
+                I i = ranges::next(I{t}, default_sentinel);
                 assert((i.pos_ == sentinel_position && t == trace{.differences_ = 1, .increments_ = 42}));
             }
         }
@@ -2228,12 +2166,12 @@ namespace iter_ops {
             {
                 trace t{};
                 I i{t};
-                advance(i, default_sentinel);
+                ranges::advance(i, default_sentinel);
                 assert((i.pos_ == sentinel_position && t == trace{.compares_ = 43, .increments_ = 42}));
             }
             {
                 trace t{};
-                I i = next(I{t}, default_sentinel);
+                I i = ranges::next(I{t}, default_sentinel);
                 assert((i.pos_ == sentinel_position && t == trace{.compares_ = 43, .increments_ = 42}));
             }
         }
@@ -2243,7 +2181,7 @@ namespace iter_ops {
     STATIC_ASSERT(test_iter_sentinel_forms());
 
     constexpr bool test_iter_count_sentinel_forms() {
-        // Call advance(i, n, s) / next(i, n, s) / prev(i, -n, s) with:
+        // Call ranges::advance(i, n, s) / ranges::next(i, n, s) / ranges::prev(i, -n, s) with:
         //   sized_sentinel_for<S, I> && n < s - i && s - i < 0
         {
             // && bidirectional_iterator<I>, validating that i = s is called (NB: s and i must have the same type),
@@ -2252,18 +2190,18 @@ namespace iter_ops {
             {
                 trace t{};
                 I i{sentinel_position, t};
-                int const result = advance(i, -2 * sentinel_position, I{t});
+                int const result = ranges::advance(i, -2 * sentinel_position, I{t});
                 assert(result == -sentinel_position);
                 assert((i.pos_ == 0 && t == trace{.differences_ = 1, .assignments_ = 1}));
             }
             {
                 trace t{};
-                I i = next(I{sentinel_position, t}, -2 * sentinel_position, I{t});
+                I i = ranges::next(I{sentinel_position, t}, -2 * sentinel_position, I{t});
                 assert((i.pos_ == 0 && t == trace{.differences_ = 1, .assignments_ = 1}));
             }
             {
                 trace t{};
-                I i = prev(I{sentinel_position, t}, 2 * sentinel_position, I{t});
+                I i = ranges::prev(I{sentinel_position, t}, 2 * sentinel_position, I{t});
                 assert((i.pos_ == 0 && t == trace{.differences_ = 1, .assignments_ = 1}));
             }
         }
@@ -2274,23 +2212,23 @@ namespace iter_ops {
             {
                 trace t{};
                 I i{sentinel_position, t};
-                int const result = advance(i, -2 * sentinel_position, I{t});
+                int const result = ranges::advance(i, -2 * sentinel_position, I{t});
                 assert(result == -sentinel_position);
                 assert((i.pos_ == 0 && t == trace{.differences_ = 1, .assignments_ = 1}));
             }
             {
                 trace t{};
-                I i = next(I{sentinel_position, t}, -2 * sentinel_position, I{t});
+                I i = ranges::next(I{sentinel_position, t}, -2 * sentinel_position, I{t});
                 assert((i.pos_ == 0 && t == trace{.differences_ = 1, .assignments_ = 1}));
             }
             {
                 trace t{};
-                I i = prev(I{sentinel_position, t}, 2 * sentinel_position, I{t});
+                I i = ranges::prev(I{sentinel_position, t}, 2 * sentinel_position, I{t});
                 assert((i.pos_ == 0 && t == trace{.differences_ = 1, .assignments_ = 1}));
             }
         }
 
-        // Call advance(i, n, s) / next(i, n, s) / prev(i, -n, s) with:
+        // Call ranges::advance(i, n, s) / ranges::next(i, n, s) / ranges::prev(i, -n, s) with:
         //   sized_sentinel_for<S, I> && n == s - i && s - i < 0
         {
             // && bidirectional_iterator<I>, validating that i = s is called, and the return value is 0
@@ -2298,18 +2236,18 @@ namespace iter_ops {
             {
                 trace t{};
                 I i{sentinel_position, t};
-                int const result = advance(i, -sentinel_position, I{t});
+                int const result = ranges::advance(i, -sentinel_position, I{t});
                 assert(result == 0);
                 assert((i.pos_ == 0 && t == trace{.differences_ = 1, .assignments_ = 1}));
             }
             {
                 trace t{};
-                I i = next(I{sentinel_position, t}, -sentinel_position, I{t});
+                I i = ranges::next(I{sentinel_position, t}, -sentinel_position, I{t});
                 assert((i.pos_ == 0 && t == trace{.differences_ = 1, .assignments_ = 1}));
             }
             {
                 trace t{};
-                I i = prev(I{sentinel_position, t}, sentinel_position, I{t});
+                I i = ranges::prev(I{sentinel_position, t}, sentinel_position, I{t});
                 assert((i.pos_ == 0 && t == trace{.differences_ = 1, .assignments_ = 1}));
             }
         }
@@ -2319,23 +2257,23 @@ namespace iter_ops {
             {
                 trace t{};
                 I i{sentinel_position, t};
-                int const result = advance(i, -sentinel_position, I{t});
+                int const result = ranges::advance(i, -sentinel_position, I{t});
                 assert(result == 0);
                 assert((i.pos_ == 0 && t == trace{.differences_ = 1, .assignments_ = 1}));
             }
             {
                 trace t{};
-                I i = next(I{sentinel_position, t}, -sentinel_position, I{t});
+                I i = ranges::next(I{sentinel_position, t}, -sentinel_position, I{t});
                 assert((i.pos_ == 0 && t == trace{.differences_ = 1, .assignments_ = 1}));
             }
             {
                 trace t{};
-                I i = prev(I{sentinel_position, t}, sentinel_position, I{t});
+                I i = ranges::prev(I{sentinel_position, t}, sentinel_position, I{t});
                 assert((i.pos_ == 0 && t == trace{.differences_ = 1, .assignments_ = 1}));
             }
         }
 
-        // Call advance(i, n, s) / next(i, n, s) / prev(i, -n, s) with:
+        // Call ranges::advance(i, n, s) / ranges::next(i, n, s) / ranges::prev(i, -n, s) with:
         //   sized_sentinel_for<S, I> && s - i < n && n < 0
         {
             // && bidirectional_iterator<I>, validating that --i is called -n times, and the return value is 0
@@ -2343,20 +2281,20 @@ namespace iter_ops {
             {
                 trace t{};
                 I i{sentinel_position, t};
-                int const result = advance(i, -sentinel_position / 2, I{t});
+                int const result = ranges::advance(i, -sentinel_position / 2, I{t});
                 assert(result == 0);
                 assert(i.pos_ == sentinel_position - sentinel_position / 2);
                 assert((t == trace{.differences_ = 1, .decrements_ = sentinel_position / 2}));
             }
             {
                 trace t{};
-                I i = next(I{sentinel_position, t}, -sentinel_position / 2, I{t});
+                I i = ranges::next(I{sentinel_position, t}, -sentinel_position / 2, I{t});
                 assert(i.pos_ == sentinel_position - sentinel_position / 2);
                 assert((t == trace{.differences_ = 1, .decrements_ = sentinel_position / 2}));
             }
             {
                 trace t{};
-                I i = prev(I{sentinel_position, t}, sentinel_position / 2, I{t});
+                I i = ranges::prev(I{sentinel_position, t}, sentinel_position / 2, I{t});
                 assert(i.pos_ == sentinel_position - sentinel_position / 2);
                 assert((t == trace{.differences_ = 1, .decrements_ = sentinel_position / 2}));
             }
@@ -2367,26 +2305,26 @@ namespace iter_ops {
             {
                 trace t{};
                 I i{sentinel_position, t};
-                int const result = advance(i, -sentinel_position / 2, I{t});
+                int const result = ranges::advance(i, -sentinel_position / 2, I{t});
                 assert(result == 0);
                 assert(i.pos_ == sentinel_position - sentinel_position / 2);
                 assert((t == trace{.differences_ = 1, .seeks_ = 1}));
             }
             {
                 trace t{};
-                I i = next(I{sentinel_position, t}, -sentinel_position / 2, I{t});
+                I i = ranges::next(I{sentinel_position, t}, -sentinel_position / 2, I{t});
                 assert(i.pos_ == sentinel_position - sentinel_position / 2);
                 assert((t == trace{.differences_ = 1, .seeks_ = 1}));
             }
             {
                 trace t{};
-                I i = prev(I{sentinel_position, t}, sentinel_position / 2, I{t});
+                I i = ranges::prev(I{sentinel_position, t}, sentinel_position / 2, I{t});
                 assert(i.pos_ == sentinel_position - sentinel_position / 2);
                 assert((t == trace{.differences_ = 1, .seeks_ = 1}));
             }
         }
 
-        // Call advance(i, n, s) / next(i, n, s) / prev(i, -n, s) with:
+        // Call ranges::advance(i, n, s) / ranges::next(i, n, s) / ranges::prev(i, -n, s) with:
         //   sized_sentinel_for<S, I> && s - i < n && n == 0
         {
             // && bidirectional_iterator<I>, validating that there are no effects, and the return value is 0
@@ -2394,18 +2332,18 @@ namespace iter_ops {
             {
                 trace t{};
                 I i{sentinel_position, t};
-                int const result = advance(i, 0, I{t});
+                int const result = ranges::advance(i, 0, I{t});
                 assert(result == 0);
                 assert((i.pos_ == sentinel_position && t == trace{.differences_ = 1}));
             }
             {
                 trace t{};
-                I i = next(I{sentinel_position, t}, 0, I{t});
+                I i = ranges::next(I{sentinel_position, t}, 0, I{t});
                 assert((i.pos_ == sentinel_position && t == trace{.differences_ = 1}));
             }
             {
                 trace t{};
-                I i = prev(I{sentinel_position, t}, 0, I{t});
+                I i = ranges::prev(I{sentinel_position, t}, 0, I{t});
                 assert((i.pos_ == sentinel_position && t == trace{.differences_ = 1}));
             }
         }
@@ -2415,23 +2353,23 @@ namespace iter_ops {
             {
                 trace t{};
                 I i{sentinel_position, t};
-                int const result = advance(i, 0, I{t});
+                int const result = ranges::advance(i, 0, I{t});
                 assert(result == 0);
                 assert((i.pos_ == sentinel_position && t == trace{.differences_ = 1, .seeks_ = 1}));
             }
             {
                 trace t{};
-                I i = next(I{sentinel_position, t}, 0, I{t});
+                I i = ranges::next(I{sentinel_position, t}, 0, I{t});
                 assert((i.pos_ == sentinel_position && t == trace{.differences_ = 1, .seeks_ = 1}));
             }
             {
                 trace t{};
-                I i = prev(I{sentinel_position, t}, 0, I{t});
+                I i = ranges::prev(I{sentinel_position, t}, 0, I{t});
                 assert((i.pos_ == sentinel_position && t == trace{.differences_ = 1, .seeks_ = 1}));
             }
         }
 
-        // Call advance(i, n, s) / next(i, n, s) / prev(i, -n, s) with:
+        // Call ranges::advance(i, n, s) / ranges::next(i, n, s) / ranges::prev(i, -n, s) with:
         //   sized_sentinel_for<S, I> && 0 < s - i && s - i < n
         {
             // && input_iterator<I> && assignable_from<I&, S>, validating that i = s is called, and the return value is
@@ -2440,21 +2378,21 @@ namespace iter_ops {
             {
                 trace t{};
                 I i{t};
-                int const result = advance(i, 2 * sentinel_position, default_sentinel);
+                int const result = ranges::advance(i, 2 * sentinel_position, default_sentinel);
                 assert(result == sentinel_position);
                 assert((i.pos_ == sentinel_position && t == trace{.differences_ = 1, .assignments_ = 1}));
             }
             {
                 trace t{};
-                I i = next(I{t}, 2 * sentinel_position, default_sentinel);
+                I i = ranges::next(I{t}, 2 * sentinel_position, default_sentinel);
                 assert((i.pos_ == sentinel_position && t == trace{.differences_ = 1, .assignments_ = 1}));
             }
 
-            // Ditto, but bidirectional_iterator<I> for prev(i, n, i)
+            // Ditto, but bidirectional_iterator<I> for ranges::prev(i, n, i)
             {
                 using B = trace_iterator<bidirectional_iterator_tag, sized::yes, assign::yes>;
                 trace t{};
-                B b = prev(B{t}, -2 * sentinel_position, B{sentinel_position, t});
+                B b = ranges::prev(B{t}, -2 * sentinel_position, B{sentinel_position, t});
                 assert((b.pos_ == sentinel_position && t == trace{.differences_ = 1, .assignments_ = 1}));
             }
         }
@@ -2464,14 +2402,14 @@ namespace iter_ops {
             {
                 trace t{};
                 I i{t};
-                int const result = advance(i, 2 * sentinel_position, default_sentinel);
+                int const result = ranges::advance(i, 2 * sentinel_position, default_sentinel);
                 assert(result == sentinel_position);
                 assert(i.pos_ == sentinel_position);
                 assert((t == trace{.differences_ = 1, .increments_ = sentinel_position}));
             }
             {
                 trace t{};
-                I const i = next(I{t}, 2 * sentinel_position, default_sentinel);
+                I const i = ranges::next(I{t}, 2 * sentinel_position, default_sentinel);
                 assert(i.pos_ == sentinel_position);
                 assert((t == trace{.differences_ = 1, .increments_ = sentinel_position}));
             }
@@ -2482,18 +2420,18 @@ namespace iter_ops {
             {
                 trace t{};
                 I i{t};
-                int const result = advance(i, 2 * sentinel_position, default_sentinel);
+                int const result = ranges::advance(i, 2 * sentinel_position, default_sentinel);
                 assert(result == sentinel_position);
                 assert((i.pos_ == sentinel_position && t == trace{.differences_ = 1, .seeks_ = 1}));
             }
             {
                 trace t{};
-                I const i = next(I{t}, 2 * sentinel_position, default_sentinel);
+                I const i = ranges::next(I{t}, 2 * sentinel_position, default_sentinel);
                 assert((i.pos_ == sentinel_position && t == trace{.differences_ = 1, .seeks_ = 1}));
             }
         }
 
-        // Call advance(i, n, s) / next(i, n, s) / prev(i, -n, s) with:
+        // Call ranges::advance(i, n, s) / ranges::next(i, n, s) / ranges::prev(i, -n, s) with:
         //   sized_sentinel_for<S, I> && 0 < s - i && s - i == n
         {
             // && input_iterator<I> && assignable_from<I&, S>, validating that i = s is called,
@@ -2502,21 +2440,21 @@ namespace iter_ops {
             {
                 trace t{};
                 I i{t};
-                int const result = advance(i, sentinel_position, default_sentinel);
+                int const result = ranges::advance(i, sentinel_position, default_sentinel);
                 assert(result == 0);
                 assert((i.pos_ == sentinel_position && t == trace{.differences_ = 1, .assignments_ = 1}));
             }
             {
                 trace t{};
-                I const i = next(I{t}, sentinel_position, default_sentinel);
+                I const i = ranges::next(I{t}, sentinel_position, default_sentinel);
                 assert((i.pos_ == sentinel_position && t == trace{.differences_ = 1, .assignments_ = 1}));
             }
 
-            // Ditto, but bidirectional_iterator<I> for prev(i, n, i)
+            // Ditto, but bidirectional_iterator<I> for ranges::prev(i, n, i)
             {
                 using B = trace_iterator<bidirectional_iterator_tag, sized::yes, assign::yes>;
                 trace t{};
-                B b = prev(B{t}, -sentinel_position, B{sentinel_position, t});
+                B b = ranges::prev(B{t}, -sentinel_position, B{sentinel_position, t});
                 assert((b.pos_ == sentinel_position && t == trace{.differences_ = 1, .assignments_ = 1}));
             }
         }
@@ -2526,14 +2464,14 @@ namespace iter_ops {
             {
                 trace t{};
                 I i{t};
-                int const result = advance(i, sentinel_position, default_sentinel);
+                int const result = ranges::advance(i, sentinel_position, default_sentinel);
                 assert(result == 0);
                 assert(i.pos_ == sentinel_position);
                 assert((t == trace{.differences_ = 1, .increments_ = sentinel_position}));
             }
             {
                 trace t{};
-                I const i = next(I{t}, sentinel_position, default_sentinel);
+                I const i = ranges::next(I{t}, sentinel_position, default_sentinel);
                 assert(i.pos_ == sentinel_position);
                 assert((t == trace{.differences_ = 1, .increments_ = sentinel_position}));
             }
@@ -2544,18 +2482,18 @@ namespace iter_ops {
             {
                 trace t{};
                 I i{t};
-                int const result = advance(i, sentinel_position, default_sentinel);
+                int const result = ranges::advance(i, sentinel_position, default_sentinel);
                 assert(result == 0);
                 assert((i.pos_ == sentinel_position && t == trace{.differences_ = 1, .seeks_ = 1}));
             }
             {
                 trace t{};
-                I const i = next(I{t}, sentinel_position, default_sentinel);
+                I const i = ranges::next(I{t}, sentinel_position, default_sentinel);
                 assert((i.pos_ == sentinel_position && t == trace{.differences_ = 1, .seeks_ = 1}));
             }
         }
 
-        // Call advance(i, n, s) / next(i, n, s) / prev(i, -n, s) with:
+        // Call ranges::advance(i, n, s) / ranges::next(i, n, s) / ranges::prev(i, -n, s) with:
         //   sized_sentinel_for<S, I> && 0 < n && n < s - i
         {
             // && input_iterator<I>, validating that ++i is called n times, and the return value is 0
@@ -2563,23 +2501,23 @@ namespace iter_ops {
             {
                 trace t{};
                 I i{t};
-                int const result = advance(i, sentinel_position / 2, default_sentinel);
+                int const result = ranges::advance(i, sentinel_position / 2, default_sentinel);
                 assert(result == 0);
                 assert(i.pos_ == sentinel_position / 2);
                 assert((t == trace{.differences_ = 1, .increments_ = sentinel_position / 2}));
             }
             {
                 trace t{};
-                I const i = next(I{t}, sentinel_position / 2, default_sentinel);
+                I const i = ranges::next(I{t}, sentinel_position / 2, default_sentinel);
                 assert(i.pos_ == sentinel_position / 2);
                 assert((t == trace{.differences_ = 1, .increments_ = sentinel_position / 2}));
             }
 
-            // Ditto, but bidirectional_iterator<I> for prev(i, n, i)
+            // Ditto, but bidirectional_iterator<I> for ranges::prev(i, n, i)
             {
                 using B = trace_iterator<bidirectional_iterator_tag, sized::yes>;
                 trace t{};
-                B b = prev(B{t}, -sentinel_position / 2, B{sentinel_position, t});
+                B b = ranges::prev(B{t}, -sentinel_position / 2, B{sentinel_position, t});
                 assert(b.pos_ == sentinel_position / 2);
                 assert((t == trace{.differences_ = 1, .increments_ = sentinel_position / 2}));
             }
@@ -2590,23 +2528,23 @@ namespace iter_ops {
             {
                 trace t{};
                 I i{t};
-                int const result = advance(i, sentinel_position / 2, default_sentinel);
+                int const result = ranges::advance(i, sentinel_position / 2, default_sentinel);
                 assert(result == 0);
                 assert((i.pos_ == sentinel_position / 2 && t == trace{.differences_ = 1, .seeks_ = 1}));
             }
             {
                 trace t{};
-                I const i = next(I{t}, sentinel_position / 2, default_sentinel);
+                I const i = ranges::next(I{t}, sentinel_position / 2, default_sentinel);
                 assert((i.pos_ == sentinel_position / 2 && t == trace{.differences_ = 1, .seeks_ = 1}));
             }
             {
                 trace t{};
-                I const i = prev(I{t}, -sentinel_position / 2, I{sentinel_position, t});
+                I const i = ranges::prev(I{t}, -sentinel_position / 2, I{sentinel_position, t});
                 assert((i.pos_ == sentinel_position / 2 && t == trace{.differences_ = 1, .seeks_ = 1}));
             }
         }
 
-        // Call advance(i, n, s) / next(i, n, s) / prev(i, -n, s) with:
+        // Call ranges::advance(i, n, s) / ranges::next(i, n, s) / ranges::prev(i, -n, s) with:
         //   sized_sentinel_for<S, I> && 0 == n && n < s - i
         {
             // && input_iterator<I>, validating that there are no effects, and the return value is 0
@@ -2614,21 +2552,21 @@ namespace iter_ops {
             {
                 trace t{};
                 I i{t};
-                int const result = advance(i, 0, default_sentinel);
+                int const result = ranges::advance(i, 0, default_sentinel);
                 assert(result == 0);
                 assert((i.pos_ == 0 && t == trace{.differences_ = 1}));
             }
             {
                 trace t{};
-                I const i = next(I{t}, 0, default_sentinel);
+                I const i = ranges::next(I{t}, 0, default_sentinel);
                 assert((i.pos_ == 0 && t == trace{.differences_ = 1}));
             }
 
-            // Ditto, but bidirectional_iterator<I> for prev(i, n, i)
+            // Ditto, but bidirectional_iterator<I> for ranges::prev(i, n, i)
             {
                 using B = trace_iterator<bidirectional_iterator_tag, sized::yes>;
                 trace t{};
-                B b = prev(B{t}, 0, B{sentinel_position, t});
+                B b = ranges::prev(B{t}, 0, B{sentinel_position, t});
                 assert((b.pos_ == 0 && t == trace{.differences_ = 1}));
             }
         }
@@ -2638,23 +2576,23 @@ namespace iter_ops {
             {
                 trace t{};
                 I i{t};
-                int const result = advance(i, 0, default_sentinel);
+                int const result = ranges::advance(i, 0, default_sentinel);
                 assert(result == 0);
                 assert((i.pos_ == 0 && t == trace{.differences_ = 1, .seeks_ = 1}));
             }
             {
                 trace t{};
-                I const i = next(I{t}, 0, default_sentinel);
+                I const i = ranges::next(I{t}, 0, default_sentinel);
                 assert((i.pos_ == 0 && t == trace{.differences_ = 1, .seeks_ = 1}));
             }
             {
                 trace t{};
-                I const i = prev(I{t}, 0, I{sentinel_position, t});
+                I const i = ranges::prev(I{t}, 0, I{sentinel_position, t});
                 assert((i.pos_ == 0 && t == trace{.differences_ = 1, .seeks_ = 1}));
             }
         }
 
-        // Call advance(i, n, s) / next(i, n, s) / prev(i, -n, s) with:
+        // Call ranges::advance(i, n, s) / ranges::next(i, n, s) / ranges::prev(i, -n, s) with:
         //    n < s - i < 0 && bidirectional_iterator<I>
         {
             // validating that --i is called i - s times, and the return value is n + (i - s)
@@ -2662,26 +2600,26 @@ namespace iter_ops {
             {
                 trace t{};
                 I i{sentinel_position, t};
-                int const result = advance(i, -2 * sentinel_position, I{t});
+                int const result = ranges::advance(i, -2 * sentinel_position, I{t});
                 assert(result == -sentinel_position);
                 assert(i.pos_ == 0);
                 assert((t == trace{.compares_ = sentinel_position + 1, .decrements_ = sentinel_position}));
             }
             {
                 trace t{};
-                I const i = next(I{sentinel_position, t}, -2 * sentinel_position, I{t});
+                I const i = ranges::next(I{sentinel_position, t}, -2 * sentinel_position, I{t});
                 assert(i.pos_ == 0);
                 assert((t == trace{.compares_ = sentinel_position + 1, .decrements_ = sentinel_position}));
             }
             {
                 trace t{};
-                I const i = prev(I{sentinel_position, t}, 2 * sentinel_position, I{t});
+                I const i = ranges::prev(I{sentinel_position, t}, 2 * sentinel_position, I{t});
                 assert(i.pos_ == 0);
                 assert((t == trace{.compares_ = sentinel_position + 1, .decrements_ = sentinel_position}));
             }
         }
 
-        // Call advance(i, n, s) / next(i, n, s) / prev(i, -n, s) with:
+        // Call ranges::advance(i, n, s) / ranges::next(i, n, s) / ranges::prev(i, -n, s) with:
         //   n == s - i && s - i < 0 && bidirectional_iterator<I>
         {
             // validating that --i is called -n times, and the return value is 0
@@ -2689,23 +2627,23 @@ namespace iter_ops {
             {
                 trace t{};
                 I i{sentinel_position, t};
-                int const result = advance(i, -sentinel_position, I{t});
+                int const result = ranges::advance(i, -sentinel_position, I{t});
                 assert(result == 0);
                 assert((i.pos_ == 0 && t == trace{.compares_ = sentinel_position, .decrements_ = sentinel_position}));
             }
             {
                 trace t{};
-                I const i = next(I{sentinel_position, t}, -sentinel_position, I{t});
+                I const i = ranges::next(I{sentinel_position, t}, -sentinel_position, I{t});
                 assert((i.pos_ == 0 && t == trace{.compares_ = sentinel_position, .decrements_ = sentinel_position}));
             }
             {
                 trace t{};
-                I const i = prev(I{sentinel_position, t}, sentinel_position, I{t});
+                I const i = ranges::prev(I{sentinel_position, t}, sentinel_position, I{t});
                 assert((i.pos_ == 0 && t == trace{.compares_ = sentinel_position, .decrements_ = sentinel_position}));
             }
         }
 
-        // Call advance(i, n, s) / next(i, n, s) / prev(i, -n, s) with:
+        // Call ranges::advance(i, n, s) / ranges::next(i, n, s) / ranges::prev(i, -n, s) with:
         //   s - i < n && n < 0 && bidirectional_iterator<I>
         {
             // validating that --i is called -n times, and the return value is 0
@@ -2713,26 +2651,26 @@ namespace iter_ops {
             {
                 trace t{};
                 I i{sentinel_position, t};
-                int const result = advance(i, -sentinel_position / 2, I{t});
+                int const result = ranges::advance(i, -sentinel_position / 2, I{t});
                 assert(result == 0);
                 assert(i.pos_ == sentinel_position - sentinel_position / 2);
                 assert((t == trace{.compares_ = sentinel_position / 2, .decrements_ = sentinel_position / 2}));
             }
             {
                 trace t{};
-                I const i = next(I{sentinel_position, t}, -sentinel_position / 2, I{t});
+                I const i = ranges::next(I{sentinel_position, t}, -sentinel_position / 2, I{t});
                 assert(i.pos_ == sentinel_position - sentinel_position / 2);
                 assert((t == trace{.compares_ = sentinel_position / 2, .decrements_ = sentinel_position / 2}));
             }
             {
                 trace t{};
-                I const i = prev(I{sentinel_position, t}, sentinel_position / 2, I{t});
+                I const i = ranges::prev(I{sentinel_position, t}, sentinel_position / 2, I{t});
                 assert(i.pos_ == sentinel_position - sentinel_position / 2);
                 assert((t == trace{.compares_ = sentinel_position / 2, .decrements_ = sentinel_position / 2}));
             }
         }
 
-        // Call advance(i, n, s) / next(i, n, s) / prev(i, -n, s) with:
+        // Call ranges::advance(i, n, s) / ranges::next(i, n, s) / ranges::prev(i, -n, s) with:
         //   0 < s - i && s - i < n && input_iterator<I>
         {
             // validating that ++i is called i - s times, and the return value is n + (i - s)
@@ -2740,29 +2678,29 @@ namespace iter_ops {
             {
                 trace t{};
                 I i{t};
-                int const result = advance(i, 2 * sentinel_position, default_sentinel);
+                int const result = ranges::advance(i, 2 * sentinel_position, default_sentinel);
                 assert(result == sentinel_position);
                 assert(i.pos_ == sentinel_position);
                 assert((t == trace{.compares_ = sentinel_position + 1, .increments_ = sentinel_position}));
             }
             {
                 trace t{};
-                I const i = next(I{t}, 2 * sentinel_position, default_sentinel);
+                I const i = ranges::next(I{t}, 2 * sentinel_position, default_sentinel);
                 assert(i.pos_ == sentinel_position);
                 assert((t == trace{.compares_ = sentinel_position + 1, .increments_ = sentinel_position}));
             }
 
-            // Ditto, bidirectional_iterator<I> for prev
+            // Ditto, bidirectional_iterator<I> for ranges::prev
             {
                 using B = trace_iterator<bidirectional_iterator_tag>;
                 trace t{};
-                B const b = prev(B{t}, -2 * sentinel_position, B{sentinel_position, t});
+                B const b = ranges::prev(B{t}, -2 * sentinel_position, B{sentinel_position, t});
                 assert(b.pos_ == sentinel_position);
                 assert((t == trace{.compares_ = sentinel_position + 1, .increments_ = sentinel_position}));
             }
         }
 
-        // Call advance(i, n, s) / next(i, n, s) / prev(i, -n, s) with:
+        // Call ranges::advance(i, n, s) / ranges::next(i, n, s) / ranges::prev(i, -n, s) with:
         //   0 < n && n == s - i && input_iterator<I>
         {
             // validating that ++i is called n times, and the return value is 0
@@ -2770,29 +2708,29 @@ namespace iter_ops {
             {
                 trace t{};
                 I i{t};
-                int const result = advance(i, sentinel_position, default_sentinel);
+                int const result = ranges::advance(i, sentinel_position, default_sentinel);
                 assert(result == 0);
                 assert(i.pos_ == sentinel_position);
                 assert((t == trace{.compares_ = sentinel_position, .increments_ = sentinel_position}));
             }
             {
                 trace t{};
-                I const i = next(I{t}, sentinel_position, default_sentinel);
+                I const i = ranges::next(I{t}, sentinel_position, default_sentinel);
                 assert(i.pos_ == sentinel_position);
                 assert((t == trace{.compares_ = sentinel_position, .increments_ = sentinel_position}));
             }
 
-            // Ditto, bidirectional_iterator<I> for prev
+            // Ditto, bidirectional_iterator<I> for ranges::prev
             {
                 using B = trace_iterator<bidirectional_iterator_tag>;
                 trace t{};
-                B const b = prev(B{t}, -sentinel_position, B{sentinel_position, t});
+                B const b = ranges::prev(B{t}, -sentinel_position, B{sentinel_position, t});
                 assert(b.pos_ == sentinel_position);
                 assert((t == trace{.compares_ = sentinel_position, .increments_ = sentinel_position}));
             }
         }
 
-        // Call advance(i, n, s) / next(i, n, s) / prev(i, -n, s) with:
+        // Call ranges::advance(i, n, s) / ranges::next(i, n, s) / ranges::prev(i, -n, s) with:
         //   input_iterator<I> && 0 < n && n < s - i
         {
             // validating that ++i is called n times, and the return value is 0
@@ -2800,23 +2738,23 @@ namespace iter_ops {
             {
                 trace t{};
                 I i{t};
-                int const result = advance(i, sentinel_position / 2, default_sentinel);
+                int const result = ranges::advance(i, sentinel_position / 2, default_sentinel);
                 assert(result == 0);
                 assert(i.pos_ == sentinel_position / 2);
                 assert((t == trace{.compares_ = sentinel_position / 2, .increments_ = sentinel_position / 2}));
             }
             {
                 trace t{};
-                I const i = next(I{t}, sentinel_position / 2, default_sentinel);
+                I const i = ranges::next(I{t}, sentinel_position / 2, default_sentinel);
                 assert(i.pos_ == sentinel_position / 2);
                 assert((t == trace{.compares_ = sentinel_position / 2, .increments_ = sentinel_position / 2}));
             }
 
-            // Ditto, bidirectional_iterator<I> for prev
+            // Ditto, bidirectional_iterator<I> for ranges::prev
             {
                 using B = trace_iterator<bidirectional_iterator_tag>;
                 trace t{};
-                B const b = prev(B{t}, -sentinel_position / 2, B{sentinel_position, t});
+                B const b = ranges::prev(B{t}, -sentinel_position / 2, B{sentinel_position, t});
                 assert(b.pos_ == sentinel_position / 2);
                 assert((t == trace{.compares_ = sentinel_position / 2, .increments_ = sentinel_position / 2}));
             }
@@ -2844,59 +2782,56 @@ namespace iter_ops {
             ++t.begins_;
             return trace_iterator<forward_iterator_tag>{t};
         }
-        constexpr std::default_sentinel_t end() const {
+        constexpr default_sentinel_t end() const {
             ++t.ends_;
             return {};
         }
     };
 
     constexpr bool test_distance() {
-        using ranges::distance, ranges::size;
-        using std::iter_difference_t, std::same_as;
-
         {
-            // Call distance(i, s) with: sized_sentinel_for<S, I> && input_iterator<I> && last - first > 0
+            // Call ranges::distance(i, s) with: sized_sentinel_for<S, I> && input_iterator<I> && last - first > 0
             // Validate return is last - first
             using I = trace_iterator<input_iterator_tag, sized::yes>;
             trace t{};
-            auto const result = distance(I{t}, default_sentinel);
+            auto const result = ranges::distance(I{t}, default_sentinel);
             STATIC_ASSERT(same_as<decltype(result), iter_difference_t<I> const>);
             assert(result == sentinel_position);
             assert((t == trace{.differences_ = 1}));
         }
         {
-            // Call distance(i, s) with:
+            // Call ranges::distance(i, s) with:
             //   sized_sentinel_for<S, I> && forward_iterator<I> && same_as<S, I> && last - first < 0
             // Validate return is last - first
             using I = trace_iterator<forward_iterator_tag, sized::yes>;
             trace t{};
-            auto const result = distance(I{sentinel_position, t}, I{t});
+            auto const result = ranges::distance(I{sentinel_position, t}, I{t});
             STATIC_ASSERT(same_as<decltype(result), iter_difference_t<I> const>);
             assert(result == -sentinel_position);
             assert((t == trace{.differences_ = 1}));
         }
         {
-            // Call distance(i, s) with: !sized_sentinel_for<S, I> && input_iterator<I> && last - first > 0
+            // Call ranges::distance(i, s) with: !sized_sentinel_for<S, I> && input_iterator<I> && last - first > 0
             // Validate return is last - first, and increment is called last - first times
             using I = trace_iterator<input_iterator_tag>;
             trace t{};
-            auto const result = distance(I{t}, default_sentinel);
+            auto const result = ranges::distance(I{t}, default_sentinel);
             STATIC_ASSERT(same_as<decltype(result), iter_difference_t<I> const>);
             assert(result == sentinel_position);
             assert((t == trace{.compares_ = sentinel_position + 1, .increments_ = sentinel_position}));
         }
         {
-            // Call distance(r) with: sized_range<R>, validate that begin and end are not called
+            // Call ranges::distance(r) with: sized_range<R>, validate that begin and end are not called
             sized_test_range r{};
-            auto const result = distance(r);
-            STATIC_ASSERT(same_as<decltype(result), std::ptrdiff_t const>);
+            auto const result = ranges::distance(r);
+            STATIC_ASSERT(same_as<decltype(result), ptrdiff_t const>);
             assert(result == 42);
             assert((r.t == trace{.sizes_ = 1}));
         }
         {
-            // Call distance(r) with: !sized_range<R>, validate that begin and end are called
+            // Call ranges::distance(r) with: !sized_range<R>, validate that begin and end are called
             unsized_test_range r{};
-            assert(distance(r) == sentinel_position);
+            assert(ranges::distance(r) == sentinel_position);
             trace const expected{
                 .compares_ = sentinel_position + 1, .increments_ = sentinel_position, .begins_ = 1, .ends_ = 1};
             assert(r.t == expected);
@@ -2919,9 +2854,6 @@ namespace iter_ops {
 namespace insert_iterators {
     template <class Container>
     constexpr bool test() {
-        using std::back_insert_iterator, std::front_insert_iterator, std::insert_iterator;
-        using std::iter_difference_t, std::ptrdiff_t, std::same_as;
-
         STATIC_ASSERT(same_as<iter_difference_t<back_insert_iterator<Container>>, ptrdiff_t>);
         STATIC_ASSERT(same_as<iter_difference_t<front_insert_iterator<Container>>, ptrdiff_t>);
         STATIC_ASSERT(same_as<iter_difference_t<insert_iterator<Container>>, ptrdiff_t>);
@@ -2929,8 +2861,8 @@ namespace insert_iterators {
         return true;
     }
 
-    STATIC_ASSERT(test<std::list<double>>());
-    STATIC_ASSERT(test<std::vector<int>>());
+    STATIC_ASSERT(test<list<double>>());
+    STATIC_ASSERT(test<vector<int>>());
 
     struct container {
         using value_type = int;
@@ -2953,7 +2885,7 @@ namespace insert_iterators {
     constexpr bool test_insert_relaxation() {
         // Verify that insert_iterator correctly does not require a nested `iterator` typename
         container c;
-        std::insert_iterator i(c, c.begin());
+        insert_iterator i(c, c.begin());
         *i = 42;
         assert(c.value == 42);
         return true;
@@ -2963,9 +2895,6 @@ namespace insert_iterators {
 } // namespace insert_iterators
 
 namespace reverse_iterator_test {
-    using std::bidirectional_iterator_tag, std::random_access_iterator_tag, std::reverse_iterator, std::same_as,
-        std::string, std::three_way_comparable, std::three_way_comparable_with;
-
     // Validate the iterator_concept/iterator_category metaprogramming
     STATIC_ASSERT(same_as<reverse_iterator<simple_contiguous_iter<>>::iterator_concept, random_access_iterator_tag>);
     STATIC_ASSERT(same_as<reverse_iterator<simple_contiguous_iter<>>::iterator_category, random_access_iterator_tag>);
@@ -3013,7 +2942,7 @@ namespace reverse_iterator_test {
     STATIC_ASSERT(has_greater<reverse_iterator<simple_random_iter<>>>);
     STATIC_ASSERT(has_less_eq<reverse_iterator<simple_random_iter<>>>);
     STATIC_ASSERT(has_greater_eq<reverse_iterator<simple_random_iter<>>>);
-    STATIC_ASSERT(three_way_comparable<reverse_iterator<simple_random_iter<>>, std::strong_ordering>);
+    STATIC_ASSERT(three_way_comparable<reverse_iterator<simple_random_iter<>>, strong_ordering>);
 
     STATIC_ASSERT(has_eq<reverse_iterator<int*>, reverse_iterator<int const*>>);
     STATIC_ASSERT(has_neq<reverse_iterator<int*>, reverse_iterator<int const*>>);
@@ -3021,8 +2950,7 @@ namespace reverse_iterator_test {
     STATIC_ASSERT(has_greater<reverse_iterator<int*>, reverse_iterator<int const*>>);
     STATIC_ASSERT(has_less_eq<reverse_iterator<int*>, reverse_iterator<int const*>>);
     STATIC_ASSERT(has_greater_eq<reverse_iterator<int*>, reverse_iterator<int const*>>);
-    STATIC_ASSERT(
-        three_way_comparable_with<reverse_iterator<int*>, reverse_iterator<int const*>, std::strong_ordering>);
+    STATIC_ASSERT(three_way_comparable_with<reverse_iterator<int*>, reverse_iterator<int const*>, strong_ordering>);
 
     STATIC_ASSERT(!has_eq<reverse_iterator<int*>, reverse_iterator<string*>>);
     STATIC_ASSERT(!has_neq<reverse_iterator<int*>, reverse_iterator<string*>>);
@@ -3047,7 +2975,7 @@ namespace reverse_iterator_test {
         int some_ints[] = {3, 2, 1, 0};
         reverse_iterator<int*> ri{&some_ints[1]};
         reverse_iterator<int const*> ric{&some_ints[2]};
-        assert((ri <=> ric) == std::strong_ordering::greater);
+        assert((ri <=> ric) == strong_ordering::greater);
 
         return true;
     }
@@ -3066,20 +2994,15 @@ namespace reverse_iterator_test {
 } // namespace reverse_iterator_test
 
 template <>
-inline constexpr bool std::disable_sized_sentinel_for<reverse_iterator_test::simple_no_difference,
+inline constexpr bool disable_sized_sentinel_for<reverse_iterator_test::simple_no_difference,
     reverse_iterator_test::simple_no_difference> = true;
 
 namespace reverse_iterator_test {
-    STATIC_ASSERT(!std::sized_sentinel_for<simple_no_difference, simple_no_difference>);
-    STATIC_ASSERT(
-        !std::sized_sentinel_for<reverse_iterator<simple_no_difference>, reverse_iterator<simple_no_difference>>);
+    STATIC_ASSERT(!sized_sentinel_for<simple_no_difference, simple_no_difference>);
+    STATIC_ASSERT(!sized_sentinel_for<reverse_iterator<simple_no_difference>, reverse_iterator<simple_no_difference>>);
 } // namespace reverse_iterator_test
 
 namespace move_iterator_test {
-    using std::bidirectional_iterator_tag, std::default_sentinel_t, std::forward_iterator_tag, std::input_iterator_tag,
-        std::move_iterator, std::move_sentinel, std::random_access_iterator_tag, std::same_as, std::string,
-        std::three_way_comparable, std::three_way_comparable_with;
-
     template <bool CanCopy>
     struct input_iter {
         using iterator_concept = input_iterator_tag;
@@ -3112,13 +3035,13 @@ namespace move_iterator_test {
         }
         friend void iter_swap(input_iter const&, input_iter const&) noexcept {}
 
-        friend bool operator==(input_iter const&, std::default_sentinel_t) {
+        friend bool operator==(input_iter const&, default_sentinel_t) {
             return true;
         }
-        friend int operator-(input_iter const&, std::default_sentinel_t) {
+        friend int operator-(input_iter const&, default_sentinel_t) {
             return 0;
         }
-        friend int operator-(std::default_sentinel_t, input_iter const&) {
+        friend int operator-(default_sentinel_t, input_iter const&) {
             return 0;
         }
     };
@@ -3131,22 +3054,22 @@ namespace move_iterator_test {
 } // namespace move_iterator_test
 
 template <>
-struct std::common_type<move_iterator_test::input_iter<false>::reference,
+struct common_type<move_iterator_test::input_iter<false>::reference,
     move_iterator_test::input_iter<false>::rvalue_reference> {
     using type = move_iterator_test::common;
 };
 template <>
-struct std::common_type<move_iterator_test::input_iter<false>::rvalue_reference,
+struct common_type<move_iterator_test::input_iter<false>::rvalue_reference,
     move_iterator_test::input_iter<false>::reference> {
     using type = move_iterator_test::common;
 };
 template <>
-struct std::common_type<move_iterator_test::input_iter<true>::reference,
+struct common_type<move_iterator_test::input_iter<true>::reference,
     move_iterator_test::input_iter<true>::rvalue_reference> {
     using type = move_iterator_test::common;
 };
 template <>
-struct std::common_type<move_iterator_test::input_iter<true>::rvalue_reference,
+struct common_type<move_iterator_test::input_iter<true>::rvalue_reference,
     move_iterator_test::input_iter<true>::reference> {
     using type = move_iterator_test::common;
 };
@@ -3196,7 +3119,7 @@ namespace move_iterator_test {
     STATIC_ASSERT(has_greater<move_iterator<simple_random_iter<>>>);
     STATIC_ASSERT(has_less_eq<move_iterator<simple_random_iter<>>>);
     STATIC_ASSERT(has_greater_eq<move_iterator<simple_random_iter<>>>);
-    STATIC_ASSERT(three_way_comparable<move_iterator<simple_random_iter<>>, std::strong_ordering>);
+    STATIC_ASSERT(three_way_comparable<move_iterator<simple_random_iter<>>, strong_ordering>);
 
     STATIC_ASSERT(has_eq<move_iterator<int*>, move_iterator<int const*>>);
     STATIC_ASSERT(has_neq<move_iterator<int*>, move_iterator<int const*>>);
@@ -3204,7 +3127,7 @@ namespace move_iterator_test {
     STATIC_ASSERT(has_greater<move_iterator<int*>, move_iterator<int const*>>);
     STATIC_ASSERT(has_less_eq<move_iterator<int*>, move_iterator<int const*>>);
     STATIC_ASSERT(has_greater_eq<move_iterator<int*>, move_iterator<int const*>>);
-    STATIC_ASSERT(three_way_comparable_with<move_iterator<int*>, move_iterator<int const*>, std::strong_ordering>);
+    STATIC_ASSERT(three_way_comparable_with<move_iterator<int*>, move_iterator<int const*>, strong_ordering>);
 
     STATIC_ASSERT(!has_eq<move_iterator<int*>, move_iterator<string*>>);
     STATIC_ASSERT(!has_neq<move_iterator<int*>, move_iterator<string*>>);
@@ -3240,27 +3163,24 @@ namespace move_iterator_test {
     STATIC_ASSERT(!has_difference<move_iterator<input_iter<false>>, move_sentinel<int>>);
     STATIC_ASSERT(!has_difference<move_sentinel<int>, move_iterator<input_iter<false>>>);
 
-    STATIC_ASSERT(has_eq<move_iterator<input_iter<false>>, move_sentinel<std::default_sentinel_t>>);
-    STATIC_ASSERT(has_neq<move_iterator<input_iter<false>>, move_sentinel<std::default_sentinel_t>>);
-    STATIC_ASSERT(!has_less<move_iterator<input_iter<false>>, move_sentinel<std::default_sentinel_t>>);
-    STATIC_ASSERT(!has_greater<move_iterator<input_iter<false>>, move_sentinel<std::default_sentinel_t>>);
-    STATIC_ASSERT(!has_less_eq<move_iterator<input_iter<false>>, move_sentinel<std::default_sentinel_t>>);
-    STATIC_ASSERT(!has_greater_eq<move_iterator<input_iter<false>>, move_sentinel<std::default_sentinel_t>>);
-    STATIC_ASSERT(!three_way_comparable_with<move_iterator<input_iter<false>>, move_sentinel<std::default_sentinel_t>>);
-    STATIC_ASSERT(has_difference<move_iterator<input_iter<false>>, move_sentinel<std::default_sentinel_t>>);
-    STATIC_ASSERT(has_difference<move_sentinel<std::default_sentinel_t>, move_iterator<input_iter<false>>>);
+    STATIC_ASSERT(has_eq<move_iterator<input_iter<false>>, move_sentinel<default_sentinel_t>>);
+    STATIC_ASSERT(has_neq<move_iterator<input_iter<false>>, move_sentinel<default_sentinel_t>>);
+    STATIC_ASSERT(!has_less<move_iterator<input_iter<false>>, move_sentinel<default_sentinel_t>>);
+    STATIC_ASSERT(!has_greater<move_iterator<input_iter<false>>, move_sentinel<default_sentinel_t>>);
+    STATIC_ASSERT(!has_less_eq<move_iterator<input_iter<false>>, move_sentinel<default_sentinel_t>>);
+    STATIC_ASSERT(!has_greater_eq<move_iterator<input_iter<false>>, move_sentinel<default_sentinel_t>>);
+    STATIC_ASSERT(!three_way_comparable_with<move_iterator<input_iter<false>>, move_sentinel<default_sentinel_t>>);
+    STATIC_ASSERT(has_difference<move_iterator<input_iter<false>>, move_sentinel<default_sentinel_t>>);
+    STATIC_ASSERT(has_difference<move_sentinel<default_sentinel_t>, move_iterator<input_iter<false>>>);
 
-    STATIC_ASSERT(has_eq<move_iterator<simple_random_iter<sentinel_base>>, move_sentinel<std::default_sentinel_t>>);
-    STATIC_ASSERT(has_neq<move_iterator<simple_random_iter<sentinel_base>>, move_sentinel<std::default_sentinel_t>>);
-    STATIC_ASSERT(!has_less<move_iterator<simple_random_iter<sentinel_base>>, move_sentinel<std::default_sentinel_t>>);
+    STATIC_ASSERT(has_eq<move_iterator<simple_random_iter<sentinel_base>>, move_sentinel<default_sentinel_t>>);
+    STATIC_ASSERT(has_neq<move_iterator<simple_random_iter<sentinel_base>>, move_sentinel<default_sentinel_t>>);
+    STATIC_ASSERT(!has_less<move_iterator<simple_random_iter<sentinel_base>>, move_sentinel<default_sentinel_t>>);
+    STATIC_ASSERT(!has_greater<move_iterator<simple_random_iter<sentinel_base>>, move_sentinel<default_sentinel_t>>);
+    STATIC_ASSERT(!has_less_eq<move_iterator<simple_random_iter<sentinel_base>>, move_sentinel<default_sentinel_t>>);
+    STATIC_ASSERT(!has_greater_eq<move_iterator<simple_random_iter<sentinel_base>>, move_sentinel<default_sentinel_t>>);
     STATIC_ASSERT(
-        !has_greater<move_iterator<simple_random_iter<sentinel_base>>, move_sentinel<std::default_sentinel_t>>);
-    STATIC_ASSERT(
-        !has_less_eq<move_iterator<simple_random_iter<sentinel_base>>, move_sentinel<std::default_sentinel_t>>);
-    STATIC_ASSERT(
-        !has_greater_eq<move_iterator<simple_random_iter<sentinel_base>>, move_sentinel<std::default_sentinel_t>>);
-    STATIC_ASSERT(!three_way_comparable<move_iterator<simple_random_iter<sentinel_base>>,
-                  move_sentinel<std::default_sentinel_t>>);
+        !three_way_comparable<move_iterator<simple_random_iter<sentinel_base>>, move_sentinel<default_sentinel_t>>);
 
     constexpr bool test() {
         // Validate iter_move
@@ -3283,9 +3203,9 @@ namespace move_iterator_test {
         int some_ints[] = {3, 2, 1, 0};
         move_iterator<int*> mi{&some_ints[1]};
         move_iterator<int const*> mic{&some_ints[2]};
-        assert((mi <=> mi) == std::strong_ordering::equal);
-        assert((mi <=> mic) == std::strong_ordering::less);
-        assert((mic <=> mi) == std::strong_ordering::greater);
+        assert((mi <=> mi) == strong_ordering::equal);
+        assert((mi <=> mic) == strong_ordering::less);
+        assert((mic <=> mi) == strong_ordering::greater);
 
         return true;
     }
@@ -3293,10 +3213,6 @@ namespace move_iterator_test {
 } // namespace move_iterator_test
 
 namespace counted_iterator_test {
-    using std::bidirectional_iterator_tag, std::default_sentinel_t, std::forward_iterator_tag, std::input_iterator_tag,
-        std::iterator_traits, std::counted_iterator, std::random_access_iterator_tag, std::same_as, std::string,
-        std::three_way_comparable, std::three_way_comparable_with;
-
     // Validate the iterator_concept/iterator_category metaprogramming
     STATIC_ASSERT(same_as<iterator_traits<counted_iterator<simple_contiguous_iter<>>>::iterator_category,
         random_access_iterator_tag>);
@@ -3309,7 +3225,7 @@ namespace counted_iterator_test {
     STATIC_ASSERT(same_as<iterator_traits<counted_iterator<simple_input_iter>>::iterator_category, input_iterator_tag>);
 
     // Validate postincrement
-    STATIC_ASSERT(same_as<decltype(std::declval<counted_iterator<simple_input_iter>&>()++), simple_input_iter>);
+    STATIC_ASSERT(same_as<decltype(declval<counted_iterator<simple_input_iter>&>()++), simple_input_iter>);
     STATIC_ASSERT(
         same_as<decltype(counted_iterator<simple_forward_iter<>> {} ++), counted_iterator<simple_forward_iter<>>>);
 
@@ -3336,7 +3252,7 @@ namespace counted_iterator_test {
     STATIC_ASSERT(has_greater<counted_iterator<simple_random_iter<>>>);
     STATIC_ASSERT(has_less_eq<counted_iterator<simple_random_iter<>>>);
     STATIC_ASSERT(has_greater_eq<counted_iterator<simple_random_iter<>>>);
-    STATIC_ASSERT(three_way_comparable<counted_iterator<simple_random_iter<>>, std::strong_ordering>);
+    STATIC_ASSERT(three_way_comparable<counted_iterator<simple_random_iter<>>, strong_ordering>);
 
     STATIC_ASSERT(has_eq<counted_iterator<int*>, counted_iterator<int const*>>);
     STATIC_ASSERT(has_neq<counted_iterator<int*>, counted_iterator<int const*>>);
@@ -3344,8 +3260,7 @@ namespace counted_iterator_test {
     STATIC_ASSERT(has_greater<counted_iterator<int*>, counted_iterator<int const*>>);
     STATIC_ASSERT(has_less_eq<counted_iterator<int*>, counted_iterator<int const*>>);
     STATIC_ASSERT(has_greater_eq<counted_iterator<int*>, counted_iterator<int const*>>);
-    STATIC_ASSERT(
-        three_way_comparable_with<counted_iterator<int*>, counted_iterator<int const*>, std::strong_ordering>);
+    STATIC_ASSERT(three_way_comparable_with<counted_iterator<int*>, counted_iterator<int const*>, strong_ordering>);
 
     STATIC_ASSERT(!has_eq<counted_iterator<int*>, counted_iterator<string*>>);
     STATIC_ASSERT(!has_neq<counted_iterator<int*>, counted_iterator<string*>>);
@@ -3372,20 +3287,18 @@ namespace lwg3420 {
     // results in constraint recursion.
     struct X {
         X() = default;
-        template <std::copyable T>
+        template <copyable T>
         X(T const&);
     };
-    STATIC_ASSERT(!has_member_iter_concept<std::iterator_traits<X>>);
-    STATIC_ASSERT(!has_member_iter_category<std::iterator_traits<X>>);
-    STATIC_ASSERT(!has_member_difference_type<std::iterator_traits<X>>);
-    STATIC_ASSERT(!has_member_value_type<std::iterator_traits<X>>);
+    STATIC_ASSERT(!has_member_iter_concept<iterator_traits<X>>);
+    STATIC_ASSERT(!has_member_iter_category<iterator_traits<X>>);
+    STATIC_ASSERT(!has_member_difference_type<iterator_traits<X>>);
+    STATIC_ASSERT(!has_member_value_type<iterator_traits<X>>);
 } // namespace lwg3420
 
 namespace vso1121031 {
     // Validate that indirectly_readable_traits accepts type arguments with both value_type and element_type nested
     // types if they are consistent.
-    using std::indirectly_readable_traits, std::same_as;
-
     template <class Element>
     struct iterish {
         using value_type   = int;

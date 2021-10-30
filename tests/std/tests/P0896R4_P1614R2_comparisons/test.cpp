@@ -13,7 +13,6 @@
 
 #include <cassert>
 #include <compare>
-#include <concepts>
 #include <functional>
 #include <ranges>
 #include <type_traits>
@@ -21,13 +20,7 @@
 
 #define STATIC_ASSERT(...) static_assert(__VA_ARGS__, #__VA_ARGS__)
 
-namespace ranges = std::ranges;
-
-using std::common_comparison_category_t;
-using std::compare_three_way, std::compare_three_way_result, std::compare_three_way_result_t;
-using std::partial_ordering, std::weak_ordering, std::strong_ordering;
-using std::same_as, std::convertible_to;
-using std::three_way_comparable, std::three_way_comparable_with;
+using namespace std;
 
 template <class T, class... Types>
 constexpr bool is_one_of = (same_as<T, Types> || ...);
@@ -48,21 +41,21 @@ struct common_incomparable {
 // Validate properties common to the concept-constrained comparison object types
 template <class T>
 constexpr bool is_trivially_constexpr() {
-    STATIC_ASSERT(std::semiregular<T>);
+    STATIC_ASSERT(semiregular<T>);
 
     // Not required, but likely portable nonetheless:
-    STATIC_ASSERT(std::is_empty_v<T>);
-    STATIC_ASSERT(std::is_trivial_v<T>);
-    STATIC_ASSERT(std::is_trivially_copy_constructible_v<T>);
-    STATIC_ASSERT(std::is_trivially_move_constructible_v<T>);
-    STATIC_ASSERT(std::is_trivially_copy_assignable_v<T>);
-    STATIC_ASSERT(std::is_trivially_move_assignable_v<T>);
+    STATIC_ASSERT(is_empty_v<T>);
+    STATIC_ASSERT(is_trivial_v<T>);
+    STATIC_ASSERT(is_trivially_copy_constructible_v<T>);
+    STATIC_ASSERT(is_trivially_move_constructible_v<T>);
+    STATIC_ASSERT(is_trivially_copy_assignable_v<T>);
+    STATIC_ASSERT(is_trivially_move_assignable_v<T>);
 
     // Not required to be constant expressions, but likely portable nonetheless:
     T value_initialized{};
     T copy_constructed = value_initialized;
-    T move_constructed = std::move(copy_constructed);
-    copy_constructed   = std::move(move_constructed);
+    T move_constructed = move(copy_constructed);
+    copy_constructed   = move(move_constructed);
     move_constructed   = copy_constructed;
 
     return true;
@@ -117,7 +110,7 @@ constexpr bool test_three_way_comparable1() {
 }
 
 template <int... Is>
-constexpr bool test_three_way_comparable(std::integer_sequence<int, Is...>) {
+constexpr bool test_three_way_comparable(integer_sequence<int, Is...>) {
     (test_three_way_comparable1<three_way_archetype<Is, partial_ordering>, void>(), ...);
     (test_three_way_comparable1<three_way_archetype<Is, weak_ordering>, void>(), ...);
     (test_three_way_comparable1<three_way_archetype<Is, strong_ordering>, void>(), ...);
@@ -130,7 +123,7 @@ constexpr bool test_three_way_comparable(std::integer_sequence<int, Is...>) {
 
     return true;
 }
-STATIC_ASSERT(test_three_way_comparable(std::make_integer_sequence<int, three_way_archetype_max>{}));
+STATIC_ASSERT(test_three_way_comparable(make_integer_sequence<int, three_way_archetype_max>{}));
 
 // Validate three_way_comparable_with
 // clang-format off
@@ -139,7 +132,7 @@ STATIC_ASSERT(test_three_way_comparable(std::make_integer_sequence<int, three_wa
 // 5: common_reference_t is not three_way_comparable
 template <int I1, class Cat1, int I2, class Cat2>
     requires ((I1 != I2 || !same_as<Cat1, Cat2>) && I1 != 4 && I2 != 4)
-struct std::common_type<three_way_archetype<I1, Cat1>, three_way_archetype<I2, Cat2>> {
+struct common_type<three_way_archetype<I1, Cat1>, three_way_archetype<I2, Cat2>> {
     using type = conditional_t<I1 == 5 || I2 == 5, ::common_incomparable, ::common_comparable>;
 };
 
@@ -204,7 +197,7 @@ constexpr bool test_three_way_comparable_with1() {
 }
 
 template <int... Is>
-constexpr bool test_three_way_comparable_with(std::integer_sequence<int, Is...>) {
+constexpr bool test_three_way_comparable_with(integer_sequence<int, Is...>) {
     (test_three_way_comparable_with1<three_way_archetype<Is, partial_ordering>, void>(), ...);
     (test_three_way_comparable_with1<three_way_archetype<Is, weak_ordering>, void>(), ...);
     (test_three_way_comparable_with1<three_way_archetype<Is, strong_ordering>, void>(), ...);
@@ -217,7 +210,7 @@ constexpr bool test_three_way_comparable_with(std::integer_sequence<int, Is...>)
 
     return true;
 }
-STATIC_ASSERT(test_three_way_comparable_with(std::make_integer_sequence<int, three_way_with_max>{}));
+STATIC_ASSERT(test_three_way_comparable_with(make_integer_sequence<int, three_way_with_max>{}));
 
 // Validate static properties of compare_three_way, compare_three_way_result, and compare_three_way_result_t
 template <class T>
@@ -232,20 +225,20 @@ concept can_three_way = requires(T const& t, U const& u) {
 
 template <class T, class U, class Cat>
 constexpr bool test_compare_three_way() {
-    STATIC_ASSERT(same_as<T, std::remove_cvref_t<T>>);
-    STATIC_ASSERT(same_as<U, std::remove_cvref_t<U>>);
+    STATIC_ASSERT(same_as<T, remove_cvref_t<T>>);
+    STATIC_ASSERT(same_as<U, remove_cvref_t<U>>);
 
-    STATIC_ASSERT(can_three_way<T, U> == !std::is_void_v<Cat>);
-    STATIC_ASSERT(can_three_way<U, T> == !std::is_void_v<Cat>);
+    STATIC_ASSERT(can_three_way<T, U> == !is_void_v<Cat>);
+    STATIC_ASSERT(can_three_way<U, T> == !is_void_v<Cat>);
     if constexpr (can_three_way<T, U>) {
-        STATIC_ASSERT(same_as<decltype(std::declval<T const&>() <=> std::declval<U const&>()), Cat>);
-        STATIC_ASSERT(same_as<decltype(std::declval<U const&>() <=> std::declval<T const&>()), Cat>);
+        STATIC_ASSERT(same_as<decltype(declval<T const&>() <=> declval<U const&>()), Cat>);
+        STATIC_ASSERT(same_as<decltype(declval<U const&>() <=> declval<T const&>()), Cat>);
         STATIC_ASSERT(same_as<compare_three_way_result_t<T, U>, Cat>);
         STATIC_ASSERT(same_as<compare_three_way_result_t<U, T>, Cat>);
         STATIC_ASSERT(same_as<typename compare_three_way_result<T, U>::type, Cat>);
         STATIC_ASSERT(same_as<typename compare_three_way_result<U, T>::type, Cat>);
-        STATIC_ASSERT(same_as<decltype(compare_three_way{}(std::declval<T const&>(), std::declval<U const&>())), Cat>);
-        STATIC_ASSERT(same_as<decltype(compare_three_way{}(std::declval<U const&>(), std::declval<T const&>())), Cat>);
+        STATIC_ASSERT(same_as<decltype(compare_three_way{}(declval<T const&>(), declval<U const&>())), Cat>);
+        STATIC_ASSERT(same_as<decltype(compare_three_way{}(declval<U const&>(), declval<T const&>())), Cat>);
     } else {
         STATIC_ASSERT(!is_trait<compare_three_way_result<T, U>>);
         STATIC_ASSERT(!is_trait<compare_three_way_result<U, T>>);
@@ -280,7 +273,7 @@ template <class Cat1, class Cat2>
 common_comparison_category_t<Cat1, Cat2> operator<=>(compares_as<Cat1> const&, compares_as<Cat2> const&);
 
 template <class Cat1, class Cat2>
-struct std::common_type<compares_as<Cat1>, compares_as<Cat2>> {
+struct common_type<compares_as<Cat1>, compares_as<Cat2>> {
     using type = common_comparable;
 };
 
@@ -424,24 +417,24 @@ constexpr void ordering_test_cases() {
 
     int const some_ints[] = {13, 42};
     test_strongly_ordered(&some_ints[0], &some_ints[1]);
-    std::pair<int, int> const int_pair{13, 42};
+    pair<int, int> const int_pair{13, 42};
     test_strongly_ordered(&int_pair.first, &int_pair.second);
 
     derived const some_deriveds[2] = {};
     test_strongly_ordered(&some_deriveds[0], &some_deriveds[1]);
 #if !defined(__clang__) && !defined(__EDG__) // TRANSITION, VSO-1168721
-    if (!std::is_constant_evaluated())
+    if (!is_constant_evaluated())
 #endif // TRANSITION, VSO-1168721
     {
         test_strongly_ordered(static_cast<base const*>(&some_deriveds[0]), &some_deriveds[1]);
         test_strongly_ordered(&some_deriveds[0], static_cast<base const*>(&some_deriveds[1]));
     }
 
-    if (!std::is_constant_evaluated()) {
+    if (!is_constant_evaluated()) {
         test_strongly_ordered(&some_ints[0], static_cast<void const*>(&some_ints[1]));
         test_strongly_ordered(static_cast<void const*>(&some_ints[0]), &some_ints[1]);
 
-        std::pair<int, long> const int_long_pair{13, 42L};
+        pair<int, long> const int_long_pair{13, 42L};
         test_strongly_ordered(static_cast<void const*>(&int_long_pair.first), &int_long_pair.second);
         test_strongly_ordered(&int_long_pair.first, static_cast<void const*>(&int_long_pair.second));
     }
@@ -452,7 +445,7 @@ constexpr void ordering_test_cases() {
     test_partially_ordered(1.414, 3.14f, partial_ordering::less);
     test_partially_ordered(31.625f, 31.625, partial_ordering::equivalent);
 #if !defined(__clang__) && !defined(__EDG__) // TRANSITION, VSO-1062601
-    if (!std::is_constant_evaluated())
+    if (!is_constant_evaluated())
 #endif // TRANSITION, VSO-1062601
     {
         test_partially_ordered(3.14, NaN, partial_ordering::unordered);

@@ -4,23 +4,24 @@
 #include <algorithm>
 #include <array>
 #include <cassert>
-#include <concepts>
 #include <ranges>
 #include <span>
 #include <utility>
 
 #include <range_algorithm_support.hpp>
 
+using namespace std;
+
 constexpr void smoke_test() {
-    using ranges::adjacent_find, ranges::iterator_t, std::same_as;
-    using P = std::pair<int, int>;
+    using ranges::adjacent_find, ranges::iterator_t;
+    using P = pair<int, int>;
 
     // Validate dangling story
     STATIC_ASSERT(same_as<decltype(adjacent_find(borrowed<false>{}, ranges::equal_to{})), ranges::dangling>);
     STATIC_ASSERT(same_as<decltype(adjacent_find(borrowed<true>{}, ranges::equal_to{})), int*>);
 
-    const std::array pairs = {P{0, 42}, P{1, 42}, P{2, 42}, P{4, 42}, P{5, 42}};
-    const auto pred        = [](const int x, const int y) { return y - x > 1; };
+    const array pairs = {P{0, 42}, P{1, 42}, P{2, 42}, P{4, 42}, P{5, 42}};
+    const auto pred   = [](const int x, const int y) { return y - x > 1; };
 
     {
         // Validate range overload [found case]
@@ -57,7 +58,7 @@ struct instantiator {
     static constexpr int some_ints[] = {1, 2, 3};
     template <class Fwd>
     static void call() {
-        Fwd fwd{std::span{some_ints}};
+        Fwd fwd{span{some_ints}};
         using ranges::adjacent_find, ranges::iterator_t;
 
         (void) adjacent_find(fwd);

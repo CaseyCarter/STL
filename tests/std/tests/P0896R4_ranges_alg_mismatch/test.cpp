@@ -4,21 +4,21 @@
 #include <algorithm>
 #include <array>
 #include <cassert>
-#include <concepts>
 #include <ranges>
 #include <span>
 #include <utility>
 
 #include <range_algorithm_support.hpp>
 
+using namespace std;
+
 constexpr void smoke_test() {
     using ranges::dangling, ranges::equal_to, ranges::iterator_t, ranges::mismatch, ranges::mismatch_result;
-    using std::same_as;
-    using P = std::pair<int, int>;
-    using R = std::array<P, 3>;
+    using P = pair<int, int>;
+    using R = array<P, 3>;
 
-    R const x                                    = {{{0, 42}, {2, 42}, {4, 42}}};
-    std::array<std::pair<long, long>, 3> const y = {{{13, 0}, {13, 2}, {13, 5}}};
+    R const x                          = {{{0, 42}, {2, 42}, {4, 42}}};
+    array<pair<long, long>, 3> const y = {{{13, 0}, {13, 2}, {13, 5}}};
 
     // Validate that mismatch_result aliases in_in_result
     STATIC_ASSERT(same_as<mismatch_result<int, double>, ranges::in_in_result<int, double>>);
@@ -34,28 +34,28 @@ constexpr void smoke_test() {
         // Validate sized ranges
         auto result = mismatch(x, y, equal_to{}, get_first, get_second);
         using I1    = iterator_t<R const>;
-        using I2    = std::array<std::pair<long, long>, 3>::const_iterator;
+        using I2    = array<pair<long, long>, 3>::const_iterator;
         STATIC_ASSERT(same_as<decltype(result), mismatch_result<I1, I2>>);
         assert((*result.in1 == P{4, 42}));
-        assert((*result.in2 == std::pair<long, long>{13, 5}));
+        assert((*result.in2 == pair<long, long>{13, 5}));
     }
     {
         // Validate non-sized ranges
         auto result = mismatch(basic_borrowed_range{x}, basic_borrowed_range{y}, equal_to{}, get_first, get_second);
         using I1    = iterator_t<basic_borrowed_range<P const>>;
-        using I2    = iterator_t<basic_borrowed_range<std::pair<long, long> const>>;
+        using I2    = iterator_t<basic_borrowed_range<pair<long, long> const>>;
         STATIC_ASSERT(same_as<decltype(result), mismatch_result<I1, I2>>);
         assert((*result.in1 == P{4, 42}));
-        assert((*result.in2 == std::pair<long, long>{13, 5}));
+        assert((*result.in2 == pair<long, long>{13, 5}));
     }
     {
         // Validate sized iterator + sentinel pairs
         auto result = mismatch(x.begin(), x.end(), y.begin(), y.end(), equal_to{}, get_first, get_second);
         using I1    = iterator_t<R const>;
-        using I2    = std::array<std::pair<long, long>, 3>::const_iterator;
+        using I2    = array<pair<long, long>, 3>::const_iterator;
         STATIC_ASSERT(same_as<decltype(result), mismatch_result<I1, I2>>);
         assert((*result.in1 == P{4, 42}));
-        assert((*result.in2 == std::pair<long, long>{13, 5}));
+        assert((*result.in2 == pair<long, long>{13, 5}));
     }
     {
         // Validate non-sized iterator + sentinel pairs
@@ -67,7 +67,7 @@ constexpr void smoke_test() {
         using I2 = iterator_t<decltype(wrapped_y)>;
         STATIC_ASSERT(same_as<decltype(result), mismatch_result<I1, I2>>);
         assert((*result.in1 == P{4, 42}));
-        assert((*result.in2 == std::pair<long, long>{13, 5}));
+        assert((*result.in2 == pair<long, long>{13, 5}));
     }
 }
 
@@ -82,8 +82,8 @@ struct instantiator {
     static void call() {
         using ranges::begin, ranges::end, ranges::mismatch, ranges::iterator_t;
 
-        In1 in1{std::span<const int, 0>{}};
-        In2 in2{std::span<const int, 0>{}};
+        In1 in1{span<const int, 0>{}};
+        In2 in2{span<const int, 0>{}};
 
         if constexpr (!is_permissive) {
             (void) mismatch(in1, in2);

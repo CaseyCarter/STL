@@ -4,7 +4,6 @@
 #include <algorithm>
 #include <array>
 #include <cassert>
-#include <concepts>
 #include <ranges>
 #include <span>
 #include <utility>
@@ -12,9 +11,11 @@
 
 #include <range_algorithm_support.hpp>
 
+using namespace std;
+
 constexpr void smoke_test() {
-    using ranges::find_end, ranges::iterator_t, ranges::subrange, std::array, std::same_as;
-    using P = std::pair<int, int>;
+    using ranges::find_end, ranges::iterator_t, ranges::subrange;
+    using P = pair<int, int>;
 
     // Validate dangling story
     STATIC_ASSERT(same_as<decltype(find_end(borrowed<false>{}, array<int, 42>{})), ranges::dangling>);
@@ -65,7 +66,7 @@ constexpr void smoke_test() {
         // Validate the memcmp optimization
         const int haystack[] = {1, 2, 3, 1, 2, 3, 1, 2, 3};
         const int needle[]   = {1, 2, 3};
-        const auto result    = find_end(haystack, std::span<const int>{needle});
+        const auto result    = find_end(haystack, span<const int>{needle});
         STATIC_ASSERT(same_as<decltype(result), const subrange<const int*>>);
         assert(result.begin() == haystack + 6);
         assert(result.end() == haystack + 9);
@@ -76,9 +77,9 @@ constexpr void test_devcom_1559808() {
     // Regression test for DevCom-1559808, an interaction between vector and the
     // use of structured bindings in the constexpr evaluator.
 
-    std::vector<int> haystack(33, 42); // No particular significance to any numbers in this function
-    std::vector<int> needle(8, 42);
-    using size_type = std::vector<int>::size_type;
+    vector<int> haystack(33, 42); // No particular significance to any numbers in this function
+    vector<int> needle(8, 42);
+    using size_type = vector<int>::size_type;
 
     auto result = ranges::find_end(haystack, needle);
     assert(static_cast<size_type>(result.begin() - haystack.begin()) == haystack.size() - needle.size());
@@ -105,8 +106,8 @@ struct instantiator {
         if constexpr (!is_permissive) { // These fail to compile in C1XX's permissive mode due to VSO-566808
             using ranges::iterator_t;
 
-            Fwd1 fwd1{std::span<const int, 0>{}};
-            Fwd2 fwd2{std::span<const int, 0>{}};
+            Fwd1 fwd1{span<const int, 0>{}};
+            Fwd2 fwd2{span<const int, 0>{}};
 
             (void) ranges::find_end(fwd1, fwd2);
             (void) ranges::find_end(ranges::begin(fwd1), ranges::end(fwd1), ranges::begin(fwd2), ranges::end(fwd2));

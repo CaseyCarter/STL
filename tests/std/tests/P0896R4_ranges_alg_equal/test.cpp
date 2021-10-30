@@ -4,16 +4,16 @@
 #include <algorithm>
 #include <array>
 #include <cassert>
-#include <concepts>
 #include <cstdlib>
 #include <ranges>
 #include <span>
 
 #include <range_algorithm_support.hpp>
 
+using namespace std;
+
 constexpr void smoke_test() {
     using ranges::equal, ranges::equal_to, ranges::begin, ranges::end;
-    using std::abort, std::array, std::pair, std::same_as, std::unreachable_sentinel;
 
     array<pair<int, int>, 3> const x   = {{{0, 42}, {2, 42}, {4, 42}}};
     array<pair<long, long>, 3> const y = {{{13, -1}, {13, 1}, {13, 3}}};
@@ -91,8 +91,8 @@ struct instantiator {
     static void call() {
         using ranges::begin, ranges::end, ranges::equal, ranges::iterator_t;
 
-        In1 in1{std::span<const int, 0>{}};
-        In2 in2{std::span<const int, 0>{}};
+        In1 in1{span<const int, 0>{}};
+        In2 in2{span<const int, 0>{}};
 
         if constexpr (!is_permissive) {
             (void) equal(in1, in2);
