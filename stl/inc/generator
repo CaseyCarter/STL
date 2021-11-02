@@ -33,9 +33,14 @@ template <class _Ty, class _Value = remove_cvref_t<_Ty>, class _Alloc = void>
 // FIXME requires common_reference_with<_Generator_ref_t<_Ty> &&, Value&>
 class generator {
 public:
-    struct promise_type { // FIXME
-        add_pointer_t<_Generator_ref_t<_Ty>> _Ptr;
+    class promise_type {
+        add_pointer_t<_Generator_ref_t<_Ty>> _Ptr = nullptr;
 
+        friend generator;
+
+        void destruct_value_() const {}
+
+    public:
         generator get_return_object() noexcept {
             return generator(coroutine_handle<promise_type>::from_promise(*this));
         }
@@ -48,6 +53,18 @@ public:
             return {};
         }
 
+        suspend_always yield_value(const _Ty& _Val) noexcept {
+            _Ptr = _STD addressof(_Val);
+            return {};
+        }
+
+#if 1 // FIXME
+#endif
+
+        void await_transform() = delete;
+
+        void return_void() noexcept {}
+
 #ifndef _KERNEL_MODE
 #ifdef _CPPUNWIND
         void unhandled_exception() {
@@ -58,32 +75,39 @@ public:
 #endif // _CPPUNWIND
 #endif // _KERNEL_MODE
 
-        suspend_always yield_value(const _Ty& _Val) noexcept {
-            _Value = _STD addressof(_Val);
-            return {};
-        }
 
-        void return_void() noexcept {}
-
-        template <class _Uty>
-        void await_transform(_Uty&&) {
-            static_assert(_Always_false<_Uty>, "co_await is not supported in coroutines of type std::generator");
-        }
-
+#if 0 // FIXME
         using _Alloc_char = _Rebind_alloc_t<_Alloc, char>;
         static_assert(is_same_v<char*, typename allocator_traits<_Alloc_char>::pointer>,
             "generator does not support allocators with fancy pointer types");
         static_assert(allocator_traits<_Alloc_char>::is_always_equal::value && is_default_constructible_v<_Alloc_char>,
             "generator supports only stateless allocators");
+#endif
 
-        static void* operator new(size_t _Size) {
-            _Alloc_char _Al{};
-            return allocator_traits<_Alloc_char>::allocate(_Al, _Size);
+        static void* operator new(size_t _Size) requires is_void_v<_Alloc> || default_initializable<_Alloc> {
+            if constexpr (is_void_v<_Alloc>) {
+                return allocator<byte>{}.allocate(_Size);
+            } else {
+                _Rebind_alloc<_Alloc, byte> _Al{};
+                return _Al.allocate(_Size);
+            }
         }
 
-        static void operator delete(void* _Ptr, size_t _Size) noexcept {
-            _Alloc_char _Al{};
-            return allocator_traits<_Alloc_char>::deallocate(_Al, static_cast<char*>(_Ptr), _Size);
+#if 0 // FIXME
+        template <class _Alloc2, class... _Args>
+        static void* operator new(size_t _Size, allocator_arg_t, _Alloc2& _Al, _Args&...);
+        template <class _This, class _Alloc2, class... _Args>
+        static void* operator new(size_t _Size, _This&, allocator_arg_t, _Alloc2& _Al, _Args&...);
+#endif
+
+        static void operator delete(
+            void* const _Ptr, const size_t _Size) noexcept requires is_void_v<_Alloc> || default_initializable<_Alloc> {
+            if constexpr (is_void_v<_Alloc>) {
+                allocator<byte>{}.deallocate(static_cast<byte*>(_Ptr), _Size);
+            } else {
+                _Rebind_alloc<_Alloc, byte> _Al{};
+                return _Al.deallocate(static_cast<byte*>(_Ptr), _Size);
+            }
         }
     };
 
@@ -93,27 +117,25 @@ public:
         : _Coro(_STD exchange(_Right._Coro, {})), _Started(_STD exchange(_Right._Started, false)) {}
 
     ~generator() {
-        if (_Coro) {
-            _Coro.destroy();
+        if (_Started && !_Coro.done()) {
+            _Coro.promise().destruct_value_();
         }
+        _Coro.destroy();
     }
 
     generator& operator=(const generator&) = delete;
 
     generator& operator=(generator&& _Right) noexcept {
-        _Coro  = _STD exchange(_Right._Coro, {});
-        _Start = _STD exchange(_Right._Started, false);
+        _STD swap(_Coro, _Right._Coro);
+        _STD swap(_Started, _Right._Started);
         return *this;
     }
 
     _NODISCARD auto begin() {
-        if (_Coro) {
-            _Coro.resume();
-            if (_Coro.done()) {
-                return {};
-            }
-        }
-
+        _STL_ASSERT(_Coro, "Can't call begin on moved-from generator");
+        _STL_ASSERT(!_Started, "Can't call generator::begin more than once");
+        _Started = true;
+        _Coro.resume();
         return _Iterator{_Coro};
     }
 
@@ -154,8 +176,8 @@ private:
 
     explicit generator(coroutine_handle<promise_type> _Coro_) noexcept : _Coro(_Coro_) {}
 
-    coroutine_handle<promise_type> _Coro;
-    bool _Started = false;
+    coroutine_handle<promise_type> _Coro = nullptr;
+    bool _Started                        = false;
 };
 
 template <class _Ref, class _Value, class _Alloc>
