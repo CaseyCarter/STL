@@ -32,17 +32,17 @@ using _Generator_ref_t = conditional_t<is_reference_v<_Ty>, _Ty, const _Ty&>;
 template <class _Ty, class _Value = remove_cvref_t<_Ty>, class _Alloc = void>
 // FIXME requires common_reference_with<_Generator_ref_t<_Ty> &&, Value&>
 class generator {
+    struct _Iterator;
+
 public:
     class promise_type {
         add_pointer_t<_Generator_ref_t<_Ty>> _Ptr = nullptr;
 
+        friend _Iterator;
+
         struct alignas(__STDCPP_DEFAULT_NEW_ALIGNMENT__) _Block {
             unsigned char _Pad[__STDCPP_DEFAULT_NEW_ALIGNMENT__];
         };
-
-        friend generator;
-
-        void destruct_value_() const {}
 
     public:
         generator get_return_object() noexcept {
@@ -57,13 +57,10 @@ public:
             return {};
         }
 
-        suspend_always yield_value(const _Ty& _Val) noexcept {
-            _Ptr = _STD addressof(_Val);
+        suspend_always yield_value(_Generator_ref_t<_Ty> _Ref) noexcept {
+            _Ptr = _STD addressof(_Ref);
             return {};
         }
-
-#if 1 // FIXME
-#endif
 
         void await_transform() = delete;
 
@@ -124,10 +121,9 @@ public:
         : _Coro(_STD exchange(_Right._Coro, {})), _Started(_STD exchange(_Right._Started, false)) {}
 
     ~generator() {
-        if (_Started && !_Coro.done()) {
-            _Coro.promise().destruct_value_();
+        if (_Coro) {
+            _Coro.destroy();
         }
-        _Coro.destroy();
     }
 
     generator& operator=(const generator&) = delete;
@@ -154,15 +150,13 @@ private:
     struct _Iterator {
         using iterator_category = input_iterator_tag;
         using difference_type   = ptrdiff_t;
-        using value_type        = _Ty;
-        using reference         = const _Ty&;
+        using value_type        = _Value;
+        using reference         = _Generator_ref_t<_Ty>;
 
         coroutine_handle<promise_type> _Coro;
 
-        explicit _Iterator(coroutine_handle<promise_type> _Coro_) noexcept : _Coro(_Coro_) {}
-
         _NODISCARD reference operator*() const noexcept {
-            return *_Coro.promise()._Value;
+            return static_cast<reference>(*_Coro.promise()._Ptr);
         }
 
         _Iterator& operator++() {
@@ -178,7 +172,13 @@ private:
             ++*this;
         }
 
-        _NODISCARD bool operator==(const _Iterator& _Right) const noexcept = default;
+        _NODISCARD bool operator==(const _Iterator&) const noexcept {
+            return true;
+        }
+
+        _NODISCARD bool operator==(default_sentinel_t) const noexcept {
+            return !_Coro || _Coro.done();
+        }
     };
 
     explicit generator(coroutine_handle<promise_type> _Coro_) noexcept : _Coro(_Coro_) {}
