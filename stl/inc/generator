@@ -26,23 +26,21 @@ _STL_DISABLE_CLANG_WARNINGS
 
 _STD_BEGIN
 
-template <class _Ty>
-using _Generator_ref_t = conditional_t<is_reference_v<_Ty>, _Ty, const _Ty&>;
+struct alignas(__STDCPP_DEFAULT_NEW_ALIGNMENT__) _Aligned_block {
+    unsigned char _Pad[__STDCPP_DEFAULT_NEW_ALIGNMENT__];
+};
 
-template <class _Ty, class _Value = remove_cvref_t<_Ty>, class _Alloc = void>
-// FIXME requires common_reference_with<_Generator_ref_t<_Ty> &&, Value&>
+template <class _Ty, class _Ref = const _Ty&, class _Alloc = void>
 class generator {
     struct _Iterator;
 
 public:
+    static_assert(same_as<remove_cvref_t<_Ref>, _Ty>);
+
     class promise_type {
-        add_pointer_t<_Generator_ref_t<_Ty>> _Ptr = nullptr;
+        add_pointer_t<_Ref> _Ptr = nullptr;
 
         friend _Iterator;
-
-        struct alignas(__STDCPP_DEFAULT_NEW_ALIGNMENT__) _Block {
-            unsigned char _Pad[__STDCPP_DEFAULT_NEW_ALIGNMENT__];
-        };
 
     public:
         generator get_return_object() noexcept {
@@ -57,12 +55,12 @@ public:
             return {};
         }
 
-        suspend_always yield_value(_Generator_ref_t<_Ty> _Ref) noexcept {
-            _Ptr = _STD addressof(_Ref);
+        suspend_always yield_value(_Ref&& _Val) noexcept {
+            _Ptr = _STD addressof(_Val);
             return {};
         }
 
-        void await_transform() = delete;
+        void await_transform() = delete; // TODO
 
         void return_void() noexcept {}
 
@@ -76,49 +74,42 @@ public:
 #endif // _CPPUNWIND
 #endif // _KERNEL_MODE
 
-
-#if 0 // FIXME
-        using _Alloc_char = _Rebind_alloc_t<_Alloc, char>;
-        static_assert(is_same_v<char*, typename allocator_traits<_Alloc_char>::pointer>,
-            "generator does not support allocators with fancy pointer types");
-        static_assert(allocator_traits<_Alloc_char>::is_always_equal::value && is_default_constructible_v<_Alloc_char>,
-            "generator supports only stateless allocators");
-#endif
-
-        // FIXME: Change spec to agree
-        static void* operator new(size_t _Size) {
+        // clang-format off
+        static void* operator new(size_t _Size) requires (is_void_v<_Alloc> || default_initializable<_Alloc>) {
+            // clang-format on
             if constexpr (is_void_v<_Alloc>) {
                 return ::operator new[](_Size);
             } else {
-                _Rebind_alloc_t<_Alloc, _Block> _Al{};
-                _Size = (_Size + (sizeof(_Block) - 1)) / sizeof(_Block);
+                _Rebind_alloc_t<_Alloc, _Aligned_block> _Al{};
+                _Size = _Size / sizeof(_Aligned_block) + (_Size % sizeof(_Aligned_block) != 0);
                 return _Al.allocate(_Size);
             }
         }
 
-#if 0 // FIXME
+        // clang-format off
+        static void operator delete(void* _Ptr, size_t _Size) noexcept
+            requires (is_void_v<_Alloc> || default_initializable<_Alloc>) {
+            // clang-format on
+            if constexpr (is_void_v<_Alloc>) {
+                return ::operator delete[](_Ptr, _Size);
+            } else {
+                _Rebind_alloc_t<_Alloc, _Aligned_block> _Al{};
+                _Size = _Size / sizeof(_Aligned_block) + (_Size % sizeof(_Aligned_block) != 0);
+                return _Al.deallocate(_Ptr, _Size);
+            }
+        }
+
+#if 0 // TODO
         template <class _Alloc2, class... _Args>
         static void* operator new(size_t _Size, allocator_arg_t, _Alloc2& _Al, _Args&...);
         template <class _This, class _Alloc2, class... _Args>
         static void* operator new(size_t _Size, _This&, allocator_arg_t, _Alloc2& _Al, _Args&...);
 #endif
-
-        // FIXME: Change spec to agree
-        static void operator delete(void* _Ptr, size_t _Size) noexcept {
-            if constexpr (is_void_v<_Alloc>) {
-                ::operator delete[](_Ptr, _Size);
-            } else {
-                _Rebind_alloc_t<_Alloc, _Block> _Al{};
-                _Size = (_Size + (sizeof(_Block) - 1)) / sizeof(_Block);
-                return _Al.deallocate(_Ptr, _Size);
-            }
-        }
     };
 
     generator(const generator&) = delete;
 
-    generator(generator&& _Right) noexcept
-        : _Coro(_STD exchange(_Right._Coro, {})), _Started(_STD exchange(_Right._Started, false)) {}
+    generator(generator&& _Right) noexcept : _Coro(_STD exchange(_Right._Coro, nullptr)) {}
 
     ~generator() {
         if (_Coro) {
@@ -129,42 +120,42 @@ public:
     generator& operator=(const generator&) = delete;
 
     generator& operator=(generator&& _Right) noexcept {
-        _STD swap(_Coro, _Right._Coro);
-        _STD swap(_Started, _Right._Started);
+        _Coro = _STD exchange(_Right._Coro, nullptr);
         return *this;
     }
 
     _NODISCARD auto begin() {
+        // Pre: _Coro is suspended at its initial suspend point
+#ifndef _KERNEL_MODE
         _STL_ASSERT(_Coro, "Can't call begin on moved-from generator");
-        _STL_ASSERT(!_Started, "Can't call generator::begin more than once");
-        _Started = true;
+#endif // _KERNEL_MODE
         _Coro.resume();
         return _Iterator{_Coro};
     }
 
     _NODISCARD default_sentinel_t end() const noexcept {
-        return {};
+        return default_sentinel;
     }
 
 private:
     struct _Iterator {
-        using iterator_category = input_iterator_tag;
-        using difference_type   = ptrdiff_t;
-        using value_type        = _Value;
-        using reference         = _Generator_ref_t<_Ty>;
+        using difference_type = ptrdiff_t;
+        using value_type      = _Ty;
 
-        coroutine_handle<promise_type> _Coro;
+        coroutine_handle<promise_type> _Coro = nullptr;
 
-        _NODISCARD reference operator*() const noexcept {
-            return static_cast<reference>(*_Coro.promise()._Ptr);
+        _NODISCARD _Ref&& operator*() const noexcept {
+#ifndef _KERNEL_MODE
+            _STL_ASSERT(!_Coro.done(), "Can't dereference generator end iterator");
+#endif // _KERNEL_MODE
+            return static_cast<_Ref&&>(*_Coro.promise()._Ptr);
         }
 
         _Iterator& operator++() {
+#ifndef _KERNEL_MODE
+            _STL_ASSERT(!_Coro.done(), "Can't increment generator end iterator");
+#endif // _KERNEL_MODE
             _Coro.resume();
-            if (_Coro.done()) {
-                _Coro = nullptr;
-            }
-
             return *this;
         }
 
@@ -172,24 +163,19 @@ private:
             ++*this;
         }
 
-        _NODISCARD bool operator==(const _Iterator&) const noexcept {
-            return true;
-        }
-
         _NODISCARD bool operator==(default_sentinel_t) const noexcept {
-            return !_Coro || _Coro.done();
+            return _Coro.done();
         }
     };
 
     explicit generator(coroutine_handle<promise_type> _Coro_) noexcept : _Coro(_Coro_) {}
 
     coroutine_handle<promise_type> _Coro = nullptr;
-    bool _Started                        = false;
 };
 
 namespace ranges {
-    template <class _Ref, class _Value, class _Alloc>
-    inline constexpr bool enable_view<generator<_Ref, _Value, _Alloc>> = true;
+    template <class _Ty, class _Ref, class _Alloc>
+    inline constexpr bool enable_view<generator<_Ty, _Ref, _Alloc>> = true;
 }
 
 _STD_END
