@@ -2170,6 +2170,41 @@ constexpr _Ty* uninitialized_construct_using_allocator(_Ty* _Ptr, const _Alloc& 
         _STD uses_allocator_construction_args<_Ty>(_Al, _STD forward<_Types>(_Args)...));
 }
 #endif // _HAS_CXX20
+
+#if _HAS_CXX23 && defined(__cpp_lib_byte) && defined(__cpp_lib_ranges)
+namespace ranges {
+    template <input_range _Rng, class _Alloc = allocator<byte>>
+    struct elements_of {
+    private:
+        /* [[no_unique_address]] */ _Alloc _Al;
+        _Rng&& _Range;
+
+    public:
+        explicit constexpr elements_of(_Rng&& _Range_) noexcept requires default_initializable<_Alloc>
+            : _Range(_STD forward<_Rng>(_Range_)) {}
+
+        explicit constexpr elements_of(_Rng&& _Range_, _Alloc _Al_) noexcept
+            : _Al(_STD move(_Al_)), _Range(_STD forward<_Rng>(_Range_)) {}
+
+        constexpr elements_of(elements_of&&) = default;
+        elements_of(const elements_of&)      = delete;
+
+        constexpr _Rng&& range() noexcept {
+            return _STD forward<_Rng>(_Range);
+        }
+        constexpr _Alloc get_allocator() const noexcept {
+            return _Al;
+        }
+    };
+
+    template <class _Rng>
+    elements_of(_Rng&&) -> elements_of<_Rng>;
+
+    template <class _Rng, class _Alloc>
+    elements_of(_Rng&&, _Alloc) -> elements_of<_Rng, _Alloc>;
+} // namespace ranges
+#endif // _HAS_CXX23 && defined(__cpp_lib_byte) && defined(__cpp_lib_ranges)
+
 _STD_END
 
 #pragma pop_macro("new")

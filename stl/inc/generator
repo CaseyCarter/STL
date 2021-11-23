@@ -14,7 +14,6 @@
 #else // ^^^ no coroutine support / coroutines vvv
 
 #include <coroutine>
-#include <ranges> // TODO: Would be nice to trim this down
 #include <xmemory>
 
 #pragma pack(push, _CRT_PACKING)
@@ -189,6 +188,31 @@ struct _Generator_promise_base {
         return {};
     }
 
+#if 1 // BORKEN
+    template <class _Ty, class _Alloc>
+    struct _Nested_awaitable {
+        generator<_Ty, _Ref, _Alloc> _Gen;
+        coroutine_handle<_Generator_promise_base> _Outer;
+
+        bool await_ready() noexcept {
+            return false;
+        }
+
+        template <derived_from<_Generator_promise_base> _Promise>
+        coroutine_handle<_Generator_promise_base> await_suspend(coroutine_handle<_Promise> _Outer_) {
+            _Outer = coroutine_handle<_Generator_promise_base>::from_address(_Outer_.address());
+            return coroutine_handle<_Generator_promise_base>::from_address(_Gen._Coro.address());
+        }
+
+        void await_resume() noexcept {}
+    };
+
+    template <class _Ty, class _Alloc>
+    auto yield_value(ranges::elements_of<generator<_Ty, _Ref, _Alloc>> _Elem) noexcept {
+        return _Nested_awaitable<_Ty, _Alloc>{_Elem.range()};
+    }
+#endif // BORKEN
+
     void await_transform() = delete;
 
     void return_void() noexcept {}
@@ -243,6 +267,7 @@ public:
             return generator(coroutine_handle<promise_type>::from_promise(*this));
         }
     };
+    static_assert(is_standard_layout_v<promise_type>);
 
     coroutine_handle<promise_type> _Coro = nullptr;
 
