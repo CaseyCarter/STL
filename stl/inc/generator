@@ -92,6 +92,15 @@ struct _Generator_iterator {
 
     coroutine_handle<_Generator_promise_base<_Ref>> _Coro;
 
+    explicit _Generator_iterator(coroutine_handle<_Generator_promise_base<_Ref>> _Coro_) noexcept : _Coro{_Coro_} {}
+
+    _Generator_iterator(_Generator_iterator&& _That) noexcept : _Coro{_STD move(_That._Coro)} {}
+
+    _Generator_iterator& operator=(_Generator_iterator&& _That) noexcept {
+        _Coro = _STD move(_That._Coro);
+        return *this;
+    }
+
     _NODISCARD _Ref&& operator*() const noexcept {
 #ifndef _KERNEL_MODE
         _STL_ASSERT(!_Coro.done(), "Can't dereference generator end iterator");
@@ -128,7 +137,7 @@ public:
 
     coroutine_handle<promise_type> _Coro = nullptr;
 
-    generator(generator&& _Right) noexcept : _Coro(_STD exchange(_Right._Coro, nullptr)) {}
+    generator(generator&& _That) noexcept : _Coro(_STD exchange(_That._Coro, nullptr)) {}
 
     ~generator() {
         if (_Coro) {
@@ -136,8 +145,8 @@ public:
         }
     }
 
-    generator& operator=(generator&& _Right) noexcept {
-        _Coro = _STD exchange(_Right._Coro, nullptr);
+    generator& operator=(generator&& _That) noexcept {
+        _Coro = _STD exchange(_That._Coro, nullptr);
         return *this;
     }
 
