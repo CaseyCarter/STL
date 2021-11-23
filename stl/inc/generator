@@ -9,8 +9,8 @@
 #include <yvals_core.h>
 #if _STL_COMPILER_PREPROCESSOR
 
-#if !_HAS_CXX23 || !defined(__cpp_lib_byte) || !defined(__cpp_impl_coroutine)
-#pragma message("The contents of <generator> are available only in c++latest mode with coroutine and std::byte support")
+#if !_HAS_CXX23 || !defined(__cpp_impl_coroutine)
+#pragma message("The contents of <generator> are available only in c++latest mode with coroutine support")
 #else // ^^^ no coroutine support / coroutines vvv
 
 #include <coroutine>
