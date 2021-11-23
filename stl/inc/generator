@@ -30,6 +30,8 @@ class generator;
 
 template <class _Ref>
 struct _Generator_promise_base {
+    _STL_INTERNAL_STATIC_ASSERT(is_reference_v<_Ref>);
+
     add_pointer_t<_Ref> _Ptr = nullptr;
 
     suspend_always initial_suspend() noexcept {
@@ -40,15 +42,15 @@ struct _Generator_promise_base {
         return {};
     }
 
-    suspend_always yield_value(_Ref&& _Val) noexcept {
+    suspend_always yield_value(_Ref _Val) noexcept {
         _Ptr = _STD addressof(_Val);
         return {};
     }
 
 #if 1 // BORKEN
-    template <class _Ty, class _Alloc>
+    template <class _Ty, class _Ref2, class _Alloc>
     struct _Nested_awaitable {
-        generator<_Ty, _Ref, _Alloc> _Gen;
+        generator<_Ty, _Ref2, _Alloc> _Gen;
         coroutine_handle<_Generator_promise_base> _Outer;
 
         bool await_ready() noexcept {
@@ -67,9 +69,10 @@ struct _Generator_promise_base {
         void await_resume() noexcept {}
     };
 
-    template <class _Ty, class _Alloc>
-    auto yield_value(ranges::elements_of<generator<_Ty, _Ref, _Alloc>> _Elem) noexcept {
-        return _Nested_awaitable<_Ty, _Alloc>{_Elem.range()};
+    template <class _Ty, class _Ref2, class _Alloc>
+        requires same_as<_Ref2&&, _Ref>
+    auto yield_value(ranges::elements_of<generator<_Ty, _Ref2, _Alloc>> _Elem) noexcept {
+        return _Nested_awaitable<_Ty, _Ref2, _Alloc>{_Elem.range()};
     }
 #endif // BORKEN
 
@@ -90,6 +93,8 @@ struct _Generator_promise_base {
 
 template <class _Ty, class _Ref>
 struct _Generator_iterator {
+    _STL_INTERNAL_STATIC_ASSERT(is_reference_v<_Ref>);
+
     using difference_type = ptrdiff_t;
     using value_type      = _Ty;
 
@@ -104,11 +109,11 @@ struct _Generator_iterator {
         return *this;
     }
 
-    _NODISCARD _Ref&& operator*() const noexcept {
+    _NODISCARD _Ref operator*() const noexcept {
 #ifndef _KERNEL_MODE
         _STL_ASSERT(!_Coro.done(), "Can't dereference generator end iterator");
 #endif // _KERNEL_MODE
-        return static_cast<_Ref&&>(*_Coro.promise()._Ptr);
+        return static_cast<_Ref>(*_Coro.promise()._Ptr);
     }
 
     _Generator_iterator& operator++() {
@@ -131,7 +136,7 @@ struct _Generator_iterator {
 template <class _Ty, class _Ref, class _Allocator>
 class generator {
 public:
-    struct __declspec(empty_bases) promise_type : _Promise_allocator<_Allocator>, _Generator_promise_base<_Ref> {
+    struct __declspec(empty_bases) promise_type : _Promise_allocator<_Allocator>, _Generator_promise_base<_Ref&&> {
         generator get_return_object() noexcept {
             return generator(coroutine_handle<promise_type>::from_promise(*this));
         }
@@ -153,14 +158,14 @@ public:
         return *this;
     }
 
-    _NODISCARD _Generator_iterator<_Ty, _Ref> begin() {
+    _NODISCARD _Generator_iterator<_Ty, _Ref&&> begin() {
         // Pre: _Coro is suspended at its initial suspend point
 #ifndef _KERNEL_MODE
         _STL_ASSERT(_Coro, "Can't call begin on moved-from generator");
 #endif // _KERNEL_MODE
         _Coro.resume();
-        return _Generator_iterator<_Ty, _Ref>{
-            coroutine_handle<_Generator_promise_base<_Ref>>::from_address(_Coro.address())};
+        return _Generator_iterator<_Ty, _Ref&&>{
+            coroutine_handle<_Generator_promise_base<_Ref&&>>::from_address(_Coro.address())};
     }
 
     _NODISCARD default_sentinel_t end() const noexcept {
