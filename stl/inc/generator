@@ -14,7 +14,7 @@
 #else // ^^^ no coroutine support / coroutines vvv
 
 #include <coroutine>
-#include <ranges>
+#include <ranges> // TODO: Would be nice to trim this down
 #include <xmemory>
 
 #pragma pack(push, _CRT_PACKING)
@@ -62,7 +62,7 @@ public:
 
 #ifndef _KERNEL_MODE
 #ifdef _CPPUNWIND
-        void unhandled_exception() {
+        [[noreturn]] void unhandled_exception() {
             throw;
         }
 #else // ^^^ defined(_CPPUNWIND) / !defined(_CPPUNWIND) vvv
