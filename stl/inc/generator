@@ -55,8 +55,11 @@ struct _Generator_promise_base {
             return false;
         }
 
-        template <derived_from<_Generator_promise_base> _Promise>
-        coroutine_handle<_Generator_promise_base> await_suspend(coroutine_handle<_Promise> _Outer_) {
+        template <class _Promise>
+        coroutine_handle<_Generator_promise_base> await_suspend(coroutine_handle<_Promise> _Outer_) noexcept {
+#ifndef __clang__ // TRANSITION, LLVM-48860
+            _STL_INTERNAL_STATIC_ASSERT(is_pointer_interconvertible_base_of_v<_Generator_promise_base, _Promise>);
+#endif // TRANSITION, LLVM-48860
             _Outer = coroutine_handle<_Generator_promise_base>::from_address(_Outer_.address());
             return coroutine_handle<_Generator_promise_base>::from_address(_Gen._Coro.address());
         }
