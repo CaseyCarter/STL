@@ -29,23 +29,48 @@ _STD_BEGIN
 template <class _Ty, class _Ref = const _Ty&, class _Allocator = void>
 class generator;
 
-template <class _Ref> // TODO: Change this to pointee type?
-struct _Generator_promise_base {
+template <class _Ref>
+class _Generator_promise_base {
+public:
     _STL_INTERNAL_STATIC_ASSERT(is_reference_v<_Ref>);
 
+    suspend_always initial_suspend() noexcept {
+        return {};
+    }
+
+    auto final_suspend() noexcept {
+        return _Final_awaiter{};
+    }
+
+    suspend_always yield_value(_Ref _Val) noexcept {
+        _Ptr = _STD addressof(_Val);
+        return {};
+    }
+
+    template <class _Ty, class _Ref2, class _Alloc>
+        requires same_as<_Ref2&&, _Ref>
+    auto yield_value(ranges::elements_of<generator<_Ty, _Ref2, _Alloc>> _Elem) noexcept {
+        return _Nested_awaitable<_Ty, _Ref2, _Alloc>{_Elem.range()};
+    }
+
+    void await_transform() = delete;
+
+    void return_void() noexcept {}
+
+    void unhandled_exception() {
+        if (_Info) {
+            _Info->_Except = _STD current_exception();
+        } else {
+            throw;
+        }
+    }
+
+private:
     struct _Nest_info {
         exception_ptr _Except;
         coroutine_handle<_Generator_promise_base> _Parent;
         coroutine_handle<_Generator_promise_base> _Root;
     };
-
-    coroutine_handle<_Generator_promise_base> _Top = coroutine_handle<_Generator_promise_base>::from_promise(*this);
-    add_pointer_t<_Ref> _Ptr                       = nullptr;
-    _Nest_info* _Info                              = nullptr;
-
-    suspend_always initial_suspend() noexcept {
-        return {};
-    }
 
     struct _Final_awaiter {
         bool await_ready() noexcept {
@@ -71,15 +96,6 @@ struct _Generator_promise_base {
 
         void await_resume() noexcept {}
     };
-
-    _Final_awaiter final_suspend() noexcept {
-        return {};
-    }
-
-    suspend_always yield_value(_Ref _Val) noexcept {
-        _Ptr = _STD addressof(_Val);
-        return {};
-    }
 
     template <class _Ty, class _Ref2, class _Alloc>
     struct _Nested_awaitable {
@@ -117,40 +133,26 @@ struct _Generator_promise_base {
         }
     };
 
-    template <class _Ty, class _Ref2, class _Alloc>
-        requires same_as<_Ref2&&, _Ref>
-    auto yield_value(ranges::elements_of<generator<_Ty, _Ref2, _Alloc>> _Elem) noexcept {
-        return _Nested_awaitable<_Ty, _Ref2, _Alloc>{_Elem.range()};
-    }
+    template <class, class>
+    friend class _Generator_iterator;
 
-    void await_transform() = delete;
-
-    void return_void() noexcept {}
-
-    void unhandled_exception() {
-        if (_Info) {
-            _Info->_Except = _STD current_exception();
-        } else {
-            throw;
-        }
-    }
+    coroutine_handle<_Generator_promise_base> _Top = coroutine_handle<_Generator_promise_base>::from_promise(*this);
+    add_pointer_t<_Ref> _Ptr                       = nullptr;
+    _Nest_info* _Info                              = nullptr;
 };
 
 template <class _Ty, class _Ref>
-struct _Generator_iterator {
+class _Generator_iterator {
+public:
     _STL_INTERNAL_STATIC_ASSERT(is_reference_v<_Ref>);
 
     using difference_type = ptrdiff_t;
     using value_type      = _Ty;
 
-    coroutine_handle<_Generator_promise_base<_Ref>> _Coro;
-
-    explicit _Generator_iterator(coroutine_handle<_Generator_promise_base<_Ref>> _Coro_) noexcept : _Coro{_Coro_} {}
-
-    _Generator_iterator(_Generator_iterator&& _That) noexcept : _Coro{_STD move(_That._Coro)} {}
+    _Generator_iterator(_Generator_iterator&& _That) noexcept : _Coro{_STD exchange(_That._Coro, {})} {}
 
     _Generator_iterator& operator=(_Generator_iterator&& _That) noexcept {
-        _Coro = _STD move(_That._Coro);
+        _Coro = _STD exchange(_That._Coro, {});
         return *this;
     }
 
@@ -172,6 +174,14 @@ struct _Generator_iterator {
     _NODISCARD bool operator==(default_sentinel_t) const noexcept {
         return _Coro.done();
     }
+
+private:
+    template <class, class, class>
+    friend class generator;
+
+    explicit _Generator_iterator(coroutine_handle<_Generator_promise_base<_Ref>> _Coro_) noexcept : _Coro{_Coro_} {}
+
+    coroutine_handle<_Generator_promise_base<_Ref>> _Coro;
 };
 
 template <class _Ty, class _Ref, class _Allocator>
@@ -186,8 +196,6 @@ public:
 #ifndef __clang__ // TRANSITION, LLVM-48860
     _STL_INTERNAL_STATIC_ASSERT(is_pointer_interconvertible_base_of_v<_Generator_promise_base<_Ref&&>, promise_type>);
 #endif // TRANSITION, LLVM-48860
-
-    coroutine_handle<promise_type> _Coro = nullptr;
 
     generator(generator&& _That) noexcept : _Coro(_STD exchange(_That._Coro, nullptr)) {}
 
@@ -216,6 +224,10 @@ public:
 
 private:
     explicit generator(coroutine_handle<promise_type> _Coro_) noexcept : _Coro(_Coro_) {}
+
+    friend _Generator_promise_base<_Ref&&>;
+
+    coroutine_handle<promise_type> _Coro = nullptr;
 };
 
 namespace ranges {
