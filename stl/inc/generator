@@ -14,6 +14,7 @@
 #else // ^^^ no coroutine support / coroutines vvv
 
 #include <coroutine>
+#include <exception>
 #include <xmemory>
 
 #pragma pack(push, _CRT_PACKING)
@@ -28,17 +29,50 @@ _STD_BEGIN
 template <class _Ty, class _Ref = const _Ty&, class _Allocator = void>
 class generator;
 
-template <class _Ref>
+template <class _Ref> // TODO: Change this to pointee type?
 struct _Generator_promise_base {
     _STL_INTERNAL_STATIC_ASSERT(is_reference_v<_Ref>);
 
-    add_pointer_t<_Ref> _Ptr = nullptr;
+    struct _Nest_info {
+        exception_ptr _Except;
+        coroutine_handle<_Generator_promise_base> _Parent;
+        coroutine_handle<_Generator_promise_base> _Root;
+    };
+
+    coroutine_handle<_Generator_promise_base> _Top = coroutine_handle<_Generator_promise_base>::from_promise(*this);
+    add_pointer_t<_Ref> _Ptr                       = nullptr;
+    _Nest_info* _Info                              = nullptr;
 
     suspend_always initial_suspend() noexcept {
         return {};
     }
 
-    suspend_always final_suspend() noexcept {
+    struct _Final_awaiter {
+        bool await_ready() noexcept {
+            return false;
+        }
+
+        template <class _Promise>
+        coroutine_handle<> await_suspend(coroutine_handle<_Promise> _Handle) noexcept {
+#ifndef __clang__ // TRANSITION, LLVM-48860
+            _STL_INTERNAL_STATIC_ASSERT(is_pointer_interconvertible_base_of_v<_Generator_promise_base, _Promise>);
+#endif // TRANSITION, LLVM-48860
+
+            _Generator_promise_base& _Current = _Handle.promise();
+            if (!_Current._Info) {
+                return _STD noop_coroutine();
+            }
+
+            coroutine_handle<_Generator_promise_base> _Cont = _Current._Info->_Parent;
+            _Current._Info->_Root.promise()._Top            = _Cont;
+            _Current._Info                                  = nullptr;
+            return _Cont;
+        }
+
+        void await_resume() noexcept {}
+    };
+
+    _Final_awaiter final_suspend() noexcept {
         return {};
     }
 
@@ -47,26 +81,40 @@ struct _Generator_promise_base {
         return {};
     }
 
-#if 1 // BORKEN
     template <class _Ty, class _Ref2, class _Alloc>
     struct _Nested_awaitable {
+        _Nest_info _Nested;
         generator<_Ty, _Ref2, _Alloc> _Gen;
-        coroutine_handle<_Generator_promise_base> _Outer;
+
+        explicit _Nested_awaitable(generator<_Ty, _Ref2, _Alloc>&& _Gen_) noexcept : _Gen(_STD move(_Gen_)) {}
 
         bool await_ready() noexcept {
-            return false;
+            return !_Gen._Coro;
         }
 
         template <class _Promise>
-        coroutine_handle<_Generator_promise_base> await_suspend(coroutine_handle<_Promise> _Outer_) noexcept {
+        coroutine_handle<_Generator_promise_base> await_suspend(coroutine_handle<_Promise> _Current) noexcept {
 #ifndef __clang__ // TRANSITION, LLVM-48860
             _STL_INTERNAL_STATIC_ASSERT(is_pointer_interconvertible_base_of_v<_Generator_promise_base, _Promise>);
 #endif // TRANSITION, LLVM-48860
-            _Outer = coroutine_handle<_Generator_promise_base>::from_address(_Outer_.address());
-            return coroutine_handle<_Generator_promise_base>::from_address(_Gen._Coro.address());
+            auto _Target    = coroutine_handle<_Generator_promise_base>::from_address(_Gen._Coro.address());
+            _Nested._Parent = coroutine_handle<_Generator_promise_base>::from_address(_Current.address());
+            _Generator_promise_base& _Parent_promise = _Nested._Parent.promise();
+            if (_Parent_promise._Info) {
+                _Nested._Root = _Parent_promise._Info->_Root;
+            } else {
+                _Nested._Root = _Nested._Parent;
+            }
+            _Nested._Root.promise()._Top = _Target;
+            _Target.promise()._Info      = _STD addressof(_Nested);
+            return _Target;
         }
 
-        void await_resume() noexcept {}
+        void await_resume() {
+            if (_Nested._Except) {
+                _STD rethrow_exception(_STD move(_Nested._Except));
+            }
+        }
     };
 
     template <class _Ty, class _Ref2, class _Alloc>
@@ -74,21 +122,18 @@ struct _Generator_promise_base {
     auto yield_value(ranges::elements_of<generator<_Ty, _Ref2, _Alloc>> _Elem) noexcept {
         return _Nested_awaitable<_Ty, _Ref2, _Alloc>{_Elem.range()};
     }
-#endif // BORKEN
 
     void await_transform() = delete;
 
     void return_void() noexcept {}
 
-#ifndef _KERNEL_MODE
-#ifdef _CPPUNWIND
-    [[noreturn]] void unhandled_exception() {
-        throw;
+    void unhandled_exception() {
+        if (_Info) {
+            _Info->_Except = _STD current_exception();
+        } else {
+            throw;
+        }
     }
-#else // ^^^ defined(_CPPUNWIND) / !defined(_CPPUNWIND) vvv
-    void unhandled_exception() noexcept {}
-#endif // _CPPUNWIND
-#endif // _KERNEL_MODE
 };
 
 template <class _Ty, class _Ref>
@@ -110,17 +155,13 @@ struct _Generator_iterator {
     }
 
     _NODISCARD _Ref operator*() const noexcept {
-#ifndef _KERNEL_MODE
         _STL_ASSERT(!_Coro.done(), "Can't dereference generator end iterator");
-#endif // _KERNEL_MODE
-        return static_cast<_Ref>(*_Coro.promise()._Ptr);
+        return static_cast<_Ref>(*_Coro.promise()._Top.promise()._Ptr);
     }
 
     _Generator_iterator& operator++() {
-#ifndef _KERNEL_MODE
         _STL_ASSERT(!_Coro.done(), "Can't increment generator end iterator");
-#endif // _KERNEL_MODE
-        _Coro.resume();
+        _Coro.promise()._Top.resume();
         return *this;
     }
 
@@ -141,7 +182,10 @@ public:
             return generator(coroutine_handle<promise_type>::from_promise(*this));
         }
     };
-    static_assert(is_standard_layout_v<promise_type>);
+    _STL_INTERNAL_STATIC_ASSERT(is_standard_layout_v<promise_type>);
+#ifndef __clang__ // TRANSITION, LLVM-48860
+    _STL_INTERNAL_STATIC_ASSERT(is_pointer_interconvertible_base_of_v<_Generator_promise_base<_Ref&&>, promise_type>);
+#endif // TRANSITION, LLVM-48860
 
     coroutine_handle<promise_type> _Coro = nullptr;
 
@@ -160,9 +204,7 @@ public:
 
     _NODISCARD _Generator_iterator<_Ty, _Ref&&> begin() {
         // Pre: _Coro is suspended at its initial suspend point
-#ifndef _KERNEL_MODE
         _STL_ASSERT(_Coro, "Can't call begin on moved-from generator");
-#endif // _KERNEL_MODE
         _Coro.resume();
         return _Generator_iterator<_Ty, _Ref&&>{
             coroutine_handle<_Generator_promise_base<_Ref&&>>::from_address(_Coro.address())};
