@@ -2318,7 +2318,7 @@ namespace ranges {
     using _Elements_alloc_type          = char;
 #endif
 
-    template <input_range _Rng, class _Alloc = allocator<_Elements_alloc_type>>
+    template <range _Rng, class _Alloc = allocator<_Elements_alloc_type>>
     struct elements_of {
     private:
         /* [[no_unique_address]] */ _Alloc _Al;
