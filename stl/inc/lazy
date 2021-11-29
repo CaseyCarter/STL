@@ -1,0 +1,204 @@
+// lazy standard header
+
+// Copyright (c) Microsoft Corporation.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
+#pragma once
+#ifndef _LAZY_
+#define _LAZY_
+#include <yvals_core.h>
+#if _STL_COMPILER_PREPROCESSOR
+
+#if !_HAS_CXX23 || !defined(__cpp_impl_coroutine)
+#pragma message("The contents of <lazy> are available only in c++latest mode with coroutine support")
+#else // ^^^ no coroutine support / coroutines vvv
+
+#include <coroutine>
+#include <exception>
+#include <xmemory>
+
+#pragma pack(push, _CRT_PACKING)
+#pragma warning(push, _STL_WARNING_LEVEL)
+#pragma warning(disable : _STL_DISABLED_WARNINGS)
+_STL_DISABLE_CLANG_WARNINGS
+#pragma push_macro("new")
+#undef new
+
+_STD_BEGIN
+
+template <class _Ty = void, class _Allocator = void>
+class [[nodiscard]] lazy;
+
+template <class _Ref>
+class _Lazy_promise_base {
+public:
+    _STL_INTERNAL_STATIC_ASSERT(is_reference_v<_Ref>);
+
+    suspend_always initial_suspend() noexcept {
+        return {};
+    }
+
+    auto final_suspend() noexcept {
+        return _Final_awaiter{};
+    }
+
+    suspend_always yield_value(_Ref _Val) noexcept {
+        _Ptr = _STD addressof(_Val);
+        return {};
+    }
+
+    template <class _Ty, class _Ref2, class _Alloc, class _Alloc2>
+        requires same_as<_Ref2&&, _Ref>
+    auto yield_value(_RANGES elements_of<lazy<_Ty, _Ref2, _Alloc>, _Alloc2> _Elem) noexcept {
+        return _Nested_awaitable<_Ty, _Ref2, _Alloc>{_Elem.range()};
+    }
+
+    template <_RANGES input_range _Rng, class _Alloc>
+        requires convertible_to<_RANGES range_reference_t<_Rng>, _Ref>
+    auto yield_value(_RANGES elements_of<_Rng, _Alloc> _Elem) noexcept {
+        using _Ty     = _RANGES range_value_t<_Rng>;
+        auto&& _Range = _Elem.range();
+        return _Nested_awaitable<_Ty, _Ref, _Alloc>{
+            [](allocator_arg_t, _Alloc, auto* _Range_ptr) -> lazy<_Ty, _Ref, _Alloc> {
+                for (auto&& e : *_Range_ptr) {
+                    co_yield static_cast<_Ref>(_STD forward<decltype(e)>(e));
+                }
+            }(allocator_arg, _Elem.get_allocator(), _STD addressof(_Range))};
+    }
+
+    void await_transform() = delete;
+
+    void return_void() noexcept {}
+
+    void unhandled_exception() {
+        if (_Info) {
+            _Info->_Except = _STD current_exception();
+        } else {
+            throw;
+        }
+    }
+
+private:
+    struct _Nest_info {
+        exception_ptr _Except;
+        coroutine_handle<_Lazy_promise_base> _Parent;
+        coroutine_handle<_Lazy_promise_base> _Root;
+    };
+
+    struct _Final_awaiter {
+        bool await_ready() noexcept {
+            return false;
+        }
+
+        template <class _Promise>
+        coroutine_handle<> await_suspend(coroutine_handle<_Promise> _Handle) noexcept {
+#ifdef __cpp_lib_is_pointer_interconvertible // TRANSITION, LLVM-48860
+            _STL_INTERNAL_STATIC_ASSERT(is_pointer_interconvertible_base_of_v<_Lazy_promise_base, _Promise>);
+#endif // __cpp_lib_is_pointer_interconvertible
+
+            _Lazy_promise_base& _Current = _Handle.promise();
+            if (!_Current._Info) {
+                return _STD noop_coroutine();
+            }
+
+            coroutine_handle<_Lazy_promise_base> _Cont = _Current._Info->_Parent;
+            _Current._Info->_Root.promise()._Top       = _Cont;
+            _Current._Info                             = nullptr;
+            return _Cont;
+        }
+
+        void await_resume() noexcept {}
+    };
+
+    template <class _Ty, class _Ref2, class _Alloc>
+    struct _Nested_awaitable {
+        _Nest_info _Nested;
+        lazy<_Ty, _Ref2, _Alloc> _Gen;
+
+        explicit _Nested_awaitable(lazy<_Ty, _Ref2, _Alloc>&& _Gen_) noexcept : _Gen(_STD move(_Gen_)) {}
+
+        bool await_ready() noexcept {
+            return !_Gen._Coro;
+        }
+
+        template <class _Promise>
+        coroutine_handle<_Lazy_promise_base> await_suspend(coroutine_handle<_Promise> _Current) noexcept {
+#ifdef __cpp_lib_is_pointer_interconvertible // TRANSITION, LLVM-48860
+            _STL_INTERNAL_STATIC_ASSERT(is_pointer_interconvertible_base_of_v<_Lazy_promise_base, _Promise>);
+#endif // __cpp_lib_is_pointer_interconvertible
+            auto _Target    = coroutine_handle<_Lazy_promise_base>::from_address(_Gen._Coro.address());
+            _Nested._Parent = coroutine_handle<_Lazy_promise_base>::from_address(_Current.address());
+            _Lazy_promise_base& _Parent_promise = _Nested._Parent.promise();
+            if (_Parent_promise._Info) {
+                _Nested._Root = _Parent_promise._Info->_Root;
+            } else {
+                _Nested._Root = _Nested._Parent;
+            }
+            _Nested._Root.promise()._Top = _Target;
+            _Target.promise()._Info      = _STD addressof(_Nested);
+            return _Target;
+        }
+
+        void await_resume() {
+            if (_Nested._Except) {
+                _STD rethrow_exception(_STD move(_Nested._Except));
+            }
+        }
+    };
+
+    // _Top and _Info are mutually exclusive, and could potentially be merged.
+    coroutine_handle<_Lazy_promise_base> _Top = coroutine_handle<_Lazy_promise_base>::from_promise(*this);
+    add_pointer_t<_Ref> _Ptr                  = nullptr;
+    _Nest_info* _Info                         = nullptr;
+};
+
+template <class _Ty, class _Allocator>
+class [[nodiscard]] lazy {
+public:
+    struct __declspec(empty_bases) promise_type : _Promise_allocator<_Allocator>, _Lazy_promise_base<_Ty> {
+        lazy get_return_object() noexcept {
+            return lazy(coroutine_handle<promise_type>::from_promise(*this));
+        }
+    };
+    _STL_INTERNAL_STATIC_ASSERT(is_standard_layout_v<promise_type>);
+#ifdef __cpp_lib_is_pointer_interconvertible // TRANSITION, LLVM-48860
+    _STL_INTERNAL_STATIC_ASSERT(is_pointer_interconvertible_base_of_v<_Lazy_promise_base<_Ty>, promise_type>);
+#endif // __cpp_lib_is_pointer_interconvertible
+
+    lazy(lazy&& _That) noexcept : _Coro(_STD exchange(_That._Coro, nullptr)) {}
+
+    ~lazy() {
+        if (_Coro) {
+            _Coro.destroy();
+        }
+    }
+
+    auto operator co_await() {
+        // Pre: _Coro refers to a coroutine suspended at its initial suspend point
+        struct _Await {
+            coroutine_handle<> _Cont;
+
+            bool await_ready() noexcept {
+                return false;
+            }
+        };
+    }
+
+private:
+    explicit lazy(coroutine_handle<promise_type> _Coro_) noexcept : _Coro(_Coro_) {}
+
+    friend _Lazy_promise_base<_Ty>;
+
+    coroutine_handle<promise_type> _Coro = nullptr;
+};
+
+_STD_END
+
+#pragma pop_macro("new")
+_STL_RESTORE_CLANG_WARNINGS
+#pragma warning(pop)
+#pragma pack(pop)
+
+#endif // !_HAS_CXX23 || !defined(__cpp_impl_coroutine)
+#endif // _STL_COMPILER_PREPROCESSOR
+#endif // _LAZY_

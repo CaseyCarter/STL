@@ -256,6 +256,33 @@ struct suspend_always {
     constexpr void await_resume() const noexcept {}
 };
 
+template <class _Ty>
+concept _Await_suspend_result = _Is_any_of_v<_Ty, void, bool> || _Is_specialization_v<_Ty, coroutine_handle>;
+
+template <class _Ty, class _Promise = void>
+concept simple_awaitable = requires(_Ty& _Val, const coroutine_handle<_Promise>& _Coro) {
+    { _Val.await_ready() } -> convertible_to<bool>;
+    { _Val.await_suspend(_Coro) } -> _Await_suspend_result;
+    _Val.await_resume();
+};
+
+template <class _Ty, class _Promise = void>
+concept _Has_member_co_await = requires(_Ty&& _Val) {
+    { static_cast<_Ty&&>(_Val).operator co_await() } -> simple_awaitable<_Promise>;
+};
+
+template <class _Ty, class _Promise = void>
+concept _Has_ADL_co_await = requires(_Ty&& _Val) {
+    { operator co_await(static_cast<_Ty&&>(_Val)) } -> simple_awaitable<_Promise>;
+};
+
+template <class _Ty, class _Promise = void>
+concept awaitable =
+    _Has_member_co_await<_Ty, _Promise> || _Has_ADL_co_await<_Ty, _Promise> || simple_awaitable<_Ty&, _Promise>;
+
+_STL_INTERNAL_STATIC_ASSERT(simple_awaitable<suspend_always>);
+_STL_INTERNAL_STATIC_ASSERT(simple_awaitable<suspend_never>);
+
 _STD_END
 
 #pragma pop_macro("new")
