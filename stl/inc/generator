@@ -10,7 +10,8 @@
 #if _STL_COMPILER_PREPROCESSOR
 
 #if !_HAS_CXX23 || !defined(__cpp_impl_coroutine)
-#pragma message("The contents of <generator> are available only in c++latest mode with coroutine support")
+#pragma message( \
+    "The contents of <generator> are available only in c++latest mode with coroutine support")
 #else // ^^^ no coroutine support / coroutines vvv
 
 #include <coroutine>
@@ -28,6 +29,9 @@ _STD_BEGIN
 
 template <class _Ty, class _Ref = const _Ty&, class _Allocator = void>
 class generator;
+
+template <class _Ref>
+using _Generator_yield_t = conditional_t<is_reference_v<_Ref>, _Ref, const _Ref&>;
 
 template <class _Ref>
 class _Generator_promise_base {
@@ -48,7 +52,7 @@ public:
     }
 
     template <class _Ty, class _Ref2, class _Alloc, class _Alloc2>
-        requires same_as<_Ref2&&, _Ref>
+        requires same_as<_Generator_yield_t<_Ref2>, _Ref>
     auto yield_value(_RANGES elements_of<generator<_Ty, _Ref2, _Alloc>, _Alloc2> _Elem) noexcept {
         return _Nested_awaitable<_Ty, _Ref2, _Alloc>{_Elem.range()};
     }
@@ -93,7 +97,8 @@ private:
         template <class _Promise>
         coroutine_handle<> await_suspend(coroutine_handle<_Promise> _Handle) noexcept {
 #ifdef __cpp_lib_is_pointer_interconvertible // TRANSITION, LLVM-48860
-            _STL_INTERNAL_STATIC_ASSERT(is_pointer_interconvertible_base_of_v<_Generator_promise_base, _Promise>);
+            _STL_INTERNAL_STATIC_ASSERT(
+                is_pointer_interconvertible_base_of_v<_Generator_promise_base, _Promise>);
 #endif // __cpp_lib_is_pointer_interconvertible
 
             _Generator_promise_base& _Current = _Handle.promise();
@@ -115,19 +120,24 @@ private:
         _Nest_info _Nested;
         generator<_Ty, _Ref2, _Alloc> _Gen;
 
-        explicit _Nested_awaitable(generator<_Ty, _Ref2, _Alloc>&& _Gen_) noexcept : _Gen(_STD move(_Gen_)) {}
+        explicit _Nested_awaitable(generator<_Ty, _Ref2, _Alloc>&& _Gen_) noexcept
+            : _Gen(_STD move(_Gen_)) {}
 
         bool await_ready() noexcept {
             return !_Gen._Coro;
         }
 
         template <class _Promise>
-        coroutine_handle<_Generator_promise_base> await_suspend(coroutine_handle<_Promise> _Current) noexcept {
+        coroutine_handle<_Generator_promise_base> await_suspend(
+            coroutine_handle<_Promise> _Current) noexcept {
 #ifdef __cpp_lib_is_pointer_interconvertible // TRANSITION, LLVM-48860
-            _STL_INTERNAL_STATIC_ASSERT(is_pointer_interconvertible_base_of_v<_Generator_promise_base, _Promise>);
+            _STL_INTERNAL_STATIC_ASSERT(
+                is_pointer_interconvertible_base_of_v<_Generator_promise_base, _Promise>);
 #endif // __cpp_lib_is_pointer_interconvertible
-            auto _Target    = coroutine_handle<_Generator_promise_base>::from_address(_Gen._Coro.address());
-            _Nested._Parent = coroutine_handle<_Generator_promise_base>::from_address(_Current.address());
+            auto _Target =
+                coroutine_handle<_Generator_promise_base>::from_address(_Gen._Coro.address());
+            _Nested._Parent =
+                coroutine_handle<_Generator_promise_base>::from_address(_Current.address());
             _Generator_promise_base& _Parent_promise = _Nested._Parent.promise();
             if (_Parent_promise._Info) {
                 _Nested._Root = _Parent_promise._Info->_Root;
@@ -150,20 +160,20 @@ private:
     friend class _Generator_iterator;
 
     // _Top and _Info are mutually exclusive, and could potentially be merged.
-    coroutine_handle<_Generator_promise_base> _Top = coroutine_handle<_Generator_promise_base>::from_promise(*this);
-    add_pointer_t<_Ref> _Ptr                       = nullptr;
-    _Nest_info* _Info                              = nullptr;
+    coroutine_handle<_Generator_promise_base> _Top =
+        coroutine_handle<_Generator_promise_base>::from_promise(*this);
+    add_pointer_t<_Ref> _Ptr = nullptr;
+    _Nest_info* _Info        = nullptr;
 };
 
 template <class _Ty, class _Ref>
 class _Generator_iterator {
 public:
-    _STL_INTERNAL_STATIC_ASSERT(is_reference_v<_Ref>);
-
     using difference_type = ptrdiff_t;
     using value_type      = _Ty;
 
-    _Generator_iterator(_Generator_iterator&& _That) noexcept : _Coro{_STD exchange(_That._Coro, {})} {}
+    _Generator_iterator(_Generator_iterator&& _That) noexcept
+        : _Coro{_STD exchange(_That._Coro, {})} {}
 
     _Generator_iterator& operator=(_Generator_iterator&& _That) noexcept {
         _Coro = _STD exchange(_That._Coro, {});
@@ -193,24 +203,38 @@ private:
     template <class, class, class>
     friend class generator;
 
-    explicit _Generator_iterator(coroutine_handle<_Generator_promise_base<_Ref>> _Coro_) noexcept : _Coro{_Coro_} {}
+    explicit _Generator_iterator(
+        coroutine_handle<_Generator_promise_base<_Generator_yield_t<_Ref>>> _Coro_) noexcept
+        : _Coro{_Coro_} {}
 
-    coroutine_handle<_Generator_promise_base<_Ref>> _Coro;
+    coroutine_handle<_Generator_promise_base<_Generator_yield_t<_Ref>>> _Coro;
 };
 
 template <class _Ty, class _Ref, class _Allocator>
 class generator {
 public:
-    static_assert(same_as<remove_cvref_t<_Ty>, _Ty>, "generator's first argument must be a cv-unqualified object type");
+    static_assert(same_as<remove_cvref_t<_Ty>, _Ty>,
+        "generator's first argument must be a cv-unqualified object type");
 
-    struct __declspec(empty_bases) promise_type : _Promise_allocator<_Allocator>, _Generator_promise_base<_Ref&&> {
+    // clang-format off
+    static_assert(is_reference_v<_Ref>
+        || (is_object_v<_Ref> && same_as<remove_cv_t<_Ref>, _Ref> && copy_constructible<_Ref>),
+        "generator's second argument must be a reference type or a cv-unqualified "
+        "copy-constructible object type");
+    // clang-format on
+
+    struct __declspec(empty_bases) promise_type
+        : _Promise_allocator<_Allocator>,
+          _Generator_promise_base<_Generator_yield_t<_Ref>> {
         generator get_return_object() noexcept {
             return generator(coroutine_handle<promise_type>::from_promise(*this));
         }
     };
     _STL_INTERNAL_STATIC_ASSERT(is_standard_layout_v<promise_type>);
 #ifdef __cpp_lib_is_pointer_interconvertible // TRANSITION, LLVM-48860
-    _STL_INTERNAL_STATIC_ASSERT(is_pointer_interconvertible_base_of_v<_Generator_promise_base<_Ref&&>, promise_type>);
+    _STL_INTERNAL_STATIC_ASSERT(
+        is_pointer_interconvertible_base_of_v<_Generator_promise_base<_Generator_yield_t<_Ref>>,
+            promise_type>);
 #endif // __cpp_lib_is_pointer_interconvertible
 
     generator(generator&& _That) noexcept : _Coro(_STD exchange(_That._Coro, nullptr)) {}
@@ -226,12 +250,13 @@ public:
         return *this;
     }
 
-    _NODISCARD _Generator_iterator<_Ty, _Ref&&> begin() {
+    _NODISCARD _Generator_iterator<_Ty, _Ref> begin() {
         // Pre: _Coro is suspended at its initial suspend point
         _STL_ASSERT(_Coro, "Can't call begin on moved-from generator");
         _Coro.resume();
-        return _Generator_iterator<_Ty, _Ref&&>{
-            coroutine_handle<_Generator_promise_base<_Ref&&>>::from_address(_Coro.address())};
+        return _Generator_iterator<_Ty, _Ref>{
+            coroutine_handle<_Generator_promise_base<_Generator_yield_t<_Ref>>>::from_address(
+                _Coro.address())};
     }
 
     _NODISCARD default_sentinel_t end() const noexcept {
@@ -241,7 +266,7 @@ public:
 private:
     explicit generator(coroutine_handle<promise_type> _Coro_) noexcept : _Coro(_Coro_) {}
 
-    friend _Generator_promise_base<_Ref&&>;
+    friend _Generator_promise_base<_Generator_yield_t<_Ref>>;
 
     coroutine_handle<promise_type> _Coro = nullptr;
 };
