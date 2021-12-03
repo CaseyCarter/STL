@@ -2321,13 +2321,14 @@ namespace ranges {
 #endif
 
     template <range _Rng, class _Alloc = allocator<_Elements_alloc_type>>
-    struct elements_of {
+    class elements_of {
     private:
-        /* [[no_unique_address]] */ _Alloc _Al;
+        /* [[no_unique_address]] */ _Alloc _Al{};
         _Rng&& _Range;
 
     public:
-        constexpr explicit elements_of(_Rng&& _Range_) noexcept requires default_initializable<_Alloc>
+        constexpr explicit elements_of(_Rng&& _Range_) noexcept(
+            is_nothrow_default_constructible_v<_Alloc>) requires default_initializable<_Alloc>
             : _Range(_STD forward<_Rng>(_Range_)) {}
 
         constexpr explicit elements_of(_Rng&& _Range_, _Alloc _Al_) noexcept
@@ -2343,11 +2344,8 @@ namespace ranges {
         }
     };
 
-    template <class _Rng>
-    elements_of(_Rng&&) -> elements_of<_Rng>;
-
-    template <class _Rng, class _Alloc>
-    elements_of(_Rng&&, _Alloc) -> elements_of<_Rng, _Alloc>;
+    template <class _Rng, class _Alloc = allocator<byte>>
+    elements_of(_Rng&&, _Alloc = {}) -> elements_of<_Rng, _Alloc>;
 } // namespace ranges
 #endif // _HAS_CXX23 && defined(__cpp_lib_ranges)
 
