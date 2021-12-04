@@ -26,7 +26,7 @@ _STL_DISABLE_CLANG_WARNINGS
 
 _STD_BEGIN
 
-template <class _Ty, class _Ref = const _Ty&, class _Allocator = void>
+template <class _Ty, class _Ref = const _Ty&, class _Alloc = void>
 class generator;
 
 template <class _Ref>
@@ -200,7 +200,7 @@ private:
     coroutine_handle<_Generator_promise_base<_Generator_yield_t<_Ref>>> _Coro;
 };
 
-template <class _Ty, class _Ref, class _Allocator>
+template <class _Ty, class _Ref, class _Alloc>
 class generator {
 public:
     static_assert(same_as<remove_cvref_t<_Ty>, _Ty>, "generator's first argument must be a cv-unqualified object type");
@@ -212,7 +212,7 @@ public:
         "copy-constructible object type");
     // clang-format on
 
-    struct __declspec(empty_bases) promise_type : _Promise_allocator<_Allocator>,
+    struct __declspec(empty_bases) promise_type : _Promise_allocator<_Alloc>,
                                                   _Generator_promise_base<_Generator_yield_t<_Ref>> {
         generator get_return_object() noexcept {
             return generator(coroutine_handle<promise_type>::from_promise(*this));
@@ -258,8 +258,8 @@ private:
 };
 
 namespace ranges {
-    template <class _Ty, class _Ref, class _Allocator>
-    inline constexpr bool enable_view<generator<_Ty, _Ref, _Allocator>> = true;
+    template <class _Ty, class _Ref, class _Alloc>
+    inline constexpr bool enable_view<generator<_Ty, _Ref, _Alloc>> = true;
 }
 
 _STD_END
