@@ -2344,7 +2344,7 @@ namespace ranges {
         }
     };
 
-    template <class _Rng, class _Alloc = allocator<byte>>
+    template <class _Rng, class _Alloc = allocator<_Elements_alloc_type>>
     elements_of(_Rng&&, _Alloc = {}) -> elements_of<_Rng, _Alloc>;
 } // namespace ranges
 #endif // _HAS_CXX23 && defined(__cpp_lib_ranges)

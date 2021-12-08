@@ -212,6 +212,12 @@ public:
         "copy-constructible object type");
     // clang-format on
 
+    using _RRef = conditional_t<is_lvalue_reference_v<_Ref>, remove_reference_t<_Ref>&&, _Ref>;
+
+    static_assert(common_reference_with<_Ref&&,
+                      _Ty&> && common_reference_with<_Ref&&, _RRef&&> && common_reference_with<_RRef&&, const _Ty&>,
+        "an iterator with the selected value and reference types cannot model indirectly_readable");
+
     struct __declspec(empty_bases) promise_type : _Promise_allocator<_Alloc>,
                                                   _Generator_promise_base<_Generator_yield_t<_Ref>> {
         generator get_return_object() noexcept {
