@@ -2204,15 +2204,15 @@ public:
     }
 
     template <class _Alloc2, class... _Args>
-        requires convertible_to<const _Alloc2&, _Allocator>
-    static void* operator new(const size_t _Size, allocator_arg_t, const _Alloc2& _Al, _Args&...) {
-        return _Allocate(static_cast<_Alloc>(static_cast<_Allocator>(_Al)), _Size);
+        requires convertible_to<_Alloc2, _Allocator>
+    static void* operator new(const size_t _Size, allocator_arg_t, _Alloc2&& _Al, _Args&...) {
+        return _Allocate(static_cast<_Alloc>(static_cast<_Allocator>(_STD forward<_Alloc2>(_Al))), _Size);
     }
 
     template <class _This, class _Alloc2, class... _Args>
-        requires convertible_to<const _Alloc2&, _Allocator>
-    static void* operator new(const size_t _Size, _This&, allocator_arg_t, const _Alloc2& _Al, _Args&...) {
-        return _Allocate(static_cast<_Alloc>(static_cast<_Allocator>(_Al)), _Size);
+        requires convertible_to<_Alloc2, _Allocator>
+    static void* operator new(const size_t _Size, _This&, allocator_arg_t, _Alloc2&& _Al, _Args&...) {
+        return _Allocate(static_cast<_Alloc>(static_cast<_Allocator>(_STD forward<_Alloc2>(_Al))), _Size);
     }
 
     static void operator delete(void* const _Ptr, const size_t _Size) noexcept {

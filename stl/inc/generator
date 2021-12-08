@@ -210,13 +210,13 @@ public:
         || (is_object_v<_Ref> && same_as<remove_cv_t<_Ref>, _Ref> && copy_constructible<_Ref>),
         "generator's second argument must be a reference type or a cv-unqualified "
         "copy-constructible object type");
-    // clang-format on
 
     using _RRef = conditional_t<is_lvalue_reference_v<_Ref>, remove_reference_t<_Ref>&&, _Ref>;
 
-    static_assert(common_reference_with<_Ref&&,
-                      _Ty&> && common_reference_with<_Ref&&, _RRef&&> && common_reference_with<_RRef&&, const _Ty&>,
+    static_assert(common_reference_with<_Ref&&, _Ty&> && common_reference_with<_Ref&&, _RRef&&>
+        && common_reference_with<_RRef&&, const _Ty&>,
         "an iterator with the selected value and reference types cannot model indirectly_readable");
+    // clang-format on
 
     struct __declspec(empty_bases) promise_type : _Promise_allocator<_Alloc>,
                                                   _Generator_promise_base<_Generator_yield_t<_Ref>> {
@@ -230,7 +230,7 @@ public:
         is_pointer_interconvertible_base_of_v<_Generator_promise_base<_Generator_yield_t<_Ref>>, promise_type>);
 #endif // __cpp_lib_is_pointer_interconvertible
 
-    generator(generator&& _That) noexcept : _Coro(_STD exchange(_That._Coro, nullptr)) {}
+    generator(generator&& _That) noexcept : _Coro(_STD exchange(_That._Coro, {})) {}
 
     ~generator() {
         if (_Coro) {
@@ -239,7 +239,7 @@ public:
     }
 
     generator& operator=(generator&& _That) noexcept {
-        _Coro = _STD exchange(_That._Coro, nullptr);
+        _Coro = _STD exchange(_That._Coro, {});
         return *this;
     }
 
