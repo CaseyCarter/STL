@@ -161,8 +161,8 @@ private:
 template <class _Ty, class _Ref>
 class _Generator_iterator {
 public:
-    using difference_type = ptrdiff_t;
     using value_type      = _Ty;
+    using difference_type = ptrdiff_t;
 
     _Generator_iterator(_Generator_iterator&& _That) noexcept : _Coro{_STD exchange(_That._Coro, {})} {}
 
