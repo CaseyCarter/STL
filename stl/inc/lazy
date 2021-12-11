@@ -157,7 +157,7 @@ class [[nodiscard]] lazy {
 public:
     struct __declspec(empty_bases) promise_type : _Promise_allocator<_Allocator>, _Lazy_promise_base<_Ty> {
         lazy get_return_object() noexcept {
-            return lazy(coroutine_handle<promise_type>::from_promise(*this));
+            return lazy{coroutine_handle<promise_type>::from_promise(*this)};
         }
     };
     _STL_INTERNAL_STATIC_ASSERT(is_standard_layout_v<promise_type>);
@@ -165,7 +165,7 @@ public:
     _STL_INTERNAL_STATIC_ASSERT(is_pointer_interconvertible_base_of_v<_Lazy_promise_base<_Ty>, promise_type>);
 #endif // __cpp_lib_is_pointer_interconvertible
 
-    lazy(lazy&& _That) noexcept : _Coro(_STD exchange(_That._Coro, nullptr)) {}
+    lazy(lazy&& _That) noexcept : _Coro(_STD exchange(_That._Coro, {})) {}
 
     ~lazy() {
         if (_Coro) {
@@ -185,9 +185,9 @@ public:
     }
 
 private:
-    explicit lazy(coroutine_handle<promise_type> _Coro_) noexcept : _Coro(_Coro_) {}
-
     friend _Lazy_promise_base<_Ty>;
+
+    explicit lazy(coroutine_handle<promise_type> _Coro_) noexcept : _Coro(_Coro_) {}
 
     coroutine_handle<promise_type> _Coro = nullptr;
 };
