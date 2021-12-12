@@ -37,7 +37,7 @@ class _Generator_promise_base {
 public:
     _STL_INTERNAL_STATIC_ASSERT(is_reference_v<_Ref>);
 
-    _NODISCARD suspend_always initial_suspend() noexcept {
+    /* _NODISCARD */ suspend_always initial_suspend() noexcept {
         return {};
     }
 

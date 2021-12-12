@@ -64,7 +64,7 @@ public:
         }
     }
 
-    _NODISCARD suspend_always initial_suspend() noexcept {
+    /* _NODISCARD */ suspend_always initial_suspend() noexcept {
         return {};
     }
 

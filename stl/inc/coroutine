@@ -291,7 +291,7 @@ decltype(auto) _Sync_await(_Awaitable&& _Await) {
         } else if constexpr (_Has_ADL_co_await<_Awaitable, noop_coroutine_handle>) {
             return operator co_await(_STD forward<_Awaitable>(_Await));
         } else {
-            _STL_INTERNAL_STATIC_ASSERT(_Simple_awaitable<_Awaitable, noop_coroutine_handle>);
+            _STL_INTERNAL_STATIC_ASSERT(simple_awaitable<_Awaitable, noop_coroutine_handle>);
             return _Await; // yes, lvalue is intentional here
         }
     }();
