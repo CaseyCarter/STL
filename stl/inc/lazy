@@ -40,11 +40,15 @@ public:
             break;
         case _Discriminator::_Data:
             _Construct_in_place(_Data, _STD move(_That._Data));
+            _Destroy_in_place(_That._Data);
             break;
         case _Discriminator::_Exception:
             _Construct_in_place(_Except, _STD move(_That._Except));
+            _Destroy_in_place(_That._Except);
             break;
         }
+
+        _That._Disc = _Discriminator::_Empty;
     }
 
     ~_Lazy_promise_base() {
@@ -60,11 +64,11 @@ public:
         }
     }
 
-    suspend_always initial_suspend() noexcept {
+    _NODISCARD suspend_always initial_suspend() noexcept {
         return {};
     }
 
-    auto final_suspend() noexcept {
+    _NODISCARD auto final_suspend() noexcept {
         return _Final_awaiter{};
     }
 
@@ -119,12 +123,12 @@ private:
     friend class lazy;
 
     struct _Final_awaiter {
-        bool await_ready() noexcept {
+        _NODISCARD bool await_ready() noexcept {
             return false;
         }
 
         template <class _Promise>
-        coroutine_handle<> await_suspend(coroutine_handle<_Promise> _Coro) noexcept {
+        _NODISCARD coroutine_handle<> await_suspend(coroutine_handle<_Promise> _Coro) noexcept {
 #ifdef __cpp_lib_is_pointer_interconvertible // TRANSITION, LLVM-48860
             _STL_INTERNAL_STATIC_ASSERT(is_pointer_interconvertible_base_of_v<_Lazy_promise_base, _Promise>);
 #endif // __cpp_lib_is_pointer_interconvertible
@@ -139,11 +143,11 @@ private:
     struct _Awaiter {
         coroutine_handle<_Lazy_promise_base> _Coro;
 
-        bool await_ready() noexcept {
+        _NODISCARD bool await_ready() noexcept {
             return !_Coro;
         }
 
-        coroutine_handle<_Lazy_promise_base> await_suspend(coroutine_handle<> _Cont) noexcept {
+        _NODISCARD coroutine_handle<_Lazy_promise_base> await_suspend(coroutine_handle<> _Cont) noexcept {
             _Coro.promise()._Cont = _Cont;
             return _Coro;
         }
@@ -184,43 +188,33 @@ public:
     _Lazy_promise_base() noexcept {}
 
     _Lazy_promise_base(_Lazy_promise_base&& _That) noexcept(is_nothrow_move_constructible_v<_Ty>) : _Disc{_That._Disc} {
-        switch (_Disc) {
-        case _Discriminator::_Empty:
-            break;
-        case _Discriminator::_Exception:
+        if (_Disc == _Discriminator::_Exception) {
             _Construct_in_place(_Except, _STD move(_That._Except));
-            break;
+            _Destroy_in_place(_That._Except);
+            _That._Disc = _Discriminator::_Empty;
         }
     }
 
     ~_Lazy_promise_base() {
-        switch (_Disc) {
-        case _Discriminator::_Exception:
+        if (_Disc == _Discriminator::_Exception) {
             _Destroy_in_place(_Except);
-            break;
-        default:
-            break;
         }
     }
 
-    suspend_always initial_suspend() noexcept {
+    _NODISCARD suspend_always initial_suspend() noexcept {
         return {};
     }
 
-    auto final_suspend() noexcept {
+    _NODISCARD auto final_suspend() noexcept {
         return _Final_awaiter{};
     }
 
     void return_void() noexcept {}
 
     void unhandled_exception() {
-        switch (_Disc) {
-        case _Discriminator::_Exception:
-            break;
-        case _Discriminator::_Empty:
+        if (_Disc == _Discriminator::_Empty) {
             _Construct_in_place(_Except, _STD current_exception());
             _Disc = _Discriminator::_Exception;
-            break;
         }
     }
 
@@ -229,12 +223,12 @@ private:
     friend class lazy;
 
     struct _Final_awaiter {
-        bool await_ready() noexcept {
+        _NODISCARD bool await_ready() noexcept {
             return false;
         }
 
         template <class _Promise>
-        coroutine_handle<> await_suspend(coroutine_handle<_Promise> _Coro) noexcept {
+        _NODISCARD coroutine_handle<> await_suspend(coroutine_handle<_Promise> _Coro) noexcept {
 #ifdef __cpp_lib_is_pointer_interconvertible // TRANSITION, LLVM-48860
             _STL_INTERNAL_STATIC_ASSERT(is_pointer_interconvertible_base_of_v<_Lazy_promise_base, _Promise>);
 #endif // __cpp_lib_is_pointer_interconvertible
@@ -249,11 +243,11 @@ private:
     struct _Awaiter {
         coroutine_handle<_Lazy_promise_base> _Coro;
 
-        bool await_ready() noexcept {
+        _NODISCARD bool await_ready() noexcept {
             return !_Coro;
         }
 
-        coroutine_handle<_Lazy_promise_base> await_suspend(coroutine_handle<> _Cont) noexcept {
+        _NODISCARD coroutine_handle<_Lazy_promise_base> await_suspend(coroutine_handle<> _Cont) noexcept {
             _Coro.promise()._Cont = _Cont;
             return _Coro;
         }
@@ -281,7 +275,7 @@ public:
         "lazy's first template argument must be void, a reference type, or a move-constructible object type");
 
     struct __declspec(empty_bases) promise_type : _Promise_allocator<_Allocator>, _Lazy_promise_base<_Ty> {
-        lazy get_return_object() noexcept {
+        _NODISCARD lazy get_return_object() noexcept {
             return lazy{coroutine_handle<promise_type>::from_promise(*this)};
         }
     };
@@ -294,7 +288,7 @@ public:
         }
     }
 
-    _Lazy_promise_base<_Ty>::_Awaiter operator co_await() {
+    _NODISCARD _Lazy_promise_base<_Ty>::_Awaiter operator co_await() {
         // Pre: _Coro refers to a coroutine suspended at its initial suspend point
         auto& _Promise_base = static_cast<_Lazy_promise_base<_Ty>&>(_Coro.promise());
         return typename _Lazy_promise_base<_Ty>::_Awaiter{
