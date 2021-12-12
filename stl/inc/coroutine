@@ -283,8 +283,9 @@ concept awaitable =
 _STL_INTERNAL_STATIC_ASSERT(simple_awaitable<suspend_always>);
 _STL_INTERNAL_STATIC_ASSERT(simple_awaitable<suspend_never>);
 
+#if 0
 template <awaitable<noop_coroutine_handle> _Awaitable>
-decltype(auto) _Sync_await(_Awaitable&& _Await) {
+decltype(auto) sync_await(_Awaitable&& _Await) {
     simple_awaitable<noop_coroutine_handle> auto&& _Simple = [&]() -> decltype(auto) {
         if constexpr (_Has_member_co_await<_Awaitable, noop_coroutine_handle>) {
             return _STD forward<_Awaitable>(_Await).operator co_await();
@@ -307,6 +308,7 @@ decltype(auto) _Sync_await(_Awaitable&& _Await) {
 
     return _Simple.await_resume();
 }
+#endif // 0
 _STD_END
 
 #pragma pop_macro("new")
