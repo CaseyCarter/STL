@@ -239,7 +239,9 @@ public:
     }
 
     generator& operator=(generator&& _That) noexcept {
-        _Coro = _STD exchange(_That._Coro, {});
+        if (auto _Old = _STD exchange(_Coro, _STD exchange(_That._Coro, {}))) {
+            _Old.destroy();
+        }
         return *this;
     }
 
