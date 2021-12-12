@@ -283,6 +283,30 @@ concept awaitable =
 _STL_INTERNAL_STATIC_ASSERT(simple_awaitable<suspend_always>);
 _STL_INTERNAL_STATIC_ASSERT(simple_awaitable<suspend_never>);
 
+template <awaitable<noop_coroutine_handle> _Awaitable>
+decltype(auto) sync_await(_Awaitable&& _Await) {
+    simple_awaitable<noop_coroutine_handle> auto&& _Simple = [&]() -> decltype(auto) {
+        if constexpr (_Has_member_co_await<_Awaitable, noop_coroutine_handle>) {
+            return _STD forward<_Awaitable>(_Await).operator co_await();
+        } else if constexpr (_Has_ADL_co_await<_Awaitable, noop_coroutine_handle>) {
+            return operator co_await(_STD forward<_Awaitable>(_Await));
+        } else {
+            _STL_INTERNAL_STATIC_ASSERT(_Simple_awaitable<_Awaitable, noop_coroutine_handle>);
+            return _Await; // yes, lvalue is intentional here
+        }
+    }();
+
+    if (!_Simple.await_ready()) {
+        using _Await_suspend_t = decltype(_Simple.await_suspend(_STD noop_coroutine()));
+        if constexpr (_Is_specialization_v<_Await_suspend_t, coroutine_handle>) {
+            _Simple.await_suspend(_STD noop_coroutine()).resume();
+        } else {
+            _Simple.await_suspend(_STD noop_coroutine());
+        }
+    }
+
+    return _Simple.await_resume();
+}
 _STD_END
 
 #pragma pop_macro("new")
