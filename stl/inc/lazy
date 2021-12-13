@@ -290,6 +290,9 @@ public:
 
     _NODISCARD typename _Lazy_promise_base<_Ty>::_Awaiter operator co_await() {
         // Pre: _Coro refers to a coroutine suspended at its initial suspend point
+        _STL_ASSERT(_Coro && !_Coro.done(), "co_await requires the lazy object to be associated with a coroutine "
+                                            "suspended at its initial suspend point");
+
         auto& _Promise_base = static_cast<_Lazy_promise_base<_Ty>&>(_Coro.promise());
         return typename _Lazy_promise_base<_Ty>::_Awaiter{
             coroutine_handle<_Lazy_promise_base<_Ty>>::from_promise(_Promise_base)};
@@ -297,14 +300,15 @@ public:
 
     _NODISCARD _Ty sync_await() {
         // Pre: _Coro refers to a coroutine suspended at its initial suspend point
-        _STL_ASSERT(
-            _Coro && !_Coro.done(), "sync_await requires the coroutine to be suspended at its initial suspend point");
+        _STL_ASSERT(_Coro && !_Coro.done(), "sync_await requires the lazy object to be associated with a coroutine "
+                                            "suspended at its initial suspend point");
 
         simple_awaitable<noop_coroutine_handle> auto _Simple = operator co_await();
 
-        if (!_Simple.await_ready()) {
-            _Simple.await_suspend(_STD noop_coroutine()).resume();
-        }
+        _STL_ASSERT(!_Simple.await_ready(), "sync_await requires the lazy object to be associated with a coroutine "
+                                            "suspended at its initial suspend point");
+
+        _Simple.await_suspend(_STD noop_coroutine()).resume();
 
         return _Simple.await_resume();
     }
