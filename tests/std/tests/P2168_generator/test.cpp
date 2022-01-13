@@ -327,11 +327,16 @@ int main() {
                 ranges::generate(vec, [&] { return dist(rd); });
                 co_yield std::move(vec);
             }
+            // test yielding lvalue
+            vec.resize(size);
+            ranges::generate(vec, [&] { return dist(rd); });
+            const auto tmp = vec;
+            co_yield vec;
+            assert(tmp == vec);
         };
 
-        constexpr size_t size  = 16;
-        constexpr size_t count = 4;
-        auto r                 = woof(size, count);
+        constexpr size_t size = 16;
+        auto r                = woof(size, 4);
         for (auto i = r.begin(); i != r.end(); ++i) {
             std::vector<int> vec = *i;
             assert(vec.size() == size);

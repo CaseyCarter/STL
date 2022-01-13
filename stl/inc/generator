@@ -56,6 +56,15 @@ public:
     }
 
     // clang-format off
+    template <class _Uty = remove_reference_t<_Yielded>>
+        requires (is_rvalue_reference_v<_Yielded> && constructible_from<remove_cvref_t<_Yielded>, const _Uty&>)
+    _NODISCARD auto yield_value(type_identity_t<const _Uty&> _Val)
+        noexcept(is_nothrow_constructible_v<remove_cvref_t<_Yielded>, const _Uty&>) {
+        // clang-format on
+        return _Element_awaiter{_Val};
+    }
+
+    // clang-format off
     template <class _Ty, class _Alloc, class _Uty, class _Alloc2>
         requires same_as<_Generator_yield_t<_Generator_reference_t<_Ty, _Uty>>, _Yielded>
     _NODISCARD auto yield_value(
@@ -93,6 +102,26 @@ public:
     }
 
 private:
+    struct _Element_awaiter {
+        remove_cvref_t<_Yielded> _Val;
+
+        _NODISCARD constexpr bool await_ready() const noexcept {
+            return false;
+        }
+
+        template <class _Promise>
+        constexpr void await_suspend(coroutine_handle<_Promise> _Handle) noexcept {
+#ifdef __cpp_lib_is_pointer_interconvertible // TRANSITION, LLVM-48860
+            _STL_INTERNAL_STATIC_ASSERT(is_pointer_interconvertible_base_of_v<_Generator_promise_base, _Promise>);
+#endif // __cpp_lib_is_pointer_interconvertible
+
+            _Generator_promise_base& _Current = _Handle.promise();
+            _Current._Ptr                     = _STD addressof(_Val);
+        }
+
+        constexpr void await_resume() const noexcept {}
+    };
+
     struct _Nest_info {
         exception_ptr _Except;
         coroutine_handle<_Generator_promise_base> _Parent;
@@ -214,6 +243,13 @@ private:
     coroutine_handle<_Generator_promise_base<_Generator_yield_t<_Ref>>> _Coro;
 };
 
+template <class _Yield, class _Alloc>
+struct __declspec(empty_bases) _Generator_promise : _Promise_allocator<_Alloc>, _Generator_promise_base<_Yield> {
+    _NODISCARD coroutine_handle<_Generator_promise> get_return_object() noexcept {
+        return coroutine_handle<_Generator_promise>::from_promise(*this);
+    }
+};
+
 template <class _Ty, class _Alloc, class _Uty>
 class generator {
 public:
@@ -235,17 +271,15 @@ public:
         "an iterator with the selected value and reference types cannot model indirectly_readable");
     // clang-format on
 
-    struct __declspec(empty_bases) promise_type : _Promise_allocator<_Alloc>,
-                                                  _Generator_promise_base<_Generator_yield_t<_Ref>> {
-        _NODISCARD generator get_return_object() noexcept {
-            return generator(coroutine_handle<promise_type>::from_promise(*this));
-        }
-    };
+    friend _Generator_promise_base<_Generator_yield_t<_Ref>>;
+    using promise_type = _Generator_promise<_Generator_yield_t<_Ref>, _Alloc>;
     _STL_INTERNAL_STATIC_ASSERT(is_standard_layout_v<promise_type>);
 #ifdef __cpp_lib_is_pointer_interconvertible // TRANSITION, LLVM-48860
     _STL_INTERNAL_STATIC_ASSERT(
         is_pointer_interconvertible_base_of_v<_Generator_promise_base<_Generator_yield_t<_Ref>>, promise_type>);
 #endif // __cpp_lib_is_pointer_interconvertible
+
+    generator(coroutine_handle<promise_type> _Coro_) noexcept : _Coro(_Coro_) {}
 
     generator(generator&& _That) noexcept : _Coro(_STD exchange(_That._Coro, {})) {}
 
@@ -275,10 +309,6 @@ public:
     }
 
 private:
-    explicit generator(coroutine_handle<promise_type> _Coro_) noexcept : _Coro(_Coro_) {}
-
-    friend _Generator_promise_base<_Generator_yield_t<_Ref>>;
-
     coroutine_handle<promise_type> _Coro = nullptr;
 };
 
