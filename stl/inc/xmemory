@@ -2188,7 +2188,7 @@ private:
             return _Al.allocate(_Count);
         } else {
             // store stateful allocator
-            static constexpr size_t _Align = (_STD max) (alignof(_Alloc), sizeof(_Aligned_block));
+            static constexpr size_t _Align = (_STD max)(alignof(_Alloc), sizeof(_Aligned_block));
             const size_t _Count            = (_Size + sizeof(_Alloc) + _Align - 1) / sizeof(_Aligned_block);
             void* const _Ptr               = _Al.allocate(_Count);
             const auto _Al_address =
@@ -2229,7 +2229,7 @@ public:
             _Alloc _Al{_STD move(_Stored_al)};
             _Stored_al.~_Alloc();
 
-            static constexpr size_t _Align = (_STD max) (alignof(_Alloc), sizeof(_Aligned_block));
+            static constexpr size_t _Align = (_STD max)(alignof(_Alloc), sizeof(_Aligned_block));
             const size_t _Count            = (_Size + sizeof(_Alloc) + _Align - 1) / sizeof(_Aligned_block);
             _Al.deallocate(static_cast<_Aligned_block*>(_Ptr), _Count);
         }
@@ -2261,7 +2261,7 @@ private:
             return _Ptr;
         } else {
             // store stateful allocator
-            static constexpr size_t _Align = (_STD max) (alignof(_Alloc), sizeof(_Aligned_block));
+            static constexpr size_t _Align = (_STD max)(alignof(_Alloc), sizeof(_Aligned_block));
 
             const _Dealloc_fn _Dealloc = [](void* const _Ptr, size_t _Size) {
                 _Size += sizeof(_Dealloc_fn);
@@ -2321,31 +2321,13 @@ namespace ranges {
 #endif
 
     template <range _Rng, class _Alloc = allocator<_Elements_alloc_type>>
-    class elements_of {
-    private:
-        /* [[no_unique_address]] */ _Alloc _Al{};
-        _Rng&& _Range;
-
-    public:
-        constexpr explicit elements_of(_Rng&& _Range_) noexcept(
-            is_nothrow_default_constructible_v<_Alloc>) requires default_initializable<_Alloc>
-            : _Range(_STD forward<_Rng>(_Range_)) {}
-
-        constexpr explicit elements_of(_Rng&& _Range_, _Alloc _Al_) noexcept
-            : _Al(_STD move(_Al_)), _Range(_STD forward<_Rng>(_Range_)) {}
-
-        constexpr elements_of(elements_of&&) = default;
-
-        constexpr _Rng&& range() noexcept {
-            return _STD forward<_Rng>(_Range);
-        }
-        constexpr _Alloc get_allocator() const noexcept {
-            return _Al;
-        }
+    struct elements_of {
+        _Rng range;
+        /* [[no_unique_address]] */ _Alloc allocator{};
     };
 
     template <class _Rng, class _Alloc = allocator<_Elements_alloc_type>>
-    elements_of(_Rng&&, _Alloc = {}) -> elements_of<_Rng, _Alloc>;
+    elements_of(_Rng&&, _Alloc = {}) -> elements_of<_Rng&&, _Alloc>;
 } // namespace ranges
 #endif // _HAS_CXX23 && defined(__cpp_lib_ranges)
 

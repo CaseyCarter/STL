@@ -32,8 +32,7 @@ class generator;
 template <class _Rty, class _Vty>
 using _Gen_value_t = conditional_t<is_void_v<_Vty>, remove_cvref_t<_Rty>, _Vty>;
 template <class _Rty, class _Vty>
-using _Gen_reference_t = conditional_t<is_void_v<_Vty>, conditional_t<is_reference_v<_Rty>, _Rty, const _Rty&>, _Rty>;
-
+using _Gen_reference_t = conditional_t<is_void_v<_Vty>, _Rty&&, _Rty>;
 template <class _Ref>
 using _Gen_yield_t = conditional_t<is_reference_v<_Ref>, _Ref, const _Ref&>;
 
@@ -65,28 +64,27 @@ public:
     }
 
     // clang-format off
-    template <class _Rty, class _Alloc, class _Vty, class _Alloc2>
+    template <class _Rty, class _Vty, class _Alloc, class _Unused>
         requires same_as<_Gen_yield_t<_Gen_reference_t<_Rty, _Vty>>, _Yielded>
     _NODISCARD auto yield_value(
-        _RANGES elements_of<generator<_Rty, _Vty, _Alloc>, _Alloc2> _Elem) noexcept {
+        _RANGES elements_of<generator<_Rty, _Vty, _Alloc>&&, _Unused> _Elem) noexcept {
         // clang-format on
-        return _Nested_awaitable<_Rty, _Vty, _Alloc>{_Elem.range()};
+        return _Nested_awaitable<_Rty, _Vty, _Alloc>{std::move(_Elem.range)};
     }
 
     // clang-format off
     template <_RANGES input_range _Rng, class _Alloc>
         requires convertible_to<_RANGES range_reference_t<_Rng>, _Yielded>
-    _NODISCARD auto yield_value(
-        _RANGES elements_of<_Rng, _Alloc> _Elem) noexcept {
+    _NODISCARD auto yield_value(_RANGES elements_of<_Rng, _Alloc> _Elem) noexcept {
         // clang-format on
-        using _Vty    = _RANGES range_value_t<_Rng>;
-        auto&& _Range = _Elem.range();
+        using _Vty   = _RANGES range_value_t<_Rng>;
+        auto& _Range = _Elem.range;
         return _Nested_awaitable<_Yielded, _Vty, _Alloc>{
             [](allocator_arg_t, _Alloc, auto* _Range_ptr) -> generator<_Yielded, _Vty, _Alloc> {
                 for (auto&& e : *_Range_ptr) {
                     co_yield static_cast<_Yielded>(_STD forward<decltype(e)>(e));
                 }
-            }(allocator_arg, _Elem.get_allocator(), _STD addressof(_Range))};
+            }(allocator_arg, _Elem.allocator, _STD addressof(_Range))};
     }
 
     void await_transform() = delete;

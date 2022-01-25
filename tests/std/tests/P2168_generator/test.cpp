@@ -19,8 +19,8 @@ static_assert(!ranges::borrowed_range<std::generator<int>>);
 
 static_assert(std::same_as<ranges::range_value_t<std::generator<int>>, int>);
 static_assert(std::same_as<ranges::range_difference_t<std::generator<int>>, std::ptrdiff_t>);
-static_assert(std::same_as<ranges::range_reference_t<std::generator<int>>, const int&>);
-static_assert(std::same_as<ranges::range_rvalue_reference_t<std::generator<int>>, const int&&>);
+static_assert(std::same_as<ranges::range_reference_t<std::generator<int>>, int&&>);
+static_assert(std::same_as<ranges::range_rvalue_reference_t<std::generator<int>>, int&&>);
 
 static_assert(std::same_as<ranges::range_value_t<std::generator<const int&>>, int>);
 static_assert(std::same_as<ranges::range_difference_t<std::generator<const int&>>, std::ptrdiff_t>);
@@ -258,12 +258,21 @@ void zip_example() {
 }
 
 std::generator<int> iota_repeater(const int hi, const int depth) {
+#ifdef __clang__ // TRANSITION, https://llvm.org/PR47357
+    if (depth > 0) {
+        co_yield ranges::elements_of{iota_repeater(hi, depth - 1)};
+        co_yield ranges::elements_of{iota_repeater(hi, depth - 1)};
+    } else {
+        co_yield ranges::elements_of{meow<int>(hi)};
+    }
+#else
     if (depth > 0) {
         co_yield ranges::elements_of(iota_repeater(hi, depth - 1));
         co_yield ranges::elements_of(iota_repeater(hi, depth - 1));
     } else {
-        co_yield ranges::elements_of(meow(hi));
+        co_yield ranges::elements_of(meow<int>(hi));
     }
+#endif // TRANSITION, https://llvm.org/PR47357
 }
 
 void recursive_test() {
@@ -276,7 +285,11 @@ void recursive_test() {
 
     static constexpr auto nested_ints = []() -> std::generator<int> {
         try {
+#ifdef __clang__ // TRANSITION, https://llvm.org/PR47357
+            co_yield ranges::elements_of{might_throw()};
+#else
             co_yield ranges::elements_of(might_throw());
+#endif // TRANSITION, https://llvm.org/PR47357
         } catch (const some_error&) {
         }
         co_yield 1;
@@ -287,11 +300,18 @@ void recursive_test() {
 }
 
 void arbitrary_range_test() {
-    auto yield_arbitrary_ranges = []() -> std::generator<int> {
+    auto yield_arbitrary_ranges = []() -> std::generator<const int&> {
+#ifdef __clang__ // TRANSITION, https://llvm.org/PR47357
+        co_yield ranges::elements_of{std::vector<int>{40, 30, 20, 10}};
+        co_yield ranges::elements_of{ranges::views::iota(0, 4)};
+        std::forward_list<int> fl{500, 400, 300};
+        co_yield ranges::elements_of{fl};
+#else
         co_yield ranges::elements_of(std::vector<int>{40, 30, 20, 10});
         co_yield ranges::elements_of(ranges::views::iota(0, 4));
         std::forward_list<int> fl{500, 400, 300};
         co_yield ranges::elements_of(fl);
+#endif // TRANSITION, https://llvm.org/PR47357
     };
 
     assert(ranges::equal(yield_arbitrary_ranges(), std::array{40, 30, 20, 10, 0, 1, 2, 3, 500, 400, 300}));
