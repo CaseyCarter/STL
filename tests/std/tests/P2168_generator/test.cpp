@@ -37,10 +37,10 @@ static_assert(std::same_as<ranges::range_difference_t<std::generator<int&>>, std
 static_assert(std::same_as<ranges::range_reference_t<std::generator<int&>>, int&>);
 static_assert(std::same_as<ranges::range_rvalue_reference_t<std::generator<int&>>, int&&>);
 
-static_assert(std::same_as<ranges::range_value_t<std::generator<int, void, int>>, int>);
-static_assert(std::same_as<ranges::range_difference_t<std::generator<int, void, int>>, std::ptrdiff_t>);
-static_assert(std::same_as<ranges::range_reference_t<std::generator<int, void, int>>, int>);
-static_assert(std::same_as<ranges::range_rvalue_reference_t<std::generator<int, void, int>>, int>);
+static_assert(std::same_as<ranges::range_value_t<std::generator<int, int>>, int>);
+static_assert(std::same_as<ranges::range_difference_t<std::generator<int, int>>, std::ptrdiff_t>);
+static_assert(std::same_as<ranges::range_reference_t<std::generator<int, int>>, int>);
+static_assert(std::same_as<ranges::range_rvalue_reference_t<std::generator<int, int>>, int>);
 
 static_assert(sizeof(std::generator<int>) == sizeof(void*));
 static_assert(sizeof(std::generator<int>::promise_type) == 3 * sizeof(void*));
@@ -60,7 +60,7 @@ void f(std::ostream& os) {
 }
 
 template <ranges::input_range Rng1, ranges::input_range Rng2>
-std::generator<std::tuple<ranges::range_reference_t<Rng1>, ranges::range_reference_t<Rng2>>, void,
+std::generator<std::tuple<ranges::range_reference_t<Rng1>, ranges::range_reference_t<Rng2>>,
     std::tuple<ranges::range_value_t<Rng1>, ranges::range_value_t<Rng2>>>
     zip(Rng1 r1, Rng2 r2) {
     auto it1        = ranges::begin(r1);
@@ -74,7 +74,7 @@ std::generator<std::tuple<ranges::range_reference_t<Rng1>, ranges::range_referen
 
 // Not from the proposal:
 template <class Reference = const int&>
-std::generator<Reference, void, int> meow(const int hi) {
+std::generator<Reference, int> meow(const int hi) {
     for (int i = 0; i < hi; ++i) {
         co_yield i;
     }
@@ -193,7 +193,7 @@ void static_allocator_test() {
     // std::cerr << "static_allocator_test:\n";
 
     {
-        auto g = [](const int hi) -> std::generator<int, stateless_alloc<char>, int> {
+        auto g = [](const int hi) -> std::generator<int, int, stateless_alloc<char>> {
             constexpr std::size_t n = 64;
             int some_ints[n];
             for (int i = 0; i < hi; ++i) {
@@ -206,7 +206,7 @@ void static_allocator_test() {
 
     {
         auto g = [](std::allocator_arg_t, stateless_alloc<int>,
-                     const int hi) -> std::generator<int, stateless_alloc<char>, int> {
+                     const int hi) -> std::generator<int, int, stateless_alloc<char>> {
             constexpr std::size_t n = 64;
             int some_ints[n];
             for (int i = 0; i < hi; ++i) {
@@ -219,7 +219,7 @@ void static_allocator_test() {
 
     {
         auto g = [](std::allocator_arg_t, stateful_alloc<int>,
-                     const int hi) -> std::generator<int, stateful_alloc<char>, int> {
+                     const int hi) -> std::generator<int, int, stateful_alloc<char>> {
             constexpr std::size_t n = 64;
             int some_ints[n];
             for (int i = 0; i < hi; ++i) {
