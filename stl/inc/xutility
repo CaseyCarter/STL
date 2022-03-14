@@ -982,27 +982,36 @@ using indirect_result_t = invoke_result_t<_Fn, iter_reference_t<_Its>...>;
 #pragma clang diagnostic ignored "-Wundefined-internal" // function '%s' has internal linkage but is not defined
 #endif // __clang__
 
-template <indirectly_readable _It, indirectly_regular_unary_invocable<_It> _Proj>
-struct projected {
-    using value_type = remove_cvref_t<indirect_result_t<_Proj&, _It>>;
+template <class _It, class _Proj>
+struct _Projected_impl {
+    _STL_INTERNAL_STATIC_ASSERT(indirectly_readable<_It>);
+    _STL_INTERNAL_STATIC_ASSERT(indirectly_regular_unary_invocable<_Proj, _It>);
+
+    struct _Non_incrementable {
+        using value_type = remove_cvref_t<indirect_result_t<_Proj&, _It>>;
+
 #if defined(__clang__) || defined(__EDG__)
-    indirect_result_t<_Proj&, _It> operator*() const;
+        indirect_result_t<_Proj&, _It> operator*() const;
 #else // ^^^ no workaround / workaround vvv
-    indirect_result_t<_Proj&, _It> operator*() const {
-        _CSTD abort(); // TRANSITION, VSO-1308657
-    }
+        indirect_result_t<_Proj&, _It> operator*() const {
+            _CSTD abort(); // TRANSITION, VSO-1308657
+        }
 #endif // ^^^ workaround ^^^
+    };
+
+    struct _Incrementable : _Non_incrementable {
+        using difference_type = iter_difference_t<_It>;
+    };
 };
+
+template <indirectly_readable _It, indirectly_regular_unary_invocable<_It> _Proj>
+using projected = conditional_t<weakly_incrementable<_It>, typename _Projected_impl<_It, _Proj>::_Incrementable,
+    typename _Projected_impl<_It, _Proj>::_Non_incrementable>;
 
 #ifdef __clang__
 #pragma clang diagnostic pop
 #endif // __clang__
 #pragma warning(pop)
-
-template <weakly_incrementable _It, class _Proj>
-struct incrementable_traits<projected<_It, _Proj>> {
-    using difference_type = iter_difference_t<_It>;
-};
 
 template <class _In, class _Out>
 concept indirectly_movable = indirectly_readable<_In> && indirectly_writable<_Out, iter_rvalue_reference_t<_In>>;
