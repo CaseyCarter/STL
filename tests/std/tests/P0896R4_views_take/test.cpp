@@ -38,7 +38,8 @@ struct evil_convertible_to_difference {
 };
 
 // Test a silly precomposed range adaptor pipeline
-constexpr auto pipeline = views::take(7) | views::take(6) | views::take(5) | views::take(4);
+template <class T>
+constexpr auto pipeline = views::take(T{7}) | views::take(T{6}) | views::take(T{5}) | views::take(T{4});
 
 template <class>
 inline constexpr bool is_subrange = false;
@@ -88,14 +89,13 @@ template <ranges::viewable_range Rng>
 using pipeline_t = mapped_t<mapped_t<mapped_t<mapped_t<Rng>>>>;
 
 template <class Rng>
-concept CanViewTake = requires(Rng&& r) { views::take(forward<Rng>(r), 42); };
+concept CanViewTake = requires(Rng&& r, ranges::range_difference_t<Rng> n) { views::take(forward<Rng>(r), n); };
 
 template <ranges::input_range Rng, ranges::random_access_range Expected>
 constexpr bool test_one(Rng&& rng, Expected&& expected) {
-    using ranges::input_range, ranges::forward_range, ranges::bidirectional_range, ranges::random_access_range,
-        ranges::contiguous_range;
-    using ranges::take_view, ranges::common_range, ranges::enable_borrowed_range, ranges::iterator_t, ranges::prev,
-        ranges::range, ranges::sentinel_t, ranges::sized_range, ranges::borrowed_range;
+    using ranges::bidirectional_range, ranges::borrowed_range, ranges::common_range, ranges::contiguous_range,
+        ranges::enable_borrowed_range, ranges::forward_range, ranges::input_range, ranges::iterator_t, ranges::prev,
+        ranges::random_access_range, ranges::range, ranges::sentinel_t, ranges::sized_range, ranges::take_view;
 
     constexpr bool is_view = ranges::view<remove_cvref_t<Rng>>;
 
@@ -109,21 +109,23 @@ constexpr bool test_one(Rng&& rng, Expected&& expected) {
     STATIC_ASSERT(contiguous_range<M> == contiguous_range<Rng>);
 
     // Validate range adaptor object and range adaptor closure
-    constexpr auto closure = views::take(4);
+    using D                = ranges::range_difference_t<V>;
+    constexpr D four       = 4;
+    constexpr auto closure = views::take(four);
 
     // ... with lvalue argument
     STATIC_ASSERT(CanViewTake<Rng&> == (!is_view || copy_constructible<V>) );
     if constexpr (CanViewTake<Rng&>) {
         constexpr bool is_noexcept = !is_view || (is_nothrow_copy_constructible_v<V> && !is_subrange<V>);
 
-        STATIC_ASSERT(same_as<decltype(views::take(rng, 4)), M>);
-        STATIC_ASSERT(noexcept(views::take(rng, 4)) == is_noexcept);
+        STATIC_ASSERT(same_as<decltype(views::take(rng, four)), M>);
+        STATIC_ASSERT(noexcept(views::take(rng, four)) == is_noexcept);
 
         STATIC_ASSERT(same_as<decltype(rng | closure), M>);
         STATIC_ASSERT(noexcept(rng | closure) == is_noexcept);
 
-        STATIC_ASSERT(same_as<decltype(rng | pipeline), pipeline_t<Rng&>>);
-        STATIC_ASSERT(noexcept(rng | pipeline) == is_noexcept);
+        STATIC_ASSERT(same_as<decltype(rng | pipeline<D>), pipeline_t<Rng&>>);
+        STATIC_ASSERT(noexcept(rng | pipeline<D>) == is_noexcept);
     }
 
     // ... with const lvalue argument
@@ -131,53 +133,53 @@ constexpr bool test_one(Rng&& rng, Expected&& expected) {
     if constexpr (is_view && copy_constructible<V>) {
         constexpr bool is_noexcept = is_nothrow_copy_constructible_v<V> && !is_subrange<V>;
 
-        STATIC_ASSERT(same_as<decltype(views::take(as_const(rng), 4)), M>);
-        STATIC_ASSERT(noexcept(views::take(as_const(rng), 4)) == is_noexcept);
+        STATIC_ASSERT(same_as<decltype(views::take(as_const(rng), four)), M>);
+        STATIC_ASSERT(noexcept(views::take(as_const(rng), four)) == is_noexcept);
 
         STATIC_ASSERT(same_as<decltype(as_const(rng) | closure), M>);
         STATIC_ASSERT(noexcept(as_const(rng) | closure) == is_noexcept);
 
-        STATIC_ASSERT(same_as<decltype(as_const(rng) | pipeline), pipeline_t<const remove_reference_t<Rng>&>>);
-        STATIC_ASSERT(noexcept(as_const(rng) | pipeline) == is_noexcept);
+        STATIC_ASSERT(same_as<decltype(as_const(rng) | pipeline<D>), pipeline_t<const remove_reference_t<Rng>&>>);
+        STATIC_ASSERT(noexcept(as_const(rng) | pipeline<D>) == is_noexcept);
     } else if constexpr (!is_view) {
         using RC                   = mapped_t<const remove_reference_t<Rng>&>;
         constexpr bool is_noexcept = is_nothrow_constructible_v<RC, const remove_reference_t<Rng>&, int>;
 
-        STATIC_ASSERT(same_as<decltype(views::take(as_const(rng), 4)), RC>);
-        STATIC_ASSERT(noexcept(views::take(as_const(rng), 4)) == is_noexcept);
+        STATIC_ASSERT(same_as<decltype(views::take(as_const(rng), four)), RC>);
+        STATIC_ASSERT(noexcept(views::take(as_const(rng), four)) == is_noexcept);
 
         STATIC_ASSERT(same_as<decltype(as_const(rng) | closure), RC>);
         STATIC_ASSERT(noexcept(as_const(rng) | closure) == is_noexcept);
 
-        STATIC_ASSERT(same_as<decltype(as_const(rng) | pipeline), pipeline_t<const remove_reference_t<Rng>&>>);
-        STATIC_ASSERT(noexcept(as_const(rng) | pipeline) == is_noexcept);
+        STATIC_ASSERT(same_as<decltype(as_const(rng) | pipeline<D>), pipeline_t<const remove_reference_t<Rng>&>>);
+        STATIC_ASSERT(noexcept(as_const(rng) | pipeline<D>) == is_noexcept);
     }
 
     // ... with rvalue argument
     STATIC_ASSERT(CanViewTake<remove_reference_t<Rng>> == (is_view || movable<remove_reference_t<Rng>>) );
     if constexpr (is_view) {
         constexpr bool is_noexcept = is_nothrow_move_constructible_v<V> && !is_subrange<V>;
-        STATIC_ASSERT(same_as<decltype(views::take(move(rng), 4)), M>);
-        STATIC_ASSERT(noexcept(views::take(move(rng), 4)) == is_noexcept);
+        STATIC_ASSERT(same_as<decltype(views::take(move(rng), four)), M>);
+        STATIC_ASSERT(noexcept(views::take(move(rng), four)) == is_noexcept);
 
         STATIC_ASSERT(same_as<decltype(move(rng) | closure), M>);
         STATIC_ASSERT(noexcept(move(rng) | closure) == is_noexcept);
 
-        STATIC_ASSERT(same_as<decltype(move(rng) | pipeline), pipeline_t<remove_reference_t<Rng>>>);
-        STATIC_ASSERT(noexcept(move(rng) | pipeline) == is_noexcept);
+        STATIC_ASSERT(same_as<decltype(move(rng) | pipeline<D>), pipeline_t<remove_reference_t<Rng>>>);
+        STATIC_ASSERT(noexcept(move(rng) | pipeline<D>) == is_noexcept);
     } else if constexpr (movable<remove_reference_t<Rng>>) {
         using S                    = ranges::owning_view<remove_reference_t<Rng>>;
         using RS                   = take_view<S>;
         constexpr bool is_noexcept = is_nothrow_move_constructible_v<remove_reference_t<Rng>>;
 
-        STATIC_ASSERT(same_as<decltype(views::take(move(rng), 4)), RS>);
-        STATIC_ASSERT(noexcept(views::take(move(rng), 4)) == is_noexcept);
+        STATIC_ASSERT(same_as<decltype(views::take(move(rng), four)), RS>);
+        STATIC_ASSERT(noexcept(views::take(move(rng), four)) == is_noexcept);
 
         STATIC_ASSERT(same_as<decltype(move(rng) | closure), RS>);
         STATIC_ASSERT(noexcept(move(rng) | closure) == is_noexcept);
 
-        STATIC_ASSERT(same_as<decltype(move(rng) | pipeline), mapped_t<mapped_t<mapped_t<RS>>>>);
-        STATIC_ASSERT(noexcept(move(rng) | pipeline) == is_noexcept);
+        STATIC_ASSERT(same_as<decltype(move(rng) | pipeline<D>), mapped_t<mapped_t<mapped_t<RS>>>>);
+        STATIC_ASSERT(noexcept(move(rng) | pipeline<D>) == is_noexcept);
     }
 
     // ... with const rvalue argument
@@ -185,20 +187,20 @@ constexpr bool test_one(Rng&& rng, Expected&& expected) {
     if constexpr (is_view && copy_constructible<V>) {
         constexpr bool is_noexcept = is_nothrow_copy_constructible_v<V> && !is_subrange<V>;
 
-        STATIC_ASSERT(same_as<decltype(views::take(move(as_const(rng)), 4)), M>);
-        STATIC_ASSERT(noexcept(views::take(move(as_const(rng)), 4)) == is_noexcept);
+        STATIC_ASSERT(same_as<decltype(views::take(move(as_const(rng)), four)), M>);
+        STATIC_ASSERT(noexcept(views::take(move(as_const(rng)), four)) == is_noexcept);
 
         STATIC_ASSERT(same_as<decltype(move(as_const(rng)) | closure), M>);
         STATIC_ASSERT(noexcept(move(as_const(rng)) | closure) == is_noexcept);
 
-        STATIC_ASSERT(same_as<decltype(move(as_const(rng)) | pipeline), pipeline_t<const remove_reference_t<Rng>>>);
-        STATIC_ASSERT(noexcept(move(as_const(rng)) | pipeline) == is_noexcept);
+        STATIC_ASSERT(same_as<decltype(move(as_const(rng)) | pipeline<D>), pipeline_t<const remove_reference_t<Rng>>>);
+        STATIC_ASSERT(noexcept(move(as_const(rng)) | pipeline<D>) == is_noexcept);
     }
 
     const bool is_empty = ranges::empty(expected);
 
     // Validate deduction guide
-    same_as<take_view<V>> auto r = take_view{forward<Rng>(rng), 4};
+    same_as<take_view<V>> auto r = take_view{forward<Rng>(rng), four};
     using R                      = decltype(r);
     STATIC_ASSERT(ranges::view<R>);
     STATIC_ASSERT(input_range<R> == input_range<Rng>);
@@ -571,13 +573,16 @@ constexpr void output_range_test() {
         using R = test::range<output_iterator_tag, int, test::Sized::no, test::CanDifference::no, test::Common::no,
             test::CanCompare::no, test::ProxyRef::yes, test::CanView::yes, test::Copyability::move_only>;
         int some_writable_ints[] = {0, 1, 2, 3};
-        STATIC_ASSERT(same_as<decltype(views::take(R{some_writable_ints}, 99999)), ranges::take_view<R>>);
+        using D                  = ranges::range_difference_t<R>;
+        const auto huge          = static_cast<D>(8 * ranges::size(some_writable_ints));
+        const auto three         = static_cast<D>(ranges::size(some_writable_ints) - 1);
+        STATIC_ASSERT(same_as<decltype(views::take(R{some_writable_ints}, huge)), ranges::take_view<R>>);
 
         // How do I implement "Fill up to n elements in {output range} with {value}"?
-        ranges::fill(R{some_writable_ints} | views::take(99999), 42);
+        ranges::fill(R{some_writable_ints} | views::take(huge), 42);
         assert(ranges::equal(some_writable_ints, initializer_list<int>{42, 42, 42, 42}));
 
-        ranges::fill(R{some_writable_ints} | views::take(3), 13);
+        ranges::fill(R{some_writable_ints} | views::take(three), 13);
         assert(ranges::equal(some_writable_ints, initializer_list<int>{13, 13, 13, 42}));
     }
 }

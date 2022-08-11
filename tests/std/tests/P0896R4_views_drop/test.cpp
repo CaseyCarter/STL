@@ -35,7 +35,8 @@ struct evil_convertible_to_difference {
 };
 
 // Test a silly precomposed range adaptor pipeline
-constexpr auto pipeline = views::drop(1) | views::drop(1) | views::drop(1) | views::drop(1);
+template <class T>
+constexpr auto pipeline = views::drop(T{1}) | views::drop(T{1}) | views::drop(T{1}) | views::drop(T{1});
 
 template <class>
 inline constexpr bool is_subrange = false;
@@ -85,7 +86,7 @@ template <ranges::viewable_range Rng>
 using pipeline_t = mapped_t<mapped_t<mapped_t<mapped_t<Rng>>>>;
 
 template <class Rng>
-concept CanViewDrop = requires(Rng&& r) { views::drop(forward<Rng>(r), 42); };
+concept CanViewDrop = requires(Rng&& r, ranges::range_difference_t<Rng> n) { views::drop(forward<Rng>(r), n); };
 
 template <ranges::input_range Rng, ranges::random_access_range Expected>
 constexpr bool test_one(Rng&& rng, Expected&& expected) {
@@ -107,7 +108,8 @@ constexpr bool test_one(Rng&& rng, Expected&& expected) {
     STATIC_ASSERT(contiguous_range<M> == contiguous_range<Rng>);
 
     // Validate range adaptor object and range adaptor closure
-    constexpr auto closure = views::drop(4);
+    using D                = ranges::range_difference_t<V>;
+    constexpr auto closure = views::drop(D{4});
 
     // ... with lvalue argument
     STATIC_ASSERT(CanViewDrop<Rng&> == (!is_view || copy_constructible<V>) );
@@ -120,8 +122,8 @@ constexpr bool test_one(Rng&& rng, Expected&& expected) {
         STATIC_ASSERT(same_as<decltype(rng | closure), M>);
         STATIC_ASSERT(noexcept(rng | closure) == is_noexcept);
 
-        STATIC_ASSERT(same_as<decltype(rng | pipeline), pipeline_t<Rng&>>);
-        STATIC_ASSERT(noexcept(rng | pipeline) == is_noexcept);
+        STATIC_ASSERT(same_as<decltype(rng | pipeline<D>), pipeline_t<Rng&>>);
+        STATIC_ASSERT(noexcept(rng | pipeline<D>) == is_noexcept);
     }
 
     // ... with const lvalue argument
@@ -135,8 +137,8 @@ constexpr bool test_one(Rng&& rng, Expected&& expected) {
         STATIC_ASSERT(same_as<decltype(as_const(rng) | closure), M>);
         STATIC_ASSERT(noexcept(as_const(rng) | closure) == is_noexcept);
 
-        STATIC_ASSERT(same_as<decltype(as_const(rng) | pipeline), pipeline_t<const remove_reference_t<Rng>&>>);
-        STATIC_ASSERT(noexcept(as_const(rng) | pipeline) == is_noexcept);
+        STATIC_ASSERT(same_as<decltype(as_const(rng) | pipeline<D>), pipeline_t<const remove_reference_t<Rng>&>>);
+        STATIC_ASSERT(noexcept(as_const(rng) | pipeline<D>) == is_noexcept);
     } else if constexpr (!is_view) {
         using RC                   = mapped_t<const remove_reference_t<Rng>&>;
         constexpr bool is_noexcept = is_nothrow_constructible_v<RC, const remove_reference_t<Rng>&, int>;
@@ -147,8 +149,8 @@ constexpr bool test_one(Rng&& rng, Expected&& expected) {
         STATIC_ASSERT(same_as<decltype(as_const(rng) | closure), RC>);
         STATIC_ASSERT(noexcept(as_const(rng) | closure) == is_noexcept);
 
-        STATIC_ASSERT(same_as<decltype(as_const(rng) | pipeline), pipeline_t<const remove_reference_t<Rng>&>>);
-        STATIC_ASSERT(noexcept(as_const(rng) | pipeline) == is_noexcept);
+        STATIC_ASSERT(same_as<decltype(as_const(rng) | pipeline<D>), pipeline_t<const remove_reference_t<Rng>&>>);
+        STATIC_ASSERT(noexcept(as_const(rng) | pipeline<D>) == is_noexcept);
     }
 
     // ... with rvalue argument
@@ -161,8 +163,8 @@ constexpr bool test_one(Rng&& rng, Expected&& expected) {
         STATIC_ASSERT(same_as<decltype(move(rng) | closure), M>);
         STATIC_ASSERT(noexcept(move(rng) | closure) == is_noexcept);
 
-        STATIC_ASSERT(same_as<decltype(move(rng) | pipeline), pipeline_t<remove_reference_t<Rng>>>);
-        STATIC_ASSERT(noexcept(move(rng) | pipeline) == is_noexcept);
+        STATIC_ASSERT(same_as<decltype(move(rng) | pipeline<D>), pipeline_t<remove_reference_t<Rng>>>);
+        STATIC_ASSERT(noexcept(move(rng) | pipeline<D>) == is_noexcept);
     } else if constexpr (movable<remove_reference_t<Rng>>) {
         using S                    = ranges::owning_view<remove_reference_t<Rng>>;
         using RS                   = drop_view<S>;
@@ -174,8 +176,8 @@ constexpr bool test_one(Rng&& rng, Expected&& expected) {
         STATIC_ASSERT(same_as<decltype(move(rng) | closure), RS>);
         STATIC_ASSERT(noexcept(move(rng) | closure) == is_noexcept);
 
-        STATIC_ASSERT(same_as<decltype(move(rng) | pipeline), mapped_t<mapped_t<mapped_t<RS>>>>);
-        STATIC_ASSERT(noexcept(move(rng) | pipeline) == is_noexcept);
+        STATIC_ASSERT(same_as<decltype(move(rng) | pipeline<D>), mapped_t<mapped_t<mapped_t<RS>>>>);
+        STATIC_ASSERT(noexcept(move(rng) | pipeline<D>) == is_noexcept);
     }
 
     // ... with const rvalue argument
@@ -189,8 +191,8 @@ constexpr bool test_one(Rng&& rng, Expected&& expected) {
         STATIC_ASSERT(same_as<decltype(move(as_const(rng)) | closure), M>);
         STATIC_ASSERT(noexcept(move(as_const(rng)) | closure) == is_noexcept);
 
-        STATIC_ASSERT(same_as<decltype(move(as_const(rng)) | pipeline), pipeline_t<const remove_reference_t<Rng>>>);
-        STATIC_ASSERT(noexcept(move(as_const(rng)) | pipeline) == is_noexcept);
+        STATIC_ASSERT(same_as<decltype(move(as_const(rng)) | pipeline<D>), pipeline_t<const remove_reference_t<Rng>>>);
+        STATIC_ASSERT(noexcept(move(as_const(rng)) | pipeline<D>) == is_noexcept);
     }
 
     const bool is_empty = ranges::empty(expected);
@@ -506,7 +508,7 @@ constexpr void output_range_test() {
         test::CanCompare::no, test::ProxyRef::yes, test::CanView::yes, test::Copyability::move_only>;
     int some_writable_ints[] = {0, 1, 2, 3};
     STATIC_ASSERT(same_as<decltype(views::drop(R{some_writable_ints}, 2)), ranges::drop_view<R>>);
-    ranges::fill(R{some_writable_ints} | views::drop(2), 42);
+    ranges::fill(R{some_writable_ints} | views::drop(ranges::range_difference_t<R>{2}), 42);
     assert(ranges::equal(some_writable_ints, initializer_list<int>{0, 1, 42, 42}));
 }
 

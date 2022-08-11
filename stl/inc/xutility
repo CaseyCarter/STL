@@ -1280,7 +1280,7 @@ _EXPORT_STD template <class _BidIt>
 _NODISCARD _CONSTEXPR17 _BidIt prev(_BidIt _First, _Iter_diff_t<_BidIt> _Off = 1) { // decrement iterator
     static_assert(_Is_ranges_bidi_iter_v<_BidIt>, "prev requires bidirectional iterator");
 
-    _STD advance(_First, -_Off);
+    _STD advance(_First, static_cast<_Iter_diff_t<_BidIt>>(-_Off));
     return _First;
 }
 
@@ -3181,7 +3181,7 @@ namespace ranges {
             if constexpr (sized_range<_Rng>) {
                 return static_cast<range_difference_t<_Rng>>(_RANGES size(_Range));
             } else {
-                return _Distance_unchecked(_Ubegin(_Range), _Uend(_Range));
+                return static_cast<range_difference_t<_Rng>>(_Distance_unchecked(_Ubegin(_Range), _Uend(_Range)));
             }
         }
 
@@ -4464,7 +4464,7 @@ _OutCtgIt _Copy_memmove(_CtgIt _First, _CtgIt _Last, _OutCtgIt _Dest) {
     if constexpr (is_pointer_v<_OutCtgIt>) {
         return reinterpret_cast<_OutCtgIt>(_Dest_ch + _Count);
     } else {
-        return _Dest + (_LastPtr - _FirstPtr);
+        return _Dest + static_cast<_Iter_diff_t<_OutCtgIt>>(_LastPtr - _FirstPtr);
     }
 }
 
@@ -4772,7 +4772,7 @@ _CtgIt2 _Copy_backward_memmove(_CtgIt1 _First, _CtgIt1 _Last, _CtgIt2 _Dest) {
     if constexpr (is_pointer_v<_CtgIt2>) {
         return static_cast<_CtgIt2>(_Result);
     } else {
-        return _Dest - (_LastPtr - _FirstPtr);
+        return _Dest - static_cast<_Iter_diff_t<_CtgIt2>>(_LastPtr - _FirstPtr);
     }
 }
 
@@ -6104,8 +6104,8 @@ _NODISCARD _CONSTEXPR20 bool _Check_match_counts(
                 return false; // second range lacks value, not a permutation
             }
 
-            _FwdIt1 _Skip1                = _Next_iter(_Next1);
-            _Iter_diff_t<_FwdIt1> _Count1 = _Count_pr(_Skip1, _Last1, *_Next1, _Pred) + 1;
+            _FwdIt1 _Skip1 = _Next_iter(_Next1);
+            auto _Count1   = static_cast<_Iter_diff_t<_FwdIt1>>(_Count_pr(_Skip1, _Last1, *_Next1, _Pred) + 1);
             if (_Count2 != _Count1) {
                 return false; // match counts differ, not a permutation
             }
@@ -6966,8 +6966,8 @@ _NODISCARD _CONSTEXPR20 _FwdIt lower_bound(_FwdIt _First, const _FwdIt _Last, co
     _Iter_diff_t<_FwdIt> _Count = _STD distance(_UFirst, _Get_unwrapped(_Last));
 
     while (0 < _Count) { // divide and conquer, find half that contains answer
-        const _Iter_diff_t<_FwdIt> _Count2 = _Count / 2;
-        const auto _UMid                   = _STD next(_UFirst, _Count2);
+        const auto _Count2 = static_cast<_Iter_diff_t<_FwdIt>>(_Count / 2);
+        const auto _UMid   = _STD next(_UFirst, _Count2);
         if (_Pred(*_UMid, _Val)) { // try top half
             _UFirst = _Next_iter(_UMid);
             _Count -= _Count2 + 1;
@@ -6994,8 +6994,8 @@ _NODISCARD _CONSTEXPR20 _FwdIt upper_bound(_FwdIt _First, _FwdIt _Last, const _T
     _Iter_diff_t<_FwdIt> _Count = _STD distance(_UFirst, _Get_unwrapped(_Last));
 
     while (0 < _Count) { // divide and conquer, find half that contains answer
-        _Iter_diff_t<_FwdIt> _Count2 = _Count / 2;
-        const auto _UMid             = _STD next(_UFirst, _Count2);
+        auto _Count2     = static_cast<_Iter_diff_t<_FwdIt>>(_Count / 2);
+        const auto _UMid = _STD next(_UFirst, _Count2);
         if (_Pred(_Val, *_UMid)) {
             _Count = _Count2;
         } else { // try top half

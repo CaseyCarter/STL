@@ -16,7 +16,7 @@
 using namespace std;
 
 template <class Rng>
-concept CanViewChunk = requires(Rng&& r) { views::chunk(forward<Rng>(r), 2); };
+concept CanViewChunk = requires(Rng&& r, ranges::range_difference_t<Rng> n) { views::chunk(forward<Rng>(r), n); };
 
 constexpr auto equal_ranges = [](auto&& left, auto&& right) { return ranges::equal(left, right); };
 
@@ -42,16 +42,18 @@ constexpr bool test_one(Rng&& rng, Expected&& expected) {
     // Validate borrowed_range
     STATIC_ASSERT(ranges::borrowed_range<R> == (ranges::borrowed_range<V> && forward_range<V>) );
 
+    constexpr auto two = ranges::range_difference_t<Rng>{2};
+
     // Validate range adaptor object and range adaptor closure
-    constexpr auto closure = views::chunk(2);
+    constexpr auto closure = views::chunk(two);
 
     // ... with lvalue argument
     STATIC_ASSERT(CanViewChunk<Rng&> == (!is_view || copy_constructible<V>) );
     if constexpr (CanViewChunk<Rng&>) {
         constexpr bool is_noexcept = !is_view || is_nothrow_copy_constructible_v<V>;
 
-        STATIC_ASSERT(same_as<decltype(views::chunk(rng, 2)), R>);
-        STATIC_ASSERT(noexcept(views::chunk(rng, 2)) == is_noexcept);
+        STATIC_ASSERT(same_as<decltype(views::chunk(rng, two)), R>);
+        STATIC_ASSERT(noexcept(views::chunk(rng, two)) == is_noexcept);
 
         STATIC_ASSERT(same_as<decltype(rng | closure), R>);
         STATIC_ASSERT(noexcept(rng | closure) == is_noexcept);
@@ -65,8 +67,8 @@ constexpr bool test_one(Rng&& rng, Expected&& expected) {
 
         STATIC_ASSERT(!is_default_constructible_v<RC>);
 
-        STATIC_ASSERT(same_as<decltype(views::chunk(as_const(rng), 2)), RC>);
-        STATIC_ASSERT(noexcept(views::chunk(as_const(rng), 2)) == is_noexcept);
+        STATIC_ASSERT(same_as<decltype(views::chunk(as_const(rng), two)), RC>);
+        STATIC_ASSERT(noexcept(views::chunk(as_const(rng), two)) == is_noexcept);
 
         STATIC_ASSERT(same_as<decltype(as_const(rng) | closure), RC>);
         STATIC_ASSERT(noexcept(as_const(rng) | closure) == is_noexcept);
@@ -80,8 +82,8 @@ constexpr bool test_one(Rng&& rng, Expected&& expected) {
 
         STATIC_ASSERT(!is_default_constructible_v<RS>);
 
-        STATIC_ASSERT(same_as<decltype(views::chunk(move(rng), 2)), RS>);
-        STATIC_ASSERT(noexcept(views::chunk(move(rng), 2)) == is_noexcept);
+        STATIC_ASSERT(same_as<decltype(views::chunk(move(rng), two)), RS>);
+        STATIC_ASSERT(noexcept(views::chunk(move(rng), two)) == is_noexcept);
 
         STATIC_ASSERT(same_as<decltype(move(rng) | closure), RS>);
         STATIC_ASSERT(noexcept(move(rng) | closure) == is_noexcept);
@@ -92,15 +94,15 @@ constexpr bool test_one(Rng&& rng, Expected&& expected) {
     if constexpr (CanViewChunk<const remove_reference_t<Rng>>) {
         constexpr bool is_noexcept = is_nothrow_copy_constructible_v<V>;
 
-        STATIC_ASSERT(same_as<decltype(views::chunk(move(as_const(rng)), 2)), R>);
-        STATIC_ASSERT(noexcept(views::chunk(move(as_const(rng)), 2)) == is_noexcept);
+        STATIC_ASSERT(same_as<decltype(views::chunk(move(as_const(rng)), two)), R>);
+        STATIC_ASSERT(noexcept(views::chunk(move(as_const(rng)), two)) == is_noexcept);
 
         STATIC_ASSERT(same_as<decltype(move(as_const(rng)) | closure), R>);
         STATIC_ASSERT(noexcept(move(as_const(rng)) | closure) == is_noexcept);
     }
 
     // Validate deduction guide
-    same_as<R> auto r   = chunk_view{forward<Rng>(rng), 2};
+    same_as<R> auto r   = chunk_view{forward<Rng>(rng), two};
     const bool is_empty = ranges::empty(expected);
 
     // Validate chunk_view::size
@@ -293,28 +295,28 @@ constexpr bool test_one(Rng&& rng, Expected&& expected) {
         }
 
         if constexpr (random_access_range<R>) {
-            i += 2;
+            i += two;
             assert(equal(*i, expected[2]));
 
-            i -= 2;
+            i -= two;
             assert(equal(*i, expected[0]));
 
-            assert(equal(i[2], expected[2]));
+            assert(equal(i[two], expected[2]));
 
-            const same_as<iterator_t<R>> auto i2 = i + 2;
+            const same_as<iterator_t<R>> auto i2 = i + two;
             assert(equal(*i2, expected[2]));
 
-            const same_as<iterator_t<R>> auto i3 = 2 + i;
+            const same_as<iterator_t<R>> auto i3 = two + i;
             assert(equal(*i3, expected[2]));
 
-            const same_as<iterator_t<R>> auto i4 = i3 - 2;
+            const same_as<iterator_t<R>> auto i4 = i3 - two;
             assert(equal(*i4, expected[0]));
 
             const same_as<ranges::range_difference_t<V>> auto diff1 = i2 - i;
-            assert(diff1 == 2);
+            assert(diff1 == two);
 
             const same_as<ranges::range_difference_t<V>> auto diff2 = i - i2;
-            assert(diff2 == -2);
+            assert(diff2 == -two);
 
             // comparisons
             assert(i == i4);
@@ -342,7 +344,7 @@ constexpr bool test_one(Rng&& rng, Expected&& expected) {
             const auto size = ranges::ssize(expected);
 
             if constexpr (forward_range<R>) {
-                assert(next(r.begin(), size) == sen);
+                assert(next(r.begin(), static_cast<ranges::range_difference_t<V>>(size)) == sen);
             }
             assert(i2 != sen);
 
@@ -371,28 +373,28 @@ constexpr bool test_one(Rng&& rng, Expected&& expected) {
         }
 
         if constexpr (random_access_range<const R>) {
-            ci += 2;
+            ci += two;
             assert(equal(*ci, expected[2]));
 
-            ci -= 2;
+            ci -= two;
             assert(equal(*ci, expected[0]));
 
-            assert(equal(ci[2], expected[2]));
+            assert(equal(ci[two], expected[2]));
 
-            const same_as<iterator_t<const R>> auto ci2 = ci + 2;
+            const same_as<iterator_t<const R>> auto ci2 = ci + two;
             assert(equal(*ci2, expected[2]));
 
-            const same_as<iterator_t<const R>> auto ci3 = 2 + ci;
+            const same_as<iterator_t<const R>> auto ci3 = two + ci;
             assert(equal(*ci3, expected[2]));
 
-            const same_as<iterator_t<const R>> auto ci4 = ci3 - 2;
+            const same_as<iterator_t<const R>> auto ci4 = ci3 - two;
             assert(equal(*ci4, expected[0]));
 
             const same_as<ranges::range_difference_t<V>> auto diff1 = ci2 - ci;
-            assert(diff1 == 2);
+            assert(diff1 == two);
 
             const same_as<ranges::range_difference_t<V>> auto diff2 = ci - ci2;
-            assert(diff2 == -2);
+            assert(diff2 == -two);
 
             // comparisons
             assert(ci == ci4);
@@ -426,7 +428,7 @@ constexpr bool test_one(Rng&& rng, Expected&& expected) {
             const auto sen  = r.end();
             const auto size = ranges::ssize(expected);
 
-            assert(next(i2, size) == sen);
+            assert(next(i2, static_cast<ranges::range_difference_t<const V>>(size)) == sen);
             assert(i2 != sen);
 
             if constexpr (sized_sentinel_for<sentinel_t<const R>, iterator_t<const R>>) {
@@ -470,7 +472,7 @@ constexpr bool test_input(Rng&& rng, Expected&& expected) {
     using BI = iterator_t<V>;
     using R  = chunk_view<V>;
 
-    same_as<R> auto r = chunk_view{forward<Rng>(rng), 2};
+    same_as<R> auto r = chunk_view{forward<Rng>(rng), short{2}};
     auto outer_iter   = r.begin();
 
     auto val_ty = *outer_iter;

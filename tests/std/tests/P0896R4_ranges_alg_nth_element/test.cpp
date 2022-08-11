@@ -33,11 +33,13 @@ struct instantiator {
             }
         };
 
+        using Diff = ranges::range_difference_t<R>;
+
         // Validate range overload
         for (int i = 0; i < int{size(keys)}; ++i) {
             init();
             const R wrapped{input};
-            const auto nth                           = wrapped.begin() + i;
+            const auto nth                           = wrapped.begin() + static_cast<Diff>(i);
             const same_as<iterator_t<R>> auto result = nth_element(wrapped, nth, less{}, get_first);
             assert(result == wrapped.end());
             assert((*nth == P{i, static_cast<int>(10 + (find(keys, i) - keys))}));
@@ -51,7 +53,7 @@ struct instantiator {
         for (int i = 0; i < int{size(keys)}; ++i) {
             init();
             const R wrapped{input};
-            const auto nth = wrapped.begin() + i;
+            const auto nth = wrapped.begin() + static_cast<Diff>(i);
             const same_as<iterator_t<R>> auto result =
                 nth_element(wrapped.begin(), nth, wrapped.end(), less{}, get_first);
             assert(result == wrapped.end());

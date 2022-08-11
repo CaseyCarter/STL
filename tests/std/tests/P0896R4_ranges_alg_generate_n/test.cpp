@@ -3,7 +3,6 @@
 
 #include <algorithm>
 #include <cassert>
-#include <concepts>
 #include <ranges>
 
 #include <range_algorithm_support.hpp>
@@ -20,10 +19,11 @@ struct instantiator {
         {
             int output[] = {13, 42, 1367};
             Out out_wrapper{output};
-            auto result = generate_n(out_wrapper.begin(), ranges::distance(output), iota_gen);
-            STATIC_ASSERT(same_as<decltype(result), iterator_t<Out>>);
+            using D                              = ranges::range_difference_t<Out>;
+            const auto n                         = static_cast<D>(ranges::size(output));
+            same_as<iterator_t<Out>> auto result = generate_n(out_wrapper.begin(), n, iota_gen);
             assert(result == out_wrapper.end());
-            for (int i = 0; i < 3; ++i) {
+            for (D i = 0; i < n; ++i) {
                 assert(i == output[i]);
             }
         }
@@ -32,15 +32,13 @@ struct instantiator {
         int output[]                    = {13, 42, 1367};
         {
             Out out_wrapper{output};
-            auto result = generate_n(out_wrapper.begin(), 0, iota_gen);
-            STATIC_ASSERT(same_as<decltype(result), iterator_t<Out>>);
+            same_as<iterator_t<Out>> auto result = generate_n(out_wrapper.begin(), 0, iota_gen);
             assert(result.peek() == output);
             assert(equal(output, expected_output));
         }
         {
             Out out_wrapper{output};
-            auto result = generate_n(out_wrapper.begin(), -1, iota_gen);
-            STATIC_ASSERT(same_as<decltype(result), iterator_t<Out>>);
+            same_as<iterator_t<Out>> auto result = generate_n(out_wrapper.begin(), -1, iota_gen);
             assert(result.peek() == output);
             assert(equal(output, expected_output));
         }

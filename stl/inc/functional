@@ -2448,7 +2448,7 @@ void _Build_boyer_moore_delta_2_table(_Iter_diff_t<_RanItPat>* const _Shifts, co
     size_t _Tx = _Mx + 1;
     for (size_t _Jx = _Mx; _Jx > 0; --_Jx, --_Tx) {
         _Fx[_Jx - 1] = _Tx;
-        while (_Tx <= _Mx && !_Eq(_Pat_first[_Jx - 1], _Pat_first[_Tx - 1])) {
+        while (_Tx <= _Mx && !_Eq(_Pat_first[static_cast<_Diff>(_Jx - 1)], _Pat_first[static_cast<_Diff>(_Tx - 1)])) {
             _Shifts[_Tx - 1] = (_STD min)(_Shifts[_Tx - 1], static_cast<_Diff>(_Mx - _Jx));
             _Tx              = _Fx[_Tx - 1];
         }
@@ -2461,7 +2461,7 @@ void _Build_boyer_moore_delta_2_table(_Iter_diff_t<_RanItPat>* const _Shifts, co
     _Tx        = _Mx + 1 - _Qx;
     for (size_t _Jx = 1, _Tx1 = 0; _Jx <= _Tx; ++_Tx1, ++_Jx) {
         _Fx[_Jx - 1] = _Tx1;
-        while (_Tx1 >= 1 && !_Eq(_Pat_first[_Jx - 1], _Pat_first[_Tx1 - 1])) {
+        while (_Tx1 >= 1 && !_Eq(_Pat_first[static_cast<_Diff>(_Jx - 1)], _Pat_first[static_cast<_Diff>(_Tx1 - 1)])) {
             _Tx1 = _Fx[_Tx1 - 1];
         }
     }
@@ -2496,12 +2496,12 @@ pair<_RanItHaystack, _RanItHaystack> _Boyer_moore_search(
 
     const auto _UPat_first = _Get_unwrapped_n(_Delta1._Pat_first, _Pat_size);
     const auto _Eq         = _Delta1._Get_eq();
-    _Diff _Shift           = _Pat_size - 1;
+    auto _Shift            = static_cast<_Diff>(_Pat_size - 1);
     while (_Shift < _ULast - _UFirst) {
         _UFirst += _Shift;
         _Shift = _Delta1._Lookup(*_UFirst);
         if (_Shift == 0) { // that is, *_UFirst == "_Pat.back()"
-            _Diff _Idx = _Pat_size - 1;
+            auto _Idx = static_cast<_Diff>(_Pat_size - 1);
             do {
                 if (_Idx == 0) {
                     _Seek_wrapped(_Last, _UFirst + _Pat_size);
@@ -2537,13 +2537,13 @@ pair<_RanItHaystack, _RanItHaystack> _Boyer_moore_horspool_search(
     const auto _ULast      = _Get_unwrapped(_Last);
     const auto _UPat_first = _Get_unwrapped_n(_Delta1._Pat_first, _Pat_size);
     const auto _Eq         = _Delta1._Get_eq();
-    _Diff _Shift           = _Pat_size - 1;
+    auto _Shift            = static_cast<_Diff>(_Pat_size - 1);
     while (_Shift < _ULast - _UFirst) {
         _UFirst += _Shift;
         _Shift = _Delta1._Lookup(*_UFirst);
         if (_Shift == 0) { // that is, *_UFirst == "_Pat.back()"
-            const auto _Candidate = _UFirst - (_Pat_size - 1);
-            if (_STD equal(_UPat_first, _UPat_first + (_Pat_size - 1), _Candidate, _Pass_fn(_Eq))) {
+            const auto _Candidate = _UFirst - static_cast<_Diff>(_Pat_size - 1);
+            if (_STD equal(_UPat_first, _UPat_first + static_cast<_Diff>(_Pat_size - 1), _Candidate, _Pass_fn(_Eq))) {
                 _Seek_wrapped(_Last, _Candidate + _Pat_size);
                 _Seek_wrapped(_First, _Candidate);
                 return {_First, _Last};

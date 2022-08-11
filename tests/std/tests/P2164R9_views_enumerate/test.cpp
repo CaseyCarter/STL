@@ -45,7 +45,7 @@ constexpr bool test_one(Rng&& rng, Expected&& expected) {
     using ranges::enumerate_view, ranges::forward_range, ranges::bidirectional_range, ranges::random_access_range,
         ranges::sized_range, ranges::common_range, ranges::iterator_t, ranges::sentinel_t, ranges::const_iterator_t,
         ranges::const_sentinel_t, ranges::range_difference_t, ranges::range_rvalue_reference_t, ranges::cbegin,
-        ranges::cend, ranges::begin, ranges::end;
+        ranges::cend, ranges::begin, ranges::end, ranges::next, ranges::prev;
 
     constexpr bool is_view = ranges::view<remove_cvref_t<Rng>>;
 
@@ -351,7 +351,7 @@ constexpr bool test_one(Rng&& rng, Expected&& expected) {
             assert(i <=> i == strong_ordering::equal);
 
             if constexpr (forward_range<R>) {
-                auto i2 = ranges::next(i, 1);
+                auto i2 = next(i);
                 assert(!(i == i2));
                 assert(i != i2);
                 assert(i < i2);
@@ -462,7 +462,7 @@ constexpr bool test_one(Rng&& rng, Expected&& expected) {
             assert(ci <=> ci == strong_ordering::equal);
 
             if constexpr (forward_range<R>) {
-                auto ci2 = ranges::next(ci, 1);
+                auto ci2 = next(ci);
                 assert(!(ci == ci2));
                 assert(ci != ci2);
                 assert(ci < ci2);
@@ -482,7 +482,7 @@ constexpr bool test_one(Rng&& rng, Expected&& expected) {
                 assert(ci <=> i == strong_ordering::equal);
 
                 if constexpr (forward_range<const R>) {
-                    auto i2 = ranges::next(i, 1);
+                    auto i2 = next(i);
                     assert(ci != i2);
                     assert(ci < i2);
                     assert(ci <= i2);

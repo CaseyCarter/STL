@@ -41,13 +41,10 @@ concept CanZipTransform = (ranges::viewable_range<RangeTypes> && ...)
 template <class RangeType>
 concept HasIteratorCategory = requires { typename ranges::iterator_t<RangeType>::iterator_category; };
 
-#pragma warning(push)
-#pragma warning(disable : 4365) // conversion from 'std::array<int,8>::size_type' to 'int', signed/unsigned mismatch
 template <class TransformType, ranges::random_access_range TransformedElementsContainer, class LocalZipTransformType,
     ranges::input_range... RangeTypes>
 constexpr bool validate_iterators_sentinels(
     LocalZipTransformType& relevant_range, const TransformedElementsContainer& transformed_elements) {
-#pragma warning(pop)
     constexpr bool is_const = same_as<LocalZipTransformType, add_const_t<LocalZipTransformType>>;
 
     using InnerView            = ranges::zip_view<AllView<RangeTypes>...>;
@@ -238,7 +235,8 @@ constexpr bool validate_iterators_sentinels(
 
                 if constexpr (sentinel_for<comparison_sentinel_t, comparison_iterator_t>) {
                     auto end_iterator = relevant_range.begin();
-                    ranges::advance(end_iterator, ranges::size(transformed_elements));
+                    ranges::advance(end_iterator, static_cast<ranges::range_difference_t<LocalZipTransformType>>(
+                                                      ranges::size(transformed_elements)));
 
                     assert(end_iterator == sentinel);
                     STATIC_ASSERT(noexcept(end_iterator == sentinel)
@@ -264,13 +262,13 @@ constexpr bool validate_iterators_sentinels(
                     const auto comparison_itr = maybe_as_const<IteratorConst>(relevant_range).begin();
 
                     const same_as<difference_type> auto diff1 = sentinel - comparison_itr;
-                    assert(diff1 == static_cast<difference_type>(ranges::size(transformed_elements)));
+                    assert(diff1 == ranges::distance(transformed_elements));
                     STATIC_ASSERT(
                         noexcept(sentinel - comparison_itr)
                         == noexcept(declval<const comparison_sentinel_t&>() - declval<const comparison_iterator_t&>()));
 
                     const same_as<difference_type> auto diff2 = comparison_itr - sentinel;
-                    assert(diff2 == -static_cast<difference_type>(ranges::size(transformed_elements)));
+                    assert(diff2 == -ranges::distance(transformed_elements));
                     STATIC_ASSERT(
                         noexcept(comparison_itr - sentinel)
                         == noexcept(declval<const comparison_iterator_t&>() - declval<const comparison_sentinel_t&>()));
@@ -285,13 +283,10 @@ constexpr bool validate_iterators_sentinels(
     return true;
 }
 
-#pragma warning(push)
-#pragma warning(disable : 4100) // unreferenced formal parameter
-
 template <class TransformType_, ranges::random_access_range TransformedElementsContainer,
     ranges::input_range... RangeTypes>
 constexpr bool test_one(TransformType_&& transformer, const TransformedElementsContainer& transformed_elements,
-    RangeTypes&&... test_ranges) {
+    [[maybe_unused]] RangeTypes&&... test_ranges) {
     // Ignore instances where one of the generated test ranges does not model
     // ranges::viewable_range.
     if constexpr ((ranges::viewable_range<RangeTypes> && ...)) {
@@ -496,13 +491,11 @@ constexpr bool test_one(TransformType_&& transformer, const TransformedElementsC
             // Validate contents of zip-transformed range
             assert(ranges::equal(zipped_transformed_range, transformed_elements));
 
-#pragma warning(push)
-#pragma warning(disable : 4127) // Conditional Expression is Constant
-            if (!(ranges::forward_range<AllView<RangeTypes>> && ...)) // intentionally not if constexpr
+            constexpr bool meow = !(ranges::forward_range<AllView<RangeTypes>> && ...);
+            if (meow) // intentionally not if constexpr
             {
                 return true;
             }
-#pragma warning(pop)
 
             // Validate view_interface::data()
             //
@@ -617,8 +610,6 @@ constexpr bool test_one(TransformType_&& transformer, const TransformedElementsC
 
     return true;
 }
-
-#pragma warning(pop)
 
 constexpr auto one_element_transform_closure = [](const auto& a) { return a * 5; };
 

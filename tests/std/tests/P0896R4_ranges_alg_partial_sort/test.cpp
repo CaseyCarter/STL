@@ -23,11 +23,13 @@ struct instantiator {
     static constexpr void call() {
         using ranges::partial_sort, ranges::equal, ranges::iterator_t, ranges::less, ranges::next, ranges::size;
 
+        using Diff = ranges::range_difference_t<R>;
+
         { // Validate range overload
             for (size_t i = 0; i <= size(sorted); ++i) {
                 P elements[] = {{7, 10}, {5, 11}, {1, 12}, {3, 13}, {6, 14}, {4, 15}, {0, 16}, {2, 17}};
                 const R range{elements};
-                const auto middle                        = next(range.begin(), static_cast<int>(i));
+                const auto middle                        = next(range.begin(), static_cast<Diff>(i));
                 const same_as<iterator_t<R>> auto result = partial_sort(range, middle, less{}, get_first);
                 assert(result == range.end());
                 assert(equal(range.begin(), middle, sorted + 0, sorted + i));
@@ -38,7 +40,7 @@ struct instantiator {
             for (size_t i = 0; i <= size(sorted); ++i) {
                 P elements[] = {{7, 10}, {5, 11}, {1, 12}, {3, 13}, {6, 14}, {4, 15}, {0, 16}, {2, 17}};
                 const R range{elements};
-                const auto middle = next(range.begin(), static_cast<int>(i));
+                const auto middle = next(range.begin(), static_cast<Diff>(i));
                 const same_as<iterator_t<R>> auto result =
                     partial_sort(range.begin(), middle, range.end(), less{}, get_first);
                 assert(result == range.end());

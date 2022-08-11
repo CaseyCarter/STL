@@ -14,7 +14,7 @@
 using namespace std;
 
 template <class Rng>
-concept CanViewSlide = requires(Rng&& r) { views::slide(forward<Rng>(r), 4); };
+concept CanViewSlide = requires(Rng&& r, ranges::range_difference_t<Rng> n) { views::slide(forward<Rng>(r), n); };
 
 constexpr auto equal_ranges = [](auto&& left, auto&& right) { return ranges::equal(left, right); };
 
@@ -43,16 +43,18 @@ constexpr bool test_one(Rng&& rng, Expected&& expected) {
     // Validate borrowed_range
     static_assert(ranges::borrowed_range<R> == ranges::borrowed_range<V>);
 
+    const auto four = ranges::range_difference_t<R>{4};
+
     // Validate range adaptor object and range adaptor closure
-    constexpr auto closure = views::slide(4);
+    constexpr auto closure = views::slide(four);
 
     // ... with lvalue argument
     STATIC_ASSERT(CanViewSlide<Rng&> == (!is_view || copy_constructible<V>) );
     if constexpr (CanViewSlide<Rng&>) {
         constexpr bool is_noexcept = !is_view || is_nothrow_copy_constructible_v<V>;
 
-        STATIC_ASSERT(same_as<decltype(views::slide(rng, 4)), R>);
-        STATIC_ASSERT(noexcept(views::slide(rng, 4)) == is_noexcept);
+        STATIC_ASSERT(same_as<decltype(views::slide(rng, four)), R>);
+        STATIC_ASSERT(noexcept(views::slide(rng, four)) == is_noexcept);
 
         STATIC_ASSERT(same_as<decltype(rng | closure), R>);
         STATIC_ASSERT(noexcept(rng | closure) == is_noexcept);
@@ -66,8 +68,8 @@ constexpr bool test_one(Rng&& rng, Expected&& expected) {
 
         STATIC_ASSERT(!is_default_constructible_v<RC>);
 
-        STATIC_ASSERT(same_as<decltype(views::slide(as_const(rng), 4)), RC>);
-        STATIC_ASSERT(noexcept(views::slide(as_const(rng), 4)) == is_noexcept);
+        STATIC_ASSERT(same_as<decltype(views::slide(as_const(rng), four)), RC>);
+        STATIC_ASSERT(noexcept(views::slide(as_const(rng), four)) == is_noexcept);
 
         STATIC_ASSERT(same_as<decltype(as_const(rng) | closure), RC>);
         STATIC_ASSERT(noexcept(as_const(rng) | closure) == is_noexcept);
@@ -81,8 +83,8 @@ constexpr bool test_one(Rng&& rng, Expected&& expected) {
 
         STATIC_ASSERT(!is_default_constructible_v<RS>);
 
-        STATIC_ASSERT(same_as<decltype(views::slide(move(rng), 4)), RS>);
-        STATIC_ASSERT(noexcept(views::slide(move(rng), 4)) == is_noexcept);
+        STATIC_ASSERT(same_as<decltype(views::slide(move(rng), four)), RS>);
+        STATIC_ASSERT(noexcept(views::slide(move(rng), four)) == is_noexcept);
 
         STATIC_ASSERT(same_as<decltype(move(rng) | closure), RS>);
         STATIC_ASSERT(noexcept(move(rng) | closure) == is_noexcept);
@@ -93,15 +95,15 @@ constexpr bool test_one(Rng&& rng, Expected&& expected) {
     if constexpr (CanViewSlide<const remove_reference_t<Rng>>) {
         constexpr bool is_noexcept = is_nothrow_copy_constructible_v<V>;
 
-        STATIC_ASSERT(same_as<decltype(views::slide(move(as_const(rng)), 4)), R>);
-        STATIC_ASSERT(noexcept(views::slide(move(as_const(rng)), 4)) == is_noexcept);
+        STATIC_ASSERT(same_as<decltype(views::slide(move(as_const(rng)), four)), R>);
+        STATIC_ASSERT(noexcept(views::slide(move(as_const(rng)), four)) == is_noexcept);
 
         STATIC_ASSERT(same_as<decltype(move(as_const(rng)) | closure), R>);
         STATIC_ASSERT(noexcept(move(as_const(rng)) | closure) == is_noexcept);
     }
 
     // Validate deduction guide
-    same_as<R> auto r = slide_view{forward<Rng>(rng), 4};
+    same_as<R> auto r = slide_view{forward<Rng>(rng), four};
     assert(equal(r, expected, equal_ranges));
     const bool is_empty = ranges::empty(expected);
 
@@ -250,6 +252,8 @@ constexpr bool test_one(Rng&& rng, Expected&& expected) {
         assert(equal(as_const(r).back(), *prev(end(expected))));
     }
 
+    const auto two = ranges::range_difference_t<R>{2};
+
     // validate iterators
     {
         [[maybe_unused]] const iterator_t<R> defaulted;
@@ -264,28 +268,28 @@ constexpr bool test_one(Rng&& rng, Expected&& expected) {
         }
 
         if constexpr (random_access_range<R>) {
-            i += 2;
+            i += two;
             assert(equal(*i, expected[2]));
 
-            i -= 2;
+            i -= two;
             assert(equal(*i, expected[0]));
 
-            assert(equal(i[2], expected[2]));
+            assert(equal(i[two], expected[2]));
 
-            const same_as<iterator_t<R>> auto i2 = i + 2;
+            const same_as<iterator_t<R>> auto i2 = i + two;
             assert(equal(*i2, expected[2]));
 
-            const same_as<iterator_t<R>> auto i3 = 2 + i;
+            const same_as<iterator_t<R>> auto i3 = two + i;
             assert(equal(*i3, expected[2]));
 
-            const same_as<iterator_t<R>> auto i4 = i3 - 2;
+            const same_as<iterator_t<R>> auto i4 = i3 - two;
             assert(equal(*i4, expected[0]));
 
             const same_as<ranges::range_difference_t<V>> auto diff1 = i2 - i;
-            assert(diff1 == 2);
+            assert(diff1 == two);
 
             const same_as<ranges::range_difference_t<V>> auto diff2 = i - i2;
-            assert(diff2 == -2);
+            assert(diff2 == -two);
 
             // comparisons
             assert(i == i4);
@@ -308,7 +312,7 @@ constexpr bool test_one(Rng&& rng, Expected&& expected) {
 
             const auto i2   = r.begin();
             const auto sen  = r.end();
-            const auto size = ranges::ssize(expected);
+            const auto size = static_cast<ranges::range_difference_t<V>>(ranges::ssize(expected));
 
             assert(next(i2, size) == sen);
             assert(i2 != sen);
@@ -337,28 +341,28 @@ constexpr bool test_one(Rng&& rng, Expected&& expected) {
         }
 
         if constexpr (random_access_range<const R>) {
-            ci += 2;
+            ci += two;
             assert(equal(*ci, expected[2]));
 
-            ci -= 2;
+            ci -= two;
             assert(equal(*ci, expected[0]));
 
-            assert(equal(ci[2], expected[2]));
+            assert(equal(ci[two], expected[2]));
 
-            const same_as<iterator_t<const R>> auto ci2 = ci + 2;
+            const same_as<iterator_t<const R>> auto ci2 = ci + two;
             assert(equal(*ci2, expected[2]));
 
-            const same_as<iterator_t<const R>> auto ci3 = 2 + ci;
+            const same_as<iterator_t<const R>> auto ci3 = two + ci;
             assert(equal(*ci3, expected[2]));
 
-            const same_as<iterator_t<const R>> auto ci4 = ci3 - 2;
+            const same_as<iterator_t<const R>> auto ci4 = ci3 - two;
             assert(equal(*ci4, expected[0]));
 
             const same_as<ranges::range_difference_t<V>> auto diff1 = ci2 - ci;
-            assert(diff1 == 2);
+            assert(diff1 == two);
 
             const same_as<ranges::range_difference_t<V>> auto diff2 = ci - ci2;
-            assert(diff2 == -2);
+            assert(diff2 == -two);
 
             // comparisons
             assert(ci == ci4);

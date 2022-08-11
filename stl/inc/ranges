@@ -6457,7 +6457,8 @@ namespace ranges {
                 if (_Size < _Parent->_Remainder) {
                     return _Size == 0 ? 0 : 1;
                 }
-                return _Div_ceil(_Size - _Parent->_Remainder, _Parent->_Count) + 1;
+                return static_cast<range_difference_t<_Vw>>(
+                    _Div_ceil(static_cast<range_difference_t<_Vw>>(_Size - _Parent->_Remainder), _Parent->_Count) + 1);
             }
 
         public:
@@ -7212,7 +7213,8 @@ namespace ranges {
                     return _Iterator<false>{_STD move(_First), this->_Get_cache(_Range), _Count};
                 }
 
-                auto _Current_last = _RANGES next(_First, _Count - 1, _RANGES end(_Range));
+                auto _Current_last =
+                    _RANGES next(_First, static_cast<range_difference_t<_Vw>>(_Count - 1), _RANGES end(_Range));
                 this->_Set_cache(_Range, _Current_last);
                 return _Iterator<false>{_STD move(_First), _STD move(_Current_last), _Count};
             } else {
@@ -7231,7 +7233,7 @@ namespace ranges {
         _NODISCARD constexpr auto end() requires (!(_Simple_view<_Vw> && _Slide_caches_nothing<const _Vw>) ) {
             // clang-format on
             if constexpr (_Slide_caches_nothing<_Vw>) {
-                const auto _Size = _RANGES distance(_Range) - (_Count - 1);
+                const auto _Size = static_cast<range_difference_t<_Vw>>(_RANGES distance(_Range) - (_Count - 1));
                 if (_Size < 0) {
                     return _Iterator<false>{_RANGES begin(_Range), _Count};
                 }
@@ -7242,7 +7244,8 @@ namespace ranges {
                     return _Iterator<false>{this->_Get_cache(_Range), _Count};
                 }
 
-                auto _Current_last = _RANGES prev(_RANGES end(_Range), _Count - 1, _RANGES begin(_Range));
+                auto _Current_last = _RANGES prev(
+                    _RANGES end(_Range), static_cast<range_difference_t<_Vw>>(_Count - 1), _RANGES begin(_Range));
                 this->_Set_cache(_Range, _Current_last);
                 return _Iterator<false>{_STD move(_Current_last), _Count};
             } else if constexpr (common_range<_Vw>) {
@@ -7257,7 +7260,7 @@ namespace ranges {
                 && noexcept(_RANGES distance(_Range)) && noexcept(_RANGES begin(_Range) + _Count)) /* strengthened */
             requires _Slide_caches_nothing<const _Vw>
         {
-            const auto _Size = _RANGES distance(_Range) - (_Count - 1);
+            const auto _Size = static_cast<range_difference_t<_Vw>>(_RANGES distance(_Range) - (_Count - 1));
             if (_Size < 0) {
                 return _Iterator<true>{_RANGES begin(_Range), _Count};
             }
@@ -7268,7 +7271,7 @@ namespace ranges {
         _NODISCARD constexpr auto size() noexcept(noexcept(_RANGES distance(_Range))) /* strengthened */
             requires sized_range<_Vw>
         {
-            auto _Size = _RANGES distance(_Range) - (_Count - 1);
+            auto _Size = static_cast<range_difference_t<_Vw>>(_RANGES distance(_Range) - (_Count - 1));
             if (_Size < 0) {
                 _Size = 0;
             }
@@ -7279,7 +7282,7 @@ namespace ranges {
         _NODISCARD constexpr auto size() const noexcept(noexcept(_RANGES distance(_Range))) /* strengthened */
             requires sized_range<const _Vw>
         {
-            auto _Size = _RANGES distance(_Range) - (_Count - 1);
+            auto _Size = static_cast<range_difference_t<_Vw>>(_RANGES distance(_Range) - (_Count - 1));
             if (_Size < 0) {
                 _Size = 0;
             }
@@ -7644,7 +7647,7 @@ namespace ranges {
 
                     // Per to-be-filed LWG issue (See GH-2995)
                     if constexpr (sized_sentinel_for<_Base_sentinel, _Base_iterator>) {
-                        _Missing = _RANGES advance(_Current, _Stride * _Off, _End);
+                        _Missing = _RANGES advance(_Current, static_cast<difference_type>(_Stride * _Off), _End);
                     } else {
                         _Current += static_cast<difference_type>(_Stride * (_Off - 1));
                         _Missing = _RANGES advance(_Current, _Stride, _End);
@@ -7753,7 +7756,7 @@ namespace ranges {
                     return (_Diff + _Left._Missing - _Right._Missing) / _Left._Stride;
                 } else {
                     if (_Diff < 0) {
-                        return -_Div_ceil(-_Diff, _Left._Stride);
+                        return -_Div_ceil(static_cast<difference_type>(-_Diff), _Left._Stride);
                     } else {
                         return _Div_ceil(_Diff, _Left._Stride);
                     }

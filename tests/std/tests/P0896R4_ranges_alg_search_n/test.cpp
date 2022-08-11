@@ -4,7 +4,7 @@
 #include <algorithm>
 #include <array>
 #include <cassert>
-#include <concepts>
+#include <limits>
 #include <ranges>
 #include <utility>
 
@@ -25,6 +25,7 @@ struct instantiator {
     template <class Fwd>
     static constexpr void call() {
         const Fwd range{pairs};
+        constexpr auto huge = numeric_limits<ranges::range_difference_t<Fwd>>::max();
 
         // defaulted predicate and projections
         {
@@ -100,13 +101,13 @@ struct instantiator {
 
         // trivial case: range too small
         {
-            const auto result = ranges::search_n(range, 99999, 0, cmp, get_first);
+            const auto result = ranges::search_n(range, huge, 0, cmp, get_first);
             STATIC_ASSERT(same_as<decltype(result), const ranges::subrange<ranges::iterator_t<Fwd>>>);
             assert(result.begin() == range.end());
             assert(result.end() == range.end());
         }
         {
-            const auto result = ranges::search_n(ranges::begin(range), ranges::end(range), 99999, 0, cmp, get_first);
+            const auto result = ranges::search_n(ranges::begin(range), ranges::end(range), huge, 0, cmp, get_first);
             STATIC_ASSERT(same_as<decltype(result), const ranges::subrange<ranges::iterator_t<Fwd>>>);
             assert(result.begin() == range.end());
             assert(result.end() == range.end());

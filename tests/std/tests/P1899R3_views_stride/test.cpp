@@ -15,7 +15,7 @@
 using namespace std;
 
 template <class Rng>
-concept CanViewStride = requires(Rng&& r) { views::stride(forward<Rng>(r), 3); };
+concept CanViewStride = requires(Rng&& r, ranges::range_difference_t<Rng> n) { views::stride(forward<Rng>(r), n); };
 
 template <ranges::input_range Rng, class Expected>
 constexpr bool test_one(Rng&& rng, Expected&& expected) {
@@ -42,7 +42,7 @@ constexpr bool test_one(Rng&& rng, Expected&& expected) {
     STATIC_ASSERT(ranges::borrowed_range<R> == ranges::borrowed_range<V>);
 
     // Validate range adaptor object and range adaptor closure
-    constexpr auto closure = views::stride(3);
+    constexpr auto closure = views::stride(ranges::range_difference_t<R>{3});
 
     // ... with lvalue argument
     STATIC_ASSERT(CanViewStride<Rng&> == (!is_view || copy_constructible<V>) );

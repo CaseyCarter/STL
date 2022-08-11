@@ -2220,8 +2220,8 @@ struct _Static_partitioned_search_n3 {
 
         // any match in this chunk will have at least 1 element in _Range, so the furthest off the
         // end of the candidate range we will need to search is _Target_count - 1
-        const _Iter_diff_t<_FwdIt> _Overshoot = _Target_count - 1;
-        const auto _Serial_last               = _STD next(_Range._Last, _Overshoot);
+        const auto _Overshoot   = static_cast<_Iter_diff_t<_FwdIt>>(_Target_count - 1);
+        const auto _Serial_last = _STD next(_Range._Last, _Overshoot);
 
         // we delegate to the serial algorithm targeting [_First, _Last + _Overshoot)
         // which we know is safe because we only partitioned _First + _Candidates start positions
@@ -2997,7 +2997,8 @@ void stable_sort(_ExPo&&, const _BidIt _First, const _BidIt _Last, _Pr _Pred) no
         _Attempt_parallelism = false;
     }
 
-    _Optimistic_temporary_buffer<_Iter_value_t<_BidIt>> _Temp_buf{_Attempt_parallelism ? _Count : _Count - _Count / 2};
+    _Optimistic_temporary_buffer<_Iter_value_t<_BidIt>> _Temp_buf{
+        static_cast<_Iter_diff_t<_BidIt>>(_Attempt_parallelism ? _Count : _Count - _Count / 2)};
     if constexpr (remove_reference_t<_ExPo>::_Parallelize) {
         if (_Attempt_parallelism) {
             // forward+ iterator overflow assumption for size_t cast
@@ -3274,7 +3275,7 @@ struct _Static_partitioned_is_heap_until2 {
 
         const auto _Initial = (_STD max)(_Chunk_offset, _Diff{1});
         for (_Diff _Off = _Initial; _Off < _Last; ++_Off) {
-            if (_DEBUG_LT_PRED(_Pred, *(_Range_first + ((_Off - 1) >> 1)), *(_Range_first + _Off))) {
+            if (_DEBUG_LT_PRED(_Pred, *(_Range_first + static_cast<_Diff>((_Off - 1) >> 1)), *(_Range_first + _Off))) {
                 _Results._Imbue(_Key._Chunk_number, _Range_first + _Off);
                 return _Cancellation_status::_Canceled;
             }

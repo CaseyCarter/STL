@@ -23,8 +23,9 @@ struct instantiator {
     static constexpr void call() {
         using ranges::for_each_n, ranges::for_each_n_result, ranges::iterator_t, ranges::distance;
         P input[3] = {{0, 42}, {2, 42}, {4, 42}};
+        using D    = iter_difference_t<ReadWrite>;
 
-        auto result = for_each_n(ReadWrite{input}, distance(input), incr, get_first);
+        auto result = for_each_n(ReadWrite{input}, test::narrow_to<D>(distance(input)), incr, get_first);
         STATIC_ASSERT(same_as<decltype(result), for_each_n_result<ReadWrite, remove_const_t<decltype(incr)>>>);
         assert(result.in.peek() == end(input));
         assert(ranges::equal(expected, input));

@@ -91,7 +91,7 @@ struct holder {
 
 namespace test {
     using std::assignable_from, std::conditional_t, std::convertible_to, std::copy_constructible, std::derived_from,
-        std::exchange, std::ptrdiff_t, std::span;
+        std::exchange, std::span;
 
     using output     = std::output_iterator_tag;
     using input      = std::input_iterator_tag;
@@ -190,11 +190,15 @@ namespace test {
             return !(s == ptr);
         }
 
-        [[nodiscard]] friend constexpr ptrdiff_t operator-(sentinel const s, Element* const ptr) noexcept {
-            return s.ptr_ - ptr;
+        [[nodiscard]] friend constexpr short operator-(sentinel const s, Element* const ptr) noexcept {
+            const auto delta = s.ptr_ - ptr;
+            assert(static_cast<short>(delta) == delta);
+            return static_cast<short>(delta);
         }
-        [[nodiscard]] friend constexpr ptrdiff_t operator-(Element* const ptr, sentinel const s) noexcept {
-            return ptr - s.ptr_;
+        [[nodiscard]] friend constexpr short operator-(Element* const ptr, sentinel const s) noexcept {
+            const auto delta = ptr - s.ptr_;
+            assert(static_cast<short>(delta) == delta);
+            return static_cast<short>(delta);
         }
     };
 
@@ -245,11 +249,11 @@ namespace test {
             return *this;
         }
 
-        // clang-format off
-        constexpr operator Element&() const requires derived_from<Category, input> {
+        constexpr operator Element&() const
+            requires derived_from<Category, input>
+        {
             return ref_;
         }
-        // clang-format on
 
         template <class T>
             requires (!std::same_as<std::remove_cvref_t<T>, proxy_reference> && assignable_from<Element&, T>)
@@ -294,56 +298,66 @@ namespace test {
             return {ref_ >= that.peek()};
         }
 
-        // clang-format off
         [[nodiscard]] friend constexpr boolish operator==(proxy_reference r, Value const& val)
-            requires CanEq<Element, Value> {
+            requires CanEq<Element, Value>
+        {
             return {r.ref_ == val};
         }
         [[nodiscard]] friend constexpr boolish operator==(Value const& val, proxy_reference r)
-            requires CanEq<Element, Value> {
+            requires CanEq<Element, Value>
+        {
             return {r.ref_ == val};
         }
         [[nodiscard]] friend constexpr boolish operator!=(proxy_reference r, Value const& val)
-            requires CanNEq<Element, Value> {
+            requires CanNEq<Element, Value>
+        {
             return {r.ref_ != val};
         }
         [[nodiscard]] friend constexpr boolish operator!=(Value const& val, proxy_reference r)
-            requires CanNEq<Element, Value> {
+            requires CanNEq<Element, Value>
+        {
             return {r.ref_ != val};
         }
         [[nodiscard]] friend constexpr boolish operator<(Value const& val, proxy_reference r)
-            requires CanLt<Value, Element> {
+            requires CanLt<Value, Element>
+        {
             return {val < r.ref_};
         }
         [[nodiscard]] friend constexpr boolish operator<(proxy_reference r, Value const& val)
-            requires CanLt<Element, Value> {
+            requires CanLt<Element, Value>
+        {
             return {r.ref_ < val};
         }
         [[nodiscard]] friend constexpr boolish operator>(Value const& val, proxy_reference r)
-            requires CanGt<Value, Element> {
+            requires CanGt<Value, Element>
+        {
             return {val > r.ref_};
         }
         [[nodiscard]] friend constexpr boolish operator>(proxy_reference r, Value const& val)
-            requires CanGt<Element, Value> {
+            requires CanGt<Element, Value>
+        {
             return {r.ref_ > val};
         }
         [[nodiscard]] friend constexpr boolish operator<=(Value const& val, proxy_reference r)
-            requires CanLtE<Value, Element> {
+            requires CanLtE<Value, Element>
+        {
             return {val <= r.ref_};
         }
         [[nodiscard]] friend constexpr boolish operator<=(proxy_reference r, Value const& val)
-            requires CanLtE<Element, Value> {
+            requires CanLtE<Element, Value>
+        {
             return {r.ref_ <= val};
         }
         [[nodiscard]] friend constexpr boolish operator>=(Value const& val, proxy_reference r)
-            requires CanGtE<Value, Element> {
+            requires CanGtE<Value, Element>
+        {
             return {val >= r.ref_};
         }
         [[nodiscard]] friend constexpr boolish operator>=(proxy_reference r, Value const& val)
-            requires CanGtE<Element, Value> {
+            requires CanGtE<Element, Value>
+        {
             return {r.ref_ >= val};
         }
-        // clang-format on
 
         [[nodiscard]] constexpr Element& peek() const noexcept {
             return ref_;
@@ -415,6 +429,21 @@ namespace test {
     static_assert(std::forward_iterator<init_list_not_constructible_iterator<int>>);
     static_assert(
         std::sentinel_for<init_list_not_constructible_sentinel<int>, init_list_not_constructible_iterator<int>>);
+
+    template <class To, class From>
+    [[nodiscard]] constexpr To narrow_to(From const& n) noexcept {
+        const auto result = static_cast<To>(n);
+
+        if constexpr (std::_Integer_like<From> && std::_Integer_like<To>) {
+            assert((result <=> 0) == (n <=> 0));
+            using C = std::common_type_t<From, To>;
+            assert(static_cast<C>(result) == static_cast<C>(n));
+        } else {
+            assert(result == n);
+        }
+
+        return result;
+    }
 
     template <class Category, class Element,
         // Model sized_sentinel_for along with sentinel?
@@ -644,40 +673,72 @@ namespace test {
             return ptr_ <=> that.ptr_;
         }
 
-        [[nodiscard]] constexpr ReferenceType operator[](ptrdiff_t const n) const& noexcept
+        template <class T>
+        [[nodiscard]] constexpr ReferenceType operator[](T const n) const& noexcept
             requires at_least<random>
         {
-            return ReferenceType{ptr_[n]};
+            if constexpr (std::same_as<T, short>) {
+                return ReferenceType{ptr_[n]};
+            } else {
+                STATIC_ASSERT(always_false<T>);
+            }
         }
 
-        constexpr iterator& operator+=(ptrdiff_t const n) & noexcept
+        template <class T>
+        constexpr iterator& operator+=(T const& n) & noexcept
             requires at_least<random>
         {
-            ptr_ += n;
+            if constexpr (std::same_as<T, short>) {
+                ptr_ += n;
+            } else {
+                STATIC_ASSERT(always_false<T>);
+            }
             return *this;
         }
-        constexpr iterator& operator-=(ptrdiff_t const n) & noexcept
+
+        template <class T>
+        constexpr iterator& operator-=(T const& n) & noexcept
             requires at_least<random>
         {
-            ptr_ -= n;
+            if constexpr (std::same_as<T, short>) {
+                ptr_ -= n;
+            } else {
+                STATIC_ASSERT(always_false<T>);
+            }
             return *this;
         }
 
-        [[nodiscard]] constexpr iterator operator+(ptrdiff_t const n) const noexcept
+        template <class T>
+        [[nodiscard]] constexpr iterator operator+(T const& n) const noexcept
             requires at_least<random>
         {
-            return iterator{ptr_ + n};
-        }
-        [[nodiscard]] friend constexpr iterator operator+(ptrdiff_t const n, iterator const& i) noexcept
-            requires at_least<random>
-        {
-            return i + n;
+            if constexpr (std::same_as<T, short>) {
+                return iterator{ptr_ + n};
+            } else {
+                STATIC_ASSERT(always_false<T>);
+            }
         }
 
-        [[nodiscard]] constexpr iterator operator-(ptrdiff_t const n) const noexcept
+        template <class T>
+        [[nodiscard]] friend constexpr iterator operator+(T const& n, iterator const& i) noexcept
             requires at_least<random>
         {
-            return iterator{ptr_ - n};
+            if constexpr (std::same_as<T, short>) {
+                return i + n;
+            } else {
+                STATIC_ASSERT(always_false<T>);
+            }
+        }
+
+        template <std::_Integer_like T>
+        [[nodiscard]] constexpr iterator operator-(T const n) const noexcept
+            requires at_least<random>
+        {
+            if constexpr (std::same_as<T, short>) {
+                return iterator{ptr_ - n};
+            } else {
+                STATIC_ASSERT(always_false<T>);
+            }
         }
 
         // contiguous iterator operations:
@@ -688,27 +749,24 @@ namespace test {
         }
 
         // sized_sentinel_for operations:
-        // clang-format off
-        [[nodiscard]] constexpr ptrdiff_t operator-(iterator const& that) const noexcept
-            requires at_least<random> || (to_bool(Diff) && to_bool(Eq)) {
-            // clang-format on
-            return ptr_ - that.ptr_;
+        [[nodiscard]] constexpr short operator-(iterator const& that) const noexcept
+            requires at_least<random> || (to_bool(Diff) && to_bool(Eq))
+        {
+            return narrow_to<short>(ptr_ - that.ptr_);
         }
 
-        // clang-format off
         template <WrappedState OtherWrapped>
-        [[nodiscard]] constexpr ptrdiff_t operator-(sentinel<Element, OtherWrapped> const& s) const noexcept
-            requires compatible_wrapped_state<Wrapped, OtherWrapped> && (to_bool(Diff)) {
-            // clang-format on
-            return ptr_ - s.peek();
+        [[nodiscard]] constexpr short operator-(sentinel<Element, OtherWrapped> const& s) const noexcept
+            requires compatible_wrapped_state<Wrapped, OtherWrapped> && (to_bool(Diff))
+        {
+            return narrow_to<short>(ptr_ - s.peek());
         }
-        // clang-format off
         template <WrappedState OtherWrapped>
-        [[nodiscard]] friend constexpr ptrdiff_t operator-(
+        [[nodiscard]] friend constexpr short operator-(
             sentinel<Element, OtherWrapped> const& s, iterator const& i) noexcept
-            requires compatible_wrapped_state<Wrapped, OtherWrapped> && (to_bool(Diff)) {
-            // clang-format on
-            return -(i - s);
+            requires compatible_wrapped_state<Wrapped, OtherWrapped> && (to_bool(Diff))
+        {
+            return narrow_to<short>(-(i - s));
         }
 
         using unwrap              = std::conditional_t<derived_from<Category, contiguous>, Element*,
@@ -776,7 +834,7 @@ struct std::iterator_traits<::test::iterator<Category, Element, Diff, Eq, Proxy,
           Proxy == ::test::ProxyRef::yes, Eq == ::test::CanCompare::yes> {
     using iterator_concept = Category;
     using value_type       = remove_cv_t<Element>;
-    using difference_type  = ptrdiff_t;
+    using difference_type  = short;
     using pointer          = conditional_t<derived_from<Category, contiguous_iterator_tag>, Element*, void>;
     using reference        = iter_reference_t<::test::iterator<Category, Element, Diff, Eq, Proxy, Wrapped>>;
 };
@@ -787,7 +845,7 @@ struct std::pointer_traits<::test::iterator<std::contiguous_iterator_tag, Elemen
     using pointer         = ::test::iterator<contiguous_iterator_tag, Element, Diff, ::test::CanCompare::yes,
         ::test::ProxyRef::no, Wrapped>;
     using element_type    = Element;
-    using difference_type = ptrdiff_t;
+    using difference_type = short;
 
     [[nodiscard]] static constexpr element_type* to_address(pointer const& x) noexcept {
         return x.peek();
@@ -804,7 +862,7 @@ namespace test {
         template <class Element, Copyability Copy>
         class range_base {
         public:
-            static_assert(Copy == Copyability::immobile);
+            STATIC_ASSERT(Copy == Copyability::immobile);
 
             range_base() = delete;
             constexpr explicit range_base(span<Element> elements) noexcept : elements_{elements} {}
@@ -823,7 +881,9 @@ namespace test {
         class range_base<Element, Copyability::move_only> {
         public:
             range_base() = delete;
-            constexpr explicit range_base(span<Element> elements) noexcept : elements_{elements} {}
+            constexpr explicit range_base(span<Element> elements) noexcept : elements_{elements} {
+                (void) narrow_to<short>(elements.size());
+            }
 
             constexpr range_base(range_base&& that) noexcept
                 : elements_{that.elements_}, moved_from_{that.moved_from_} {
@@ -885,7 +945,6 @@ namespace test {
         };
     } // namespace detail
 
-    // clang-format off
     template <class Category, class Element,
         // Implement member size? (NB: Not equivalent to "Is this a sized_range?")
         Sized IsSized = Sized::no,
@@ -901,10 +960,9 @@ namespace test {
         CanView IsView = CanView::no,
         // Should this range type be copyable/movable/neither?
         Copyability Copy = IsView == CanView::yes ? Copyability::move_only : Copyability::immobile>
-        requires (!to_bool(IsCommon) || to_bool(Eq))
-            && (to_bool(Eq) || !derived_from<Category, fwd>)
-            && (Proxy == ProxyRef::no || !derived_from<Category, contiguous>)
-            && (!to_bool(IsView) || Copy != Copyability::immobile)
+        requires (!to_bool(IsCommon) || to_bool(Eq)) && (to_bool(Eq) || !derived_from<Category, fwd>)
+              && (Proxy == ProxyRef::no || !derived_from<Category, contiguous>)
+              && (!to_bool(IsView) || Copy != Copyability::immobile)
     class range : public detail::range_base<Element, Copy> {
     private:
         mutable bool begin_called_ = false;
@@ -931,15 +989,19 @@ namespace test {
             return S{elements_.data() + elements_.size()};
         }
 
-        [[nodiscard]] constexpr ptrdiff_t size() const noexcept requires (to_bool(IsSized)) {
+        [[nodiscard]] constexpr unsigned short size() const noexcept
+            requires (to_bool(IsSized))
+        {
             assert(!moved_from());
             if constexpr (!derived_from<Category, fwd>) {
                 assert(!begin_called_);
             }
-            return static_cast<ptrdiff_t>(elements_.size());
+            return static_cast<unsigned short>(elements_.size());
         }
 
-        [[nodiscard]] constexpr Element* data() const noexcept requires derived_from<Category, contiguous> {
+        [[nodiscard]] constexpr Element* data() const noexcept
+            requires derived_from<Category, contiguous>
+        {
             assert(!moved_from());
             return elements_.data();
         }
@@ -967,7 +1029,6 @@ namespace test {
             STATIC_ASSERT(always_false<Category>);
         }
     };
-    // clang-format on
 } // namespace test
 
 template <class Category, class Element, test::Sized IsSized, test::CanDifference Diff, test::Common IsCommon,

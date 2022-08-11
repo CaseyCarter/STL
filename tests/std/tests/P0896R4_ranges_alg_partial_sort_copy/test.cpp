@@ -46,7 +46,7 @@ struct instantiator1 {
                 const same_as<partial_sort_copy_result<iterator_t<In>, iterator_t<Out>>> auto result =
                     partial_sort_copy(range1, range2, less{}, get_first, get_first);
                 assert(result.in == range1.end());
-                const auto n = min(i, int{size(source)});
+                const auto n = static_cast<ranges::range_difference_t<Out>>(min(i, int{size(source)}));
                 assert(result.out == range2.begin() + n);
                 assert(equal(range2.begin(), range2.begin() + n, expected_vals, expected_vals + n));
             }
@@ -79,7 +79,7 @@ struct instantiator2 {
                     partial_sort_copy(
                         range1.begin(), range1.end(), range2.begin(), range2.end(), less{}, get_first, get_first);
                 assert(result.in == range1.end());
-                const auto n = min(i, int{size(source)});
+                const auto n = static_cast<ranges::range_difference_t<Out>>(min(i, int{size(source)}));
                 assert(result.out == range2.begin() + n);
                 assert(equal(range2.begin(), range2.begin() + n, expected_vals, expected_vals + n));
             }

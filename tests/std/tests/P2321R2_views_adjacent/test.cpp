@@ -47,7 +47,8 @@ template <size_t N, ranges::input_range Rng, class Expected>
 constexpr bool test_one(Rng&& rng, Expected&& expected) {
     using ranges::adjacent_view, ranges::forward_range, ranges::bidirectional_range, ranges::random_access_range,
         ranges::sized_range, ranges::common_range, ranges::iterator_t, ranges::sentinel_t, ranges::const_iterator_t,
-        ranges::const_sentinel_t, ranges::range_difference_t, ranges::range_value_t, ranges::range_reference_t;
+        ranges::const_sentinel_t, ranges::range_difference_t, ranges::range_value_t, ranges::range_reference_t,
+        ranges::next, ranges::prev;
 
     constexpr bool is_view = ranges::view<remove_cvref_t<Rng>>;
 
@@ -388,7 +389,7 @@ constexpr bool test_one(Rng&& rng, Expected&& expected) {
 
         if constexpr (bidirectional_range<V>) {
             { // Check pre-decrementation
-                i = ranges::next(r.begin());
+                i = next(r.begin());
 
                 same_as<I&> decltype(auto) i2 = --i;
                 assert(&i2 == &i);
@@ -396,7 +397,7 @@ constexpr bool test_one(Rng&& rng, Expected&& expected) {
             }
 
             { // Check post-decrementation
-                i = ranges::next(r.begin());
+                i = next(r.begin());
 
                 same_as<I> decltype(auto) i2 = i--;
                 if (i2 != r.end()) {
@@ -427,7 +428,7 @@ constexpr bool test_one(Rng&& rng, Expected&& expected) {
             }
 
             { // Check other comparisons
-                auto i2               = ranges::next(i);
+                auto i2               = next(i);
                 same_as<bool> auto b1 = i < i2;
                 assert(b1);
                 same_as<bool> auto b2 = i2 > i;
@@ -463,7 +464,7 @@ constexpr bool test_one(Rng&& rng, Expected&& expected) {
             }
 
             { // Check operator-(Iter, Diff)
-                same_as<I> auto i2 = ranges::next(i) - 1;
+                same_as<I> auto i2 = next(i) - 1;
                 assert(*i2 == expected[0]);
             }
         }
@@ -471,8 +472,8 @@ constexpr bool test_one(Rng&& rng, Expected&& expected) {
         if constexpr (sized_sentinel_for<BI, BI>) { // Check differencing
             same_as<range_difference_t<V>> auto diff = i - i;
             assert(diff == 0);
-            assert((i - ranges::next(i)) == -1);
-            assert((ranges::next(i) - i) == 1);
+            assert((i - next(i)) == -1);
+            assert((next(i) - i) == 1);
         }
 
         if constexpr (sized_sentinel_for<sentinel_t<R>, I>) { // Check differencing with sentinel<not const>
@@ -582,7 +583,7 @@ constexpr bool test_one(Rng&& rng, Expected&& expected) {
 
         if constexpr (bidirectional_range<const V>) {
             { // Check pre-decrementation
-                ci = ranges::next(r.begin());
+                ci = next(r.begin());
 
                 same_as<CI&> decltype(auto) ci2 = --ci;
                 assert(&ci2 == &ci);
@@ -590,7 +591,7 @@ constexpr bool test_one(Rng&& rng, Expected&& expected) {
             }
 
             { // Check post-decrementation
-                ci = ranges::next(r.begin());
+                ci = next(r.begin());
 
                 same_as<CI> decltype(auto) ci2 = ci--;
                 if (ci2 != r.end()) {
@@ -621,7 +622,7 @@ constexpr bool test_one(Rng&& rng, Expected&& expected) {
             }
 
             { // Check comparisons
-                auto ci2              = ranges::next(ci);
+                auto ci2              = next(ci);
                 same_as<bool> auto b1 = ci < ci2;
                 assert(b1);
                 same_as<bool> auto b2 = ci2 > ci;
@@ -680,7 +681,7 @@ constexpr bool test_one(Rng&& rng, Expected&& expected) {
             }
 
             { // Check operator-(Iter, Diff)
-                same_as<CI> auto ci2 = ranges::next(ci) - 1;
+                same_as<CI> auto ci2 = next(ci) - 1;
                 assert(*ci2 == expected[0]);
             }
         }
@@ -688,8 +689,8 @@ constexpr bool test_one(Rng&& rng, Expected&& expected) {
         if constexpr (sized_sentinel_for<CBI, CBI>) { // Check differencing
             same_as<range_difference_t<const V>> auto diff = ci - ci;
             assert(diff == 0);
-            assert((ci - ranges::next(ci)) == -1);
-            assert((ranges::next(ci) - ci) == 1);
+            assert((ci - next(ci)) == -1);
+            assert((next(ci) - ci) == 1);
         }
 
         if constexpr (sized_sentinel_for<sentinel_t<R>, CI>) { // Check differencing with sentinel<not const>
@@ -800,7 +801,7 @@ constexpr void test_iter_swap(Rng& rng) {
     { // Check iter_swap for adjacent_view::iterator<not const>
         auto i      = r.begin();
         auto first  = *i;
-        auto j      = ranges::next(i);
+        auto j      = next(i);
         auto second = *j;
 
         // It takes N+1 swaps to get to initial state
@@ -817,7 +818,7 @@ constexpr void test_iter_swap(Rng& rng) {
     if constexpr (CanMemberBegin<const decltype(r)> && indirectly_swappable<ranges::iterator_t<const Rng>>) {
         auto i      = as_const(r).begin();
         auto first  = *i;
-        auto j      = ranges::next(i);
+        auto j      = next(i);
         auto second = *j;
 
         // It takes N+1 swaps to get to initial state

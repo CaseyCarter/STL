@@ -7,7 +7,6 @@
 #include <algorithm>
 #include <array>
 #include <cassert>
-#include <concepts>
 #include <ranges>
 #include <span>
 #include <utility>
@@ -52,7 +51,7 @@ struct is_heap_test {
     template <ranges::random_access_range Range>
     static constexpr void call() {
         // Validate is_heap and is_heap_until
-        using ranges::is_heap, ranges::is_heap_until, ranges::less, ranges::swap;
+        using ranges::is_heap, ranges::is_heap_until, ranges::less, ranges::next, ranges::swap;
 
         array buff = {
             P{1668617627, 0},
@@ -79,8 +78,8 @@ struct is_heap_test {
         ASSERT(!is_heap(wrapped, less{}, get_first));
         ASSERT(!is_heap(wrapped.begin(), wrapped.end(), less{}, get_first));
 
-        ASSERT(is_heap_until(wrapped, less{}, get_first) == wrapped.begin() + 1);
-        ASSERT(is_heap_until(wrapped.begin(), wrapped.end(), less{}, get_first) == wrapped.begin() + 1);
+        ASSERT(is_heap_until(wrapped, less{}, get_first) == next(wrapped.begin()));
+        ASSERT(is_heap_until(wrapped.begin(), wrapped.end(), less{}, get_first) == next(wrapped.begin()));
     }
 };
 
@@ -172,12 +171,13 @@ struct push_and_pop_heap_test {
         P{-1298559576, 8},
         P{1668617627, 0},
     };
-    STATIC_ASSERT(ranges::is_heap(expectedPopped.begin(), expectedPopped.end() - 1, ranges::less{}, get_first));
+    STATIC_ASSERT(
+        ranges::is_heap(expectedPopped.begin(), ranges::prev(expectedPopped.end()), ranges::less{}, get_first));
 
     template <ranges::random_access_range Range>
     static constexpr void call() {
         // Validate push_heap and pop_heap
-        using ranges::push_heap, ranges::pop_heap, ranges::equal, ranges::is_heap, ranges::less;
+        using ranges::push_heap, ranges::pop_heap, ranges::equal, ranges::is_heap, ranges::less, ranges::prev;
 
         {
             auto buff = initial_values;
@@ -195,7 +195,7 @@ struct push_and_pop_heap_test {
             const Range wrapped{buff};
 
             pop_heap(wrapped.begin(), wrapped.end(), less{}, get_first);
-            ASSERT(is_heap(expectedPopped.begin(), expectedPopped.end() - 1, less{}, get_first));
+            ASSERT(is_heap(expectedPopped.begin(), prev(expectedPopped.end()), less{}, get_first));
             ASSERT(equal(wrapped.begin(), wrapped.end(), expectedPopped.begin(), expectedPopped.end()));
 
             push_heap(wrapped.begin(), wrapped.end(), less{}, get_first);

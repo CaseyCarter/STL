@@ -428,14 +428,15 @@ namespace ranges {
         _NODISCARD constexpr iter_difference_t<_It> operator()(
             _It _First, _Se _Last, const _Ty& _Val, _Pj _Proj = {}) const {
             _Adl_verify_range(_First, _Last);
-            return _Count_unchecked(
-                _Unwrap_iter<_Se>(_STD move(_First)), _Unwrap_sent<_It>(_STD move(_Last)), _Val, _Pass_fn(_Proj));
+            return static_cast<iter_difference_t<_It>>(_Count_unchecked(
+                _Unwrap_iter<_Se>(_STD move(_First)), _Unwrap_sent<_It>(_STD move(_Last)), _Val, _Pass_fn(_Proj)));
         }
 
         template <input_range _Rng, class _Ty, class _Pj = identity>
             requires indirect_binary_predicate<ranges::equal_to, projected<iterator_t<_Rng>, _Pj>, const _Ty*>
         _NODISCARD constexpr range_difference_t<_Rng> operator()(_Rng&& _Range, const _Ty& _Val, _Pj _Proj = {}) const {
-            return _Count_unchecked(_Ubegin(_Range), _Uend(_Range), _Val, _Pass_fn(_Proj));
+            return static_cast<range_difference_t<_Rng>>(
+                _Count_unchecked(_Ubegin(_Range), _Uend(_Range), _Val, _Pass_fn(_Proj)));
         }
 
     private:
@@ -508,14 +509,15 @@ namespace ranges {
             indirect_unary_predicate<projected<_It, _Pj>> _Pr>
         _NODISCARD constexpr iter_difference_t<_It> operator()(_It _First, _Se _Last, _Pr _Pred, _Pj _Proj = {}) const {
             _Adl_verify_range(_First, _Last);
-            return _Count_if_unchecked(_Unwrap_iter<_Se>(_STD move(_First)), _Unwrap_sent<_It>(_STD move(_Last)),
-                _Pass_fn(_Pred), _Pass_fn(_Proj));
+            return static_cast<iter_difference_t<_It>>(_Count_if_unchecked(_Unwrap_iter<_Se>(_STD move(_First)),
+                _Unwrap_sent<_It>(_STD move(_Last)), _Pass_fn(_Pred), _Pass_fn(_Proj)));
         }
 
         template <input_range _Rng, class _Pj = identity,
             indirect_unary_predicate<projected<iterator_t<_Rng>, _Pj>> _Pr>
         _NODISCARD constexpr range_difference_t<_Rng> operator()(_Rng&& _Range, _Pr _Pred, _Pj _Proj = {}) const {
-            return _Count_if_unchecked(_Ubegin(_Range), _Uend(_Range), _Pass_fn(_Pred), _Pass_fn(_Proj));
+            return static_cast<range_difference_t<_Rng>>(
+                _Count_if_unchecked(_Ubegin(_Range), _Uend(_Range), _Pass_fn(_Pred), _Pass_fn(_Proj)));
         }
 
     private:
@@ -2045,7 +2047,7 @@ _NODISCARD _CONSTEXPR20 _FwdIt search_n(
                 _Inc        = 0;
             } else { // no match, take big jump and back up as needed
                 _UOld_first = _Next_iter(_UFirst);
-                _Inc        = _Count_diff - 1;
+                _Inc        = static_cast<_Iter_diff_t<_FwdIt>>(_Count_diff - 1);
             }
         }
     } else {
@@ -2270,7 +2272,7 @@ namespace ranges {
             auto _UFirst2      = _Unwrap_iter<_Se2>(_STD move(_First2));
             const auto _ULast2 = _Unwrap_sent<_It2>(_STD move(_Last2));
             if constexpr (_Sized_or_unreachable_sentinel_for<_Se1, _It1> && sized_sentinel_for<_Se2, _It2>) {
-                const iter_difference_t<_It2> _Count2 = _ULast2 - _UFirst2;
+                const auto _Count2 = _ULast2 - _UFirst2;
                 if constexpr (sized_sentinel_for<_Se1, _It1>) {
                     if (_Count2 > _ULast1 - _UFirst1) {
                         return false;
@@ -2292,7 +2294,7 @@ namespace ranges {
         _NODISCARD constexpr bool operator()(
             _Rng1&& _Range1, _Rng2&& _Range2, _Pr _Pred = {}, _Pj1 _Proj1 = {}, _Pj2 _Proj2 = {}) const {
             if constexpr (_Sized_or_infinite_range<_Rng1> && sized_range<_Rng2>) {
-                const range_difference_t<_Rng2> _Count2 = _RANGES distance(_Range2);
+                const auto _Count2 = _RANGES distance(_Range2);
                 if constexpr (sized_range<_Rng1>) {
                     if (_Count2 > _RANGES distance(_Range1)) {
                         return false;
@@ -2368,7 +2370,7 @@ namespace ranges {
         _NODISCARD static constexpr auto _Distance_helper(_Rng&& _Range) {
             _STL_INTERNAL_STATIC_ASSERT(range<_Rng>);
             if constexpr (sized_range<_Rng>) {
-                return _RANGES distance(_Range);
+                return static_cast<iter_difference_t<decltype(_Ubegin(_Range))>>(_RANGES distance(_Range));
             } else {
                 return _Not_a_difference{};
             }
@@ -3066,9 +3068,8 @@ namespace ranges {
             // pre: _First2 + [0, _Count2) is a valid counted range
 
             if (_Count2 > 0 && _Count2 <= _Count1) {
-                const auto _Count2_as1 = static_cast<iter_difference_t<_It1>>(_Count2);
-
-                for (auto _Candidate = _First1 + (_Count1 - _Count2_as1);; --_Candidate) {
+                const auto _Delta = static_cast<iter_difference_t<_It1>>(_Count1 - _Count2);
+                for (auto _Candidate = _First1 + _Delta;; --_Candidate) {
                     auto [_Match, _Mid1] =
                         _RANGES _Equal_rev_pred(_Candidate, _First2, _First2 + _Count2, _Pred, _Proj1, _Proj2);
                     if (_Match) {
@@ -4863,7 +4864,7 @@ namespace ranges {
                             __std_reverse_copy_trivially_copyable_8(_First_addr, _Last_addr, _Result_addr);
                         }
 
-                        _Result += _Last - _First;
+                        _Result += static_cast<iter_difference_t<_Out>>(_Last - _First);
                         return _Result;
                     }
                 }
@@ -5242,7 +5243,7 @@ namespace ranges {
                 return _Result;
             }
 
-            _Rng_from_urng<iter_difference_t<_It>, remove_reference_t<_Urng>> _RngFunc(_Func);
+            _Rng_from_urng<iter_difference_t<_Unwrapped_t<_It>>, remove_reference_t<_Urng>> _RngFunc(_Func);
             if constexpr (forward_iterator<_It>) {
                 auto _UFirst   = _Unwrap_iter<_Se>(_STD move(_First));
                 auto _Pop_size = _RANGES distance(_UFirst, _Unwrap_sent<_It>(_STD move(_Last)));
@@ -5262,7 +5263,8 @@ namespace ranges {
                 return _Result;
             }
 
-            _Rng_from_urng<range_difference_t<_Rng>, remove_reference_t<_Urng>> _RngFunc(_Func);
+            _Rng_from_urng<iter_difference_t<_Unwrapped_t<iterator_t<_Rng>>>, remove_reference_t<_Urng>> _RngFunc(
+                _Func);
             if constexpr (forward_range<_Rng>) {
                 auto _UFirst   = _Ubegin(_Range);
                 auto _Pop_size = _RANGES distance(_UFirst, _Uend(_Range));
@@ -5311,19 +5313,19 @@ namespace ranges {
             iter_difference_t<_It> _Pop_size{};
             for (; _Pop_size < _Count; ++_Pop_size, (void) ++_First) {
                 if (_First == _Last) {
-                    return _Result + _Pop_size;
+                    return _Result + static_cast<iter_difference_t<_Out>>(_Pop_size);
                 }
 
-                *(_Result + _Pop_size) = *_First;
+                *(_Result + static_cast<iter_difference_t<_Out>>(_Pop_size)) = *_First;
             }
             for (; _First != _Last; ++_First) {
                 const auto _Idx = _RngFunc(++_Pop_size);
                 if (_Idx < _Count) {
-                    *(_Result + _Idx) = *_First;
+                    *(_Result + static_cast<iter_difference_t<_Out>>(_Idx)) = *_First;
                 }
             }
 
-            return _Result + _Count;
+            return _Result + static_cast<iter_difference_t<_Out>>(_Count);
         }
     };
 
@@ -5372,9 +5374,8 @@ namespace ranges {
         _It operator()(_It _First, _Se _Last, _Urng&& _Func) const {
             _Adl_verify_range(_First, _Last);
 
-            _Rng_from_urng<iter_difference_t<_It>, remove_reference_t<_Urng>> _RngFunc(_Func);
             auto _UResult =
-                _Shuffle_unchecked(_Unwrap_iter<_Se>(_STD move(_First)), _Unwrap_sent<_It>(_STD move(_Last)), _RngFunc);
+                _Shuffle_unchecked(_Unwrap_iter<_Se>(_STD move(_First)), _Unwrap_sent<_It>(_STD move(_Last)), _Func);
 
             _Seek_wrapped(_First, _STD move(_UResult));
             return _First;
@@ -5383,29 +5384,30 @@ namespace ranges {
         template <random_access_range _Rng, class _Urng>
             requires permutable<iterator_t<_Rng>> && uniform_random_bit_generator<remove_reference_t<_Urng>>
         borrowed_iterator_t<_Rng> operator()(_Rng&& _Range, _Urng&& _Func) const {
-            _Rng_from_urng<range_difference_t<_Rng>, remove_reference_t<_Urng>> _RngFunc(_Func);
-
-            return _Rewrap_iterator(_Range, _Shuffle_unchecked(_Ubegin(_Range), _Uend(_Range), _RngFunc));
+            return _Rewrap_iterator(_Range, _Shuffle_unchecked(_Ubegin(_Range), _Uend(_Range), _Func));
         }
 
     private:
-        template <class _It, class _Se, class _Rng>
-        _NODISCARD static _It _Shuffle_unchecked(_It _First, const _Se _Last, _Rng& _Func) {
+        template <class _It, class _Se, class _Urng>
+        _NODISCARD static _It _Shuffle_unchecked(_It _First, const _Se _Last, _Urng& _Func) {
             // shuffle [_First, _Last) using random function _Func
             _STL_INTERNAL_STATIC_ASSERT(random_access_iterator<_It>);
             _STL_INTERNAL_STATIC_ASSERT(sentinel_for<_Se, _It>);
             _STL_INTERNAL_STATIC_ASSERT(permutable<_It>);
+            _STL_INTERNAL_STATIC_ASSERT(uniform_random_bit_generator<_Urng>);
 
             if (_First == _Last) {
                 return _First;
             }
+
             using _Diff = iter_difference_t<_It>;
+            _Rng_from_urng<_Diff, _Urng> _RngFunc(_Func);
 
             auto _Target        = _First;
             _Diff _Target_index = 1;
             for (; ++_Target != _Last; ++_Target_index) {
                 // randomly place an element from [_First, _Target] at _Target
-                const _Diff _Off = _Func(_Target_index + 1);
+                const _Diff _Off = _RngFunc(static_cast<_Diff>(_Target_index + 1));
                 _STL_ASSERT(0 <= _Off && _Off <= _Target_index, "random value out of range");
                 if (_Off != _Target_index) { // avoid self-move-assignment
                     _RANGES iter_swap(_Target, _First + _Off);
@@ -5989,7 +5991,7 @@ pair<_BidIt, _Iter_diff_t<_BidIt>> _Stable_partition_unchecked1(_BidIt _First, _
     // note: _Count >= 2 and _First != _Last
     // returns: a pair such that first is the partition point, and second is distance(_First, partition point)
     using _Diff = _Iter_diff_t<_BidIt>;
-    if (_Count - static_cast<_Diff>(1) <= _Capacity) { // - 1 since we never need to store *_Last
+    if (_Count - _Diff{1} <= _Capacity) { // - 1 since we never need to store *_Last
         _Uninitialized_backout<_Iter_value_t<_BidIt>*> _Backout{_Temp_ptr};
         _BidIt _Next = _First;
         _Backout._Emplace_back(_STD move(*_First));
@@ -6093,7 +6095,7 @@ _BidIt _Stable_partition_unchecked(_BidIt _First, _BidIt _Last, _Pr _Pred) {
 
     using _Diff              = _Iter_diff_t<_BidIt>;
     const _Diff _Temp_count  = _STD distance(_First, _Last); // _Total_count - 1 since we never need to store *_Last
-    const _Diff _Total_count = _Temp_count + static_cast<_Diff>(1);
+    const _Diff _Total_count = _Temp_count + _Diff{1};
     _Optimistic_temporary_buffer<_Iter_value_t<_BidIt>> _Temp_buf{_Temp_count};
     return _Stable_partition_unchecked1(_First, _Last, _Pred, _Total_count, _Temp_buf._Data, _Temp_buf._Capacity).first;
 }
@@ -6254,8 +6256,8 @@ namespace ranges {
                 return {_STD move(_Next), _True_distance};
             }
 
-            const _Diff _Mid_offset = _Count >> 1; // _Mid_offset >= 1 because _Count >= 2
-            const _It _Mid          = _RANGES next(_First, _Mid_offset);
+            const auto _Mid_offset = static_cast<_Diff>(_Count >> 1); // _Mid_offset >= 1 because _Count >= 2
+            const _It _Mid         = _RANGES next(_First, _Mid_offset);
             // form [_First, _Left) true range, [_Left, _Mid) false range
             _It _Left              = _Mid;
             _Diff _Left_true_count = _Mid_offset;
@@ -6319,9 +6321,9 @@ _CONSTEXPR20 void _Push_heap_by_index(
     _RanIt _First, _Iter_diff_t<_RanIt> _Hole, _Iter_diff_t<_RanIt> _Top, _Ty&& _Val, _Pr _Pred) {
     // percolate _Hole to _Top or where _Val belongs
     using _Diff = _Iter_diff_t<_RanIt>;
-    for (_Diff _Idx = (_Hole - 1) >> 1; // shift for codegen
+    for (auto _Idx = static_cast<_Diff>((_Hole - 1) >> 1); // shift for codegen
          _Top < _Hole && _DEBUG_LT_PRED(_Pred, *(_First + _Idx), _Val); //
-         _Idx = (_Hole - 1) >> 1) { // shift for codegen
+         _Idx = static_cast<_Diff>((_Hole - 1) >> 1)) { // shift for codegen
         // move _Hole up to parent
         *(_First + _Hole) = _STD move(*(_First + _Idx));
         _Hole             = _Idx;
@@ -6406,15 +6408,14 @@ namespace ranges {
             _STL_INTERNAL_STATIC_ASSERT(random_access_iterator<_It>);
             _STL_INTERNAL_STATIC_ASSERT(sortable<_It, _Pr, _Pj>);
 
-            const auto _Count = _Last - _First;
+            auto _Count = _Last - _First;
             if (_Count < 2) {
                 return;
             }
 
-            --_Last;
-            iter_value_t<_It> _Val = _RANGES iter_move(_Last);
+            iter_value_t<_It> _Val = _RANGES iter_move(--_Last);
             // NB: if _Proj is a _Ref_fn, this aliases the _Proj1 and _Proj2 parameters of _Push_heap_by_index
-            _RANGES _Push_heap_by_index(_STD move(_First), _Count - 1, 0, _STD move(_Val), _Pred, _Proj, _Proj);
+            _RANGES _Push_heap_by_index(_STD move(_First), --_Count, 0, _STD move(_Val), _Pred, _Proj, _Proj);
         }
     };
 
@@ -6434,10 +6435,10 @@ _CONSTEXPR20 void _Pop_heap_hole_by_index(
 
     // Check whether _Idx can have a child before calculating that child's index, since
     // calculating the child's index can trigger integer overflows
-    const _Diff _Max_sequence_non_leaf = (_Bottom - 1) >> 1; // shift for codegen
+    const auto _Max_sequence_non_leaf = static_cast<_Diff>((_Bottom - 1) >> 1); // shift for codegen
     while (_Idx < _Max_sequence_non_leaf) { // move _Hole down to larger child
-        _Idx = 2 * _Idx + 2;
-        if (_DEBUG_LT_PRED(_Pred, *(_First + _Idx), *(_First + (_Idx - 1)))) {
+        _Idx = static_cast<_Diff>(2 * _Idx + 2);
+        if (_DEBUG_LT_PRED(_Pred, *(_First + _Idx), *(_First + static_cast<_Diff>(_Idx - 1)))) {
             --_Idx;
         }
         *(_First + _Hole) = _STD move(*(_First + _Idx));
@@ -6445,8 +6446,8 @@ _CONSTEXPR20 void _Pop_heap_hole_by_index(
     }
 
     if (_Idx == _Max_sequence_non_leaf && _Bottom % 2 == 0) { // only child at bottom, move _Hole down to it
-        *(_First + _Hole) = _STD move(*(_First + (_Bottom - 1)));
-        _Hole             = _Bottom - 1;
+        *(_First + _Hole) = _STD move(*(_First + --_Bottom));
+        _Hole             = _Bottom;
     }
 
     _STD _Push_heap_by_index(_First, _Hole, _Top, _STD forward<_Ty>(_Val), _Pred);
@@ -6491,8 +6492,8 @@ namespace ranges {
     template <random_access_iterator _It, class _Ty, class _Pr, class _Pj1, class _Pj2>
         requires sortable<_It, _Pr, _Pj1> && indirectly_writable<_It, _Ty>
               && indirect_strict_weak_order<_Pr, projected<_It, _Pj1>, projected<remove_reference_t<_Ty>*, _Pj2>>
-    constexpr void _Pop_heap_hole_by_index(_It _First, iter_difference_t<_It> _Hole,
-        const iter_difference_t<_It> _Bottom, _Ty&& _Val, _Pr _Pred, _Pj1 _Proj1, _Pj2 _Proj2) {
+    constexpr void _Pop_heap_hole_by_index(_It _First, iter_difference_t<_It> _Hole, iter_difference_t<_It> _Bottom,
+        _Ty&& _Val, _Pr _Pred, _Pj1 _Proj1, _Pj2 _Proj2) {
         // percolate _Hole to _Bottom, then push _Val
         _STL_INTERNAL_CHECK(_Hole >= 0);
         _STL_INTERNAL_CHECK(_Bottom > 0);
@@ -6503,9 +6504,9 @@ namespace ranges {
 
         // Check whether _Idx can have a child before calculating that child's index, since
         // calculating the child's index can trigger integer overflows
-        const _Diff _Max_sequence_non_leaf = (_Bottom - 1) >> 1; // shift for codegen
+        const auto _Max_sequence_non_leaf = static_cast<_Diff>((_Bottom - 1) >> 1); // shift for codegen
         while (_Idx < _Max_sequence_non_leaf) { // move _Hole down to larger child
-            _Idx      = 2 * _Idx + 2;
+            _Idx      = static_cast<_Diff>(2 * _Idx + 2);
             auto _Mid = _First + _Idx;
             if (_STD invoke(_Pred, _STD invoke(_Proj1, *_Mid), _STD invoke(_Proj1, *_RANGES prev(_Mid)))) {
                 --_Idx;
@@ -6516,8 +6517,9 @@ namespace ranges {
         }
 
         if (_Idx == _Max_sequence_non_leaf && _Bottom % 2 == 0) { // only child at bottom, move _Hole down to it
-            *(_First + _Hole) = _RANGES iter_move(_First + (_Bottom - 1));
-            _Hole             = _Bottom - 1;
+            --_Bottom;
+            *(_First + _Hole) = _RANGES iter_move(_First + _Bottom);
+            _Hole             = _Bottom;
         }
 
         _RANGES _Push_heap_by_index(_STD move(_First), _Hole, _Top, _STD forward<_Ty>(_Val), _Pred, _Proj1, _Proj2);
@@ -6589,7 +6591,7 @@ _CONSTEXPR20 void _Make_heap_unchecked(_RanIt _First, _RanIt _Last, _Pr _Pred) {
     // make [_First, _Last) into a heap
     using _Diff   = _Iter_diff_t<_RanIt>;
     _Diff _Bottom = _Last - _First;
-    for (_Diff _Hole = _Bottom >> 1; _Hole > 0;) { // shift for codegen
+    for (auto _Hole = static_cast<_Diff>(_Bottom >> 1); _Hole > 0;) { // shift for codegen
         // reheap top half, bottom to top
         --_Hole;
         _Iter_value_t<_RanIt> _Val = _STD move(*(_First + _Hole));
@@ -6616,7 +6618,7 @@ namespace ranges {
         // make [_First, _Last) into a heap with respect to _Pred and _Proj
         using _Diff         = iter_difference_t<_It>;
         const _Diff _Bottom = _Last - _First;
-        for (_Diff _Hole = _Bottom >> 1; _Hole > 0;) { // shift for codegen
+        for (auto _Hole = static_cast<_Diff>(_Bottom >> 1); _Hole > 0;) { // shift for codegen
             // reheap top half, bottom to top
             --_Hole;
             iter_value_t<_It> _Val = _RANGES iter_move(_First + _Hole);
@@ -6664,7 +6666,8 @@ _CONSTEXPR20 _RanIt _Is_heap_until_unchecked(_RanIt _First, _RanIt _Last, _Pr _P
     using _Diff       = _Iter_diff_t<_RanIt>;
     const _Diff _Size = _Last - _First;
     for (_Diff _Off = 1; _Off < _Size; ++_Off) {
-        if (_DEBUG_LT_PRED(_Pred, *(_First + ((_Off - 1) >> 1)), *(_First + _Off))) { // shift for codegen
+        // shift for codegen:
+        if (_DEBUG_LT_PRED(_Pred, *(_First + static_cast<_Diff>((_Off - 1) >> 1)), *(_First + _Off))) {
             return _First + _Off;
         }
     }
@@ -7005,7 +7008,7 @@ _NODISCARD _CONSTEXPR20 pair<_FwdIt, _FwdIt> equal_range(_FwdIt _First, _FwdIt _
             break;
         }
 
-        _Diff _Count2    = _Count / 2;
+        auto _Count2     = static_cast<_Diff>(_Count / 2);
         const auto _UMid = _STD next(_UFirst, _Count2);
         if (_DEBUG_LT_PRED(_Pred, *_UMid, _Val)) { // range begins above _UMid, loop
             _UFirst = _Next_iter(_UMid);
@@ -7432,13 +7435,13 @@ void _Buffered_inplace_merge_divide_and_conquer(_BidIt _First, _BidIt _Mid, _Bid
     // usual invariants apply
     using _Diff = _Iter_diff_t<_BidIt>;
     if (_Count1 <= _Count2) {
-        const _Diff _Count1n = _Count1 >> 1; // shift for codegen
+        const auto _Count1n  = static_cast<_Diff>(_Count1 >> 1); // shift for codegen
         const _BidIt _Firstn = _STD next(_First, _Count1n);
         const _BidIt _Lastn  = _STD lower_bound(_Mid, _Last, *_Firstn, _Pred);
         _STD _Buffered_inplace_merge_divide_and_conquer2(_First, _Mid, _Last, _Count1, _Count2, _Temp_ptr, _Capacity,
             _Pred, _Firstn, _Lastn, _Count1n, _STD distance(_Mid, _Lastn));
     } else {
-        const _Diff _Count2n = _Count2 >> 1; // shift for codegen
+        const auto _Count2n  = static_cast<_Diff>(_Count2 >> 1); // shift for codegen
         const _BidIt _Lastn  = _STD next(_Mid, _Count2n);
         const _BidIt _Firstn = _STD upper_bound(_First, _Mid, *_Lastn, _Pred);
         _STD _Buffered_inplace_merge_divide_and_conquer2(_First, _Mid, _Last, _Count1, _Count2, _Temp_ptr, _Capacity,
@@ -7727,16 +7730,16 @@ namespace ranges {
         // merge sorted [_First, _Mid) with sorted [_Mid, _Last)
         // usual invariants apply
         if (_Count1 <= _Count2) {
-            const iter_difference_t<_It> _Count1n = _Count1 >> 1; // shift for codegen
-            _It _Firstn                           = _RANGES next(_First, _Count1n);
+            const auto _Count1n = static_cast<iter_difference_t<_It>>(_Count1 >> 1); // shift for codegen
+            _It _Firstn         = _RANGES next(_First, _Count1n);
             _It _Lastn = _RANGES _Lower_bound_unchecked(_Mid, _Count1, _STD invoke(_Proj, *_Firstn), _Pred, _Proj);
             const auto _Count2n = _RANGES distance(_Mid, _Lastn);
             _RANGES _Buffered_inplace_merge_divide_and_conquer2(_STD move(_First), _STD move(_Mid), _STD move(_Last),
                 _Count1, _Count2, _Temp_ptr, _Capacity, _Pred, _Proj, _STD move(_Firstn), _STD move(_Lastn), _Count1n,
                 _Count2n);
         } else {
-            const iter_difference_t<_It> _Count2n = _Count2 >> 1; // shift for codegen
-            _It _Lastn                            = _RANGES next(_Mid, _Count2n);
+            const auto _Count2n = static_cast<iter_difference_t<_It>>(_Count2 >> 1); // shift for codegen
+            _It _Lastn          = _RANGES next(_Mid, _Count2n);
             _It _Firstn = _RANGES _Upper_bound_unchecked(_First, _Count2, _STD invoke(_Proj, *_Lastn), _Pred, _Proj);
             const auto _Count1n = _RANGES distance(_First, _Firstn);
             _RANGES _Buffered_inplace_merge_divide_and_conquer2(_STD move(_First), _STD move(_Mid), _STD move(_Last),
@@ -7946,8 +7949,9 @@ _CONSTEXPR20 void _Guess_median_unchecked(_RanIt _First, _RanIt _Mid, _RanIt _La
     using _Diff        = _Iter_diff_t<_RanIt>;
     const _Diff _Count = _Last - _First;
     if (40 < _Count) { // Tukey's ninther
-        const _Diff _Step     = (_Count + 1) >> 3; // +1 can't overflow because range was made inclusive in caller
-        const _Diff _Two_step = _Step << 1; // note: intentionally discards low-order bit
+        // +1 can't overflow because range was made inclusive in caller:
+        const auto _Step     = static_cast<_Diff>((_Count + 1) >> 3);
+        const auto _Two_step = static_cast<_Diff>(_Step << 1); // note: intentionally discards low-order bit
         _Med3_unchecked(_First, _First + _Step, _First + _Two_step, _Pred);
         _Med3_unchecked(_Mid - _Step, _Mid, _Mid + _Step, _Pred);
         _Med3_unchecked(_Last - _Two_step, _Last - _Step, _Last, _Pred);
@@ -7960,7 +7964,8 @@ _CONSTEXPR20 void _Guess_median_unchecked(_RanIt _First, _RanIt _Mid, _RanIt _La
 template <class _RanIt, class _Pr>
 _CONSTEXPR20 pair<_RanIt, _RanIt> _Partition_by_median_guess_unchecked(_RanIt _First, _RanIt _Last, _Pr _Pred) {
     // partition [_First, _Last)
-    _RanIt _Mid = _First + ((_Last - _First) >> 1); // shift for codegen
+    using _Diff = _Iter_diff_t<_RanIt>;
+    _RanIt _Mid = _First + static_cast<_Diff>((_Last - _First) >> 1); // shift for codegen
     _Guess_median_unchecked(_First, _Mid, _Prev_iter(_Last), _Pred);
     _RanIt _Pfirst = _Mid;
     _RanIt _Plast  = _Next_iter(_Pfirst);
@@ -8045,7 +8050,7 @@ _CONSTEXPR20 void _Sort_unchecked(_RanIt _First, _RanIt _Last, _Iter_diff_t<_Ran
         // divide and conquer by quicksort
         auto _Mid = _Partition_by_median_guess_unchecked(_First, _Last, _Pred);
 
-        _Ideal = (_Ideal >> 1) + (_Ideal >> 2); // allow 1.5 log2(N) divisions
+        _Ideal = static_cast<_Iter_diff_t<_RanIt>>((_Ideal >> 1) + (_Ideal >> 2)); // allow 1.5 log2(N) divisions
 
         if (_Mid.first - _First < _Last - _Mid.second) { // loop on second half
             _Sort_unchecked(_First, _Mid.first, _Ideal, _Pred);
@@ -8139,8 +8144,9 @@ namespace ranges {
         using _Diff        = iter_difference_t<_It>;
         const _Diff _Count = _Last - _First;
         if (_Count > 40) { // Tukey's ninther
-            const _Diff _Step     = (_Count + 1) >> 3; // +1 can't overflow because range was made inclusive in caller
-            const _Diff _Two_step = _Step << 1; // note: intentionally discards low-order bit
+            // +1 can't overflow because range was made inclusive in caller:
+            const auto _Step     = static_cast<_Diff>((_Count + 1) >> 3);
+            const auto _Two_step = static_cast<_Diff>(_Step << 1); // note: intentionally discards low-order bit
             _Med3_common(_First, _First + _Step, _First + _Two_step, _Pred, _Proj);
             _Med3_common(_Mid - _Step, _Mid, _Mid + _Step, _Pred, _Proj);
             _Med3_common(_Last - _Two_step, _Last - _Step, _Last, _Pred, _Proj);
@@ -8156,7 +8162,7 @@ namespace ranges {
         // Choose a pivot, partition [_First, _Last) into elements less than pivot, elements equal to pivot, and
         // elements greater than pivot; return the equal partition as a subrange.
 
-        _It _Mid = _First + ((_Last - _First) >> 1); // shift for codegen
+        _It _Mid = _First + static_cast<iter_difference_t<_It>>((_Last - _First) >> 1); // shift for codegen
         _Guess_median_common(_First, _Mid, _RANGES prev(_Last), _Pred, _Proj);
         _It _Pfirst = _Mid;
         _It _Plast  = _RANGES next(_Pfirst);
@@ -8280,7 +8286,8 @@ namespace ranges {
                 auto _Mid_last  = _Mid.end();
 #endif // TRANSITION, DevCom-1559808
 
-                _Ideal = (_Ideal >> 1) + (_Ideal >> 2); // allow 1.5 log2(N) divisions
+                // allow 1.5 log2(N) divisions:
+                _Ideal = static_cast<iter_difference_t<_It>>((_Ideal >> 1) + (_Ideal >> 2));
 
                 if (_Mid_first - _First < _Last - _Mid_last) { // loop on second half
                     _Sort_common(_First, _STD move(_Mid_first), _Ideal, _Pred, _Proj);
@@ -8468,7 +8475,8 @@ void stable_sort(const _BidIt _First, const _BidIt _Last, _Pr _Pred) {
         return;
     }
 
-    _Optimistic_temporary_buffer<_Iter_value_t<_BidIt>> _Temp_buf{_Count - _Count / 2};
+    _Optimistic_temporary_buffer<_Iter_value_t<_BidIt>> _Temp_buf{
+        static_cast<_Iter_diff_t<_BidIt>>(_Count - _Count / 2)};
     _Stable_sort_unchecked(_UFirst, _ULast, _Count, _Temp_buf._Data, _Temp_buf._Capacity, _Pass_fn(_Pred));
 }
 
@@ -8534,7 +8542,8 @@ namespace ranges {
                 return;
             }
 
-            _Optimistic_temporary_buffer<_Iter_value_t<_It>> _Temp_buf{_Count - _Count / 2};
+            _Optimistic_temporary_buffer<_Iter_value_t<_It>> _Temp_buf{
+                static_cast<iter_difference_t<_It>>(_Count - _Count / 2)};
             _Stable_sort_common_buffered(
                 _STD move(_First), _STD move(_Last), _Count, _Temp_buf._Data, _Temp_buf._Capacity, _Pred, _Proj);
         }
@@ -8551,9 +8560,10 @@ namespace ranges {
             if (_Count <= _Isort_max<_It>) {
                 _RANGES _Insertion_sort_common(_STD move(_First), _STD move(_Last), _Pred, _Proj);
             } else { // sort halves and merge
-                const iter_difference_t<_It> _Half_count      = _Count >> 1; // shift for codegen
-                const iter_difference_t<_It> _Half_count_ceil = _Count - _Half_count;
-                const _It _Mid                                = _First + _Half_count_ceil;
+                using _Diff                 = iter_difference_t<_It>;
+                const auto _Half_count      = static_cast<_Diff>(_Count >> 1); // shift for codegen
+                const auto _Half_count_ceil = static_cast<_Diff>(_Count - _Half_count);
+                const _It _Mid              = _First + _Half_count_ceil;
                 if (_Half_count_ceil <= _Capacity) { // temp buffer big enough, sort each half using buffer
                     _Buffered_merge_sort_common(_First, _Mid, _Half_count_ceil, _Temp_ptr, _Pred, _Proj);
                     _Buffered_merge_sort_common(_Mid, _Last, _Half_count, _Temp_ptr, _Pred, _Proj);
