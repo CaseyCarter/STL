@@ -50,6 +50,7 @@ def getDefaultFeatures(config, litConfig):
         DEFAULT_FEATURES.append(Feature(name='edg_drop'))
 
     if litConfig.target_arch.casefold() == 'x86'.casefold():
+        DEFAULT_FEATURES.append(Feature(name='edg'))
         DEFAULT_FEATURES.append(Feature(name='arch_avx2'))
         DEFAULT_FEATURES.append(Feature(name='x86'))
 
