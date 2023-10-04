@@ -67,7 +67,7 @@ steps:
   displayName: 'Configure the benchmarks'
   timeoutInMinutes: 2
   env: { TMP: $(tmpDir), TEMP: $(tmpDir) }
-  condition: and(succeeded(), neq(parameters.buildBenchmarks, false))
+  condition: and(succeeded(), ne(parameters.buildBenchmarks, false))
 - script: |
     call "%ProgramFiles%\Microsoft Visual Studio\2022\Preview\Common7\Tools\VsDevCmd.bat" ^
     -host_arch=${{ parameters.hostArch }} -arch=${{ parameters.targetArch }} -no_logo
@@ -75,4 +75,4 @@ steps:
   displayName: 'Build the benchmarks'
   timeoutInMinutes: 2
   env: { TMP: $(tmpDir), TEMP: $(tmpDir) }
-  condition: and(succeeded(), neq(parameters.buildBenchmarks, false))
+  condition: and(succeeded(), ne(parameters.buildBenchmarks, false))
