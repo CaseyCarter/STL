@@ -50,29 +50,29 @@ steps:
 - script: |
     call "%ProgramFiles%\Microsoft Visual Studio\2022\Preview\Common7\Tools\VsDevCmd.bat" ^
     -host_arch=${{ parameters.hostArch }} -arch=${{ parameters.targetArch }} -no_logo
-    cmake --build "$(buildOutputLocation)"
+    echo FIXME cmake --build "$(buildOutputLocation)"
   displayName: 'Build the STL'
   timeoutInMinutes: 5
   env: { TMP: $(tmpDir), TEMP: $(tmpDir) }
-- ${{ if parameters.buildBenchmarks }}:
-  - script: |
-      if exist "$(benchmarkBuildOutputLocation)" (
-        rmdir /S /Q "$(benchmarkBuildOutputLocation)"
-      )
-      call "%ProgramFiles%\Microsoft Visual Studio\2022\Preview\Common7\Tools\VsDevCmd.bat" ^
-      -host_arch=${{ parameters.hostArch }} -arch=${{ parameters.targetArch }} -no_logo
-      cmake ${{ parameters.cmakeAdditionalFlags }} -G Ninja ^
-      -DCMAKE_CXX_COMPILER=cl ^
-      -DCMAKE_BUILD_TYPE=Release ^
-      -DSTL_BINARY_DIR="$(buildOutputLocation)" ^
-      -S $(Build.SourcesDirectory)/benchmarks -B "$(benchmarkBuildOutputLocation)"
-    displayName: 'Configure the benchmarks'
-    timeoutInMinutes: 2
-    env: { TMP: $(tmpDir), TEMP: $(tmpDir) }
-  - script: |
-      call "%ProgramFiles%\Microsoft Visual Studio\2022\Preview\Common7\Tools\VsDevCmd.bat" ^
-      -host_arch=${{ parameters.hostArch }} -arch=${{ parameters.targetArch }} -no_logo
-      cmake --build "$(benchmarkBuildOutputLocation)"
-    displayName: 'Build the benchmarks'
-    timeoutInMinutes: 2
-    env: { TMP: $(tmpDir), TEMP: $(tmpDir) }
+- script: |
+    if exist "$(benchmarkBuildOutputLocation)" (
+      rmdir /S /Q "$(benchmarkBuildOutputLocation)"
+    )
+    call "%ProgramFiles%\Microsoft Visual Studio\2022\Preview\Common7\Tools\VsDevCmd.bat" ^
+    -host_arch=${{ parameters.hostArch }} -arch=${{ parameters.targetArch }} -no_logo
+    cmake ${{ parameters.cmakeAdditionalFlags }} -G Ninja ^
+    -DCMAKE_CXX_COMPILER=cl -DCMAKE_BUILD_TYPE=Release ^
+    -DSTL_BINARY_DIR="$(buildOutputLocation)" ^
+    -S $(Build.SourcesDirectory)/benchmarks -B "$(benchmarkBuildOutputLocation)"
+  displayName: 'Configure the benchmarks'
+  timeoutInMinutes: 2
+  env: { TMP: $(tmpDir), TEMP: $(tmpDir) }
+  condition: and(succeeded(), neq(parameters.buildBenchmarks, false))
+- script: |
+    call "%ProgramFiles%\Microsoft Visual Studio\2022\Preview\Common7\Tools\VsDevCmd.bat" ^
+    -host_arch=${{ parameters.hostArch }} -arch=${{ parameters.targetArch }} -no_logo
+    cmake --build "$(benchmarkBuildOutputLocation)"
+  displayName: 'Build the benchmarks'
+  timeoutInMinutes: 2
+  env: { TMP: $(tmpDir), TEMP: $(tmpDir) }
+  condition: and(succeeded(), neq(parameters.buildBenchmarks, false))

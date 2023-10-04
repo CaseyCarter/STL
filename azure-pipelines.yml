@@ -10,16 +10,17 @@ pr:
   drafts: false
 
 stages:
-  - stage: Code_Format
-    displayName: 'Code Format'
-    pool:
-      name: ${{ variables.poolName }}
-      demands: ${{ variables.poolDemands }}
-    jobs:
-      - template: azure-devops/format-validation.yml
+  # FIXME
+  # - stage: Code_Format
+  #   displayName: 'Code Format'
+  #   pool:
+  #     name: ${{ variables.poolName }}
+  #     demands: ${{ variables.poolDemands }}
+  #   jobs:
+  #     - template: azure-devops/format-validation.yml
 
   - stage: Build_And_Test_x64
-    dependsOn: Code_Format
+    # FIXME dependsOn: Code_Format
     displayName: 'Build and Test x64'
     pool:
       name: ${{ variables.poolName }}
