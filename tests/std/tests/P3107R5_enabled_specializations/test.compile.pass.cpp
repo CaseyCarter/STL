@@ -5,7 +5,9 @@
 #include <cstddef>
 #include <format>
 #include <list>
+#include <queue>
 #include <ranges>
+#include <stack>
 #include <stacktrace>
 #include <string>
 #include <string_view>
@@ -141,6 +143,25 @@ static_assert(!enable_nonlocking_formatter_optimization<vector<unoptimized>>);
 static_assert(!enable_nonlocking_formatter_optimization<vector<unoptimized, myalloc<unoptimized>>>);
 using R = decltype(vector<int>{} | views::take(3));
 static_assert(!enable_nonlocking_formatter_optimization<R>);
+
+// <priority_queue> =====================================================================
+static_assert(enable_nonlocking_formatter_optimization<priority_queue<int>>);
+static_assert(enable_nonlocking_formatter_optimization<priority_queue<int, vector<int, myalloc<int>>>>);
+static_assert(!enable_nonlocking_formatter_optimization<priority_queue<unoptimized>>);
+static_assert(
+    !enable_nonlocking_formatter_optimization<priority_queue<unoptimized, vector<unoptimized, myalloc<unoptimized>>>>);
+
+// <queue> =====================================================================
+static_assert(enable_nonlocking_formatter_optimization<queue<int>>);
+static_assert(enable_nonlocking_formatter_optimization<queue<int, list<int, myalloc<int>>>>);
+static_assert(!enable_nonlocking_formatter_optimization<queue<unoptimized>>);
+static_assert(!enable_nonlocking_formatter_optimization<queue<unoptimized, list<unoptimized, myalloc<unoptimized>>>>);
+
+// <stack> =====================================================================
+static_assert(enable_nonlocking_formatter_optimization<stack<int>>);
+static_assert(enable_nonlocking_formatter_optimization<stack<int, vector<int, myalloc<int>>>>);
+static_assert(!enable_nonlocking_formatter_optimization<stack<unoptimized>>);
+static_assert(!enable_nonlocking_formatter_optimization<stack<unoptimized, vector<unoptimized, myalloc<unoptimized>>>>);
 
 // <stacktrace> ================================================================
 static_assert(enable_nonlocking_formatter_optimization<stacktrace_entry>);
