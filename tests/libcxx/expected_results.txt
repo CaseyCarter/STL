@@ -37,10 +37,6 @@ std/utilities/format/format.range/format.range.fmtset/format.functions.vformat.p
 # LLVM-100506: [libc++][test] Precondition violation in rand.dist.uni.real/param_ctor.pass.cpp
 std/numerics/rand/rand.dist/rand.dist.uni/rand.dist.uni.real/param_ctor.pass.cpp FAIL
 
-# LLVM-105878: [libc++][test] fp_compare.h includes non-portable <__config>
-std/numerics/c.math/cmath.pass.cpp FAIL
-std/numerics/numeric.ops/numeric.ops.midpoint/midpoint.float.pass.cpp FAIL
-
 # LLVM-105966: [libc++][test] Fix is_always_lock_free test
 std/atomics/atomics.lockfree/is_always_lock_free.cpp FAIL
 
@@ -82,8 +78,6 @@ std/language.support/support.limits/support.limits.general/chrono.version.compil
 
 # Tests expect __cpp_lib_ranges to have the old value 201811L for P0896R4; we define the C++20 value 201911L for P1716R3.
 std/language.support/support.limits/support.limits.general/algorithm.version.compile.pass.cpp FAIL
-std/language.support/support.limits/support.limits.general/functional.version.compile.pass.cpp FAIL
-std/language.support/support.limits/support.limits.general/iterator.version.compile.pass.cpp FAIL
 
 # Test expects __cpp_lib_print to have the old value 202207L for P2093R14; we define the C++23 value 202406L for P3235R3.
 std/language.support/support.limits/support.limits.general/ostream.version.compile.pass.cpp FAIL
@@ -279,11 +273,6 @@ std/thread/thread.condition/notify_all_at_thread_exit_lwg3343.pass.cpp SKIPPED
 
 
 # *** C1XX COMPILER BUGS ***
-# DevCom-409222 VSO-752709 "Constructing rvalue reference from non-reference-related lvalue reference"
-# Reportedly fixed in VS 2019 16.10, test is still failing, need to investigate.
-std/utilities/meta/meta.unary/meta.unary.prop/is_constructible.pass.cpp:0 FAIL
-std/utilities/meta/meta.unary/meta.unary.prop/is_constructible.pass.cpp:1 FAIL
-
 # VSO-1271673 "static analyzer doesn't know about short-circuiting"
 # Note: The :1 (ASAN) configuration doesn't run static analysis.
 std/algorithms/alg.sorting/alg.sort/partial.sort/partial_sort.pass.cpp:0 FAIL
