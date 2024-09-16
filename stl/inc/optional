@@ -16,8 +16,9 @@ _EMIT_STL_WARNING(STL4038, "The contents of <optional> are available only with C
 #include <exception>
 #include <initializer_list>
 #include <type_traits>
-#include <utility>
+#if !_HAS_CXX20
 #include <xsmf_control.h>
+#endif // !_HAS_CXX20
 #include <xutility>
 
 #pragma pack(push, _CRT_PACKING)
@@ -65,6 +66,575 @@ struct _Construct_from_invoke_result_tag {
     explicit _Construct_from_invoke_result_tag() = default;
 };
 #endif // _HAS_CXX23
+
+#if _HAS_CXX20
+_EXPORT_STD template <class _Ty>
+class optional {
+private:
+    template <class>
+    friend class optional;
+
+    union {
+        unsigned char _Dummy[sizeof(_Ty)]{};
+        remove_cv_t<_Ty> _Raw_value;
+    };
+    bool _Has_value = false;
+
+    template <class _Ty2>
+    static constexpr bool _AllowDirectConversion = conjunction_v<negation<is_same<_Remove_cvref_t<_Ty2>, optional>>,
+        negation<is_same<_Remove_cvref_t<_Ty2>, in_place_t>>,
+        negation<conjunction<is_same<remove_cv_t<_Ty>, bool>, _Is_specialization<_Remove_cvref_t<_Ty2>, optional>>>,
+        is_constructible<_Ty, _Ty2>>;
+
+    template <class _Ty2>
+    static constexpr bool _AllowUnwrapping = disjunction_v<is_same<remove_cv_t<_Ty>, bool>,
+        negation<disjunction<is_same<_Ty, _Ty2>, is_constructible<_Ty, optional<_Ty2>&>,
+            is_constructible<_Ty, const optional<_Ty2>&>, is_constructible<_Ty, const optional<_Ty2>>,
+            is_constructible<_Ty, optional<_Ty2>>, is_convertible<optional<_Ty2>&, _Ty>,
+            is_convertible<const optional<_Ty2>&, _Ty>, is_convertible<const optional<_Ty2>, _Ty>,
+            is_convertible<optional<_Ty2>, _Ty>>>>;
+
+    template <class _Ty2>
+    static constexpr bool _AllowUnwrappingAssignment = !disjunction_v<is_same<_Ty, _Ty2>,
+        is_assignable<_Ty&, optional<_Ty2>&>, is_assignable<_Ty&, const optional<_Ty2>&>,
+        is_assignable<_Ty&, const optional<_Ty2>>, is_assignable<_Ty&, optional<_Ty2>>>;
+
+#if _HAS_CXX23
+    template <class _Fn, class _Ux>
+    constexpr optional(_Construct_from_invoke_result_tag, _Fn&& _Func, _Ux&& _Arg)
+        noexcept(noexcept(static_cast<_Ty>(_STD invoke(_STD forward<_Fn>(_Func), _STD forward<_Ux>(_Arg)))))
+        : _Raw_value(_STD invoke(_STD forward<_Fn>(_Func), _STD forward<_Ux>(_Arg))), _Has_value{true} {}
+#endif // _HAS_CXX23
+
+public:
+    static_assert(!_Is_any_of_v<remove_cv_t<_Ty>, nullopt_t, in_place_t>,
+        "T in optional<T> must be a type other than nullopt_t or in_place_t (N4950 [optional.optional.general]/3).");
+    static_assert(is_object_v<_Ty> && is_destructible_v<_Ty> && !is_array_v<_Ty>,
+        "T in optional<T> must meet the Cpp17Destructible requirements (N4950 [optional.optional.general]/3).");
+
+    using value_type = _Ty;
+
+    constexpr optional() noexcept {}
+    constexpr optional(nullopt_t) noexcept {}
+
+    optional(const optional&)
+        requires is_trivially_copy_constructible_v<_Ty>
+    = default;
+    optional(const optional&)
+        requires (!is_copy_constructible_v<_Ty>)
+    = delete;
+    constexpr optional(const optional& _Right) noexcept(is_nothrow_copy_constructible_v<_Ty>) // strengthened
+        : _Has_value{_Right._Has_value} {
+        if (_Has_value) {
+            _STD construct_at(_STD addressof(_Raw_value), *_Right);
+        }
+    }
+
+    optional(optional&&)
+        requires is_trivially_move_constructible_v<_Ty>
+    = default;
+    constexpr optional(optional&& _Right) noexcept(is_nothrow_move_constructible_v<_Ty>)
+        requires is_move_constructible_v<_Ty> && (!is_trivially_move_constructible_v<_Ty>)
+        : _Has_value{_Right._Has_value} {
+        if (_Has_value) {
+            _STD construct_at(_STD addressof(_Raw_value), _STD move(*_Right));
+        }
+    }
+
+    template <class... _Types>
+        requires is_constructible_v<_Ty, _Types...>
+    constexpr explicit optional(in_place_t, _Types&&... _Args)
+        noexcept(is_nothrow_constructible_v<_Ty, _Types...>) // strengthened
+        : _Raw_value(_STD forward<_Types>(_Args)...), _Has_value{true} {}
+
+    template <class _Elem, class... _Types>
+        requires is_constructible_v<_Ty, initializer_list<_Elem>&, _Types...>
+    constexpr explicit optional(in_place_t, initializer_list<_Elem> _Ilist, _Types&&... _Args)
+        noexcept(is_nothrow_constructible_v<_Ty, initializer_list<_Elem>&, _Types...>) // strengthened
+        : _Raw_value(_Ilist, _STD forward<_Types>(_Args)...), _Has_value{true} {}
+
+    template <class _Ty2 = _Ty>
+        requires _AllowDirectConversion<_Ty2>
+    constexpr explicit(!is_convertible_v<_Ty2, _Ty>) optional(_Ty2&& _Right)
+        noexcept(is_nothrow_constructible_v<_Ty, _Ty2>) // strengthened
+        : _Raw_value(_STD forward<_Ty2>(_Right)), _Has_value{true} {}
+
+    template <class _Ty2>
+        requires _AllowUnwrapping<_Ty2> && is_constructible_v<_Ty, const _Ty2&>
+    constexpr explicit(!is_convertible_v<const _Ty2&, _Ty>) optional(const optional<_Ty2>& _Right)
+        noexcept(is_nothrow_constructible_v<_Ty, const _Ty2&>) // strengthened
+        : _Has_value{_Right._Has_value} {
+        // clang-format on
+        if (_Has_value) {
+            _STD construct_at(_STD addressof(_Raw_value), *_Right);
+        }
+    }
+
+    template <class _Ty2>
+        requires _AllowUnwrapping<_Ty2> && is_constructible_v<_Ty, _Ty2>
+    constexpr explicit(!is_convertible_v<_Ty2, _Ty>) optional(optional<_Ty2>&& _Right)
+        noexcept(is_nothrow_constructible_v<_Ty, _Ty2>) // strengthened
+        : _Has_value{_Right._Has_value} {
+        // clang-format on
+        if (_Has_value) {
+            _STD construct_at(_STD addressof(_Raw_value), _STD move(*_Right));
+        }
+    }
+
+    ~optional()
+        requires is_trivially_destructible_v<_Ty>
+    = default;
+
+    constexpr ~optional() noexcept {
+        if (_Has_value) {
+            _Raw_value.~remove_cv_t<_Ty>();
+        }
+    }
+
+    constexpr optional& operator=(nullopt_t) noexcept {
+        reset();
+        return *this;
+    }
+
+    optional& operator=(const optional&)
+        requires is_trivially_copy_constructible_v<_Ty> && is_trivially_copy_assignable_v<_Ty>
+                  && is_trivially_destructible_v<_Ty>
+    = default;
+
+    optional& operator=(const optional&)
+        requires (!is_copy_constructible_v<_Ty> || !is_copy_assignable_v<_Ty>)
+    = delete;
+
+    constexpr optional& operator=(const optional& _Right)
+        noexcept(is_nothrow_copy_constructible_v<_Ty> && is_nothrow_copy_assignable_v<_Ty>) /* strengthened */ {
+        if (_Has_value) {
+            if (_Right._Has_value) {
+                **this = *_Right;
+            } else {
+                reset();
+            }
+        } else {
+            if (_Right._Has_value) {
+                _STD construct_at(_STD addressof(_Raw_value), *_Right);
+                _Has_value = true;
+            } else {
+                // nothing to do
+            }
+        }
+        return *this;
+    }
+
+    optional& operator=(optional&&)
+        requires is_trivially_move_constructible_v<_Ty> && is_trivially_move_assignable_v<_Ty>
+                  && is_trivially_destructible_v<_Ty>
+    = default;
+
+    constexpr optional& operator=(optional&& _Right)
+        noexcept(is_nothrow_move_constructible_v<_Ty> && is_nothrow_move_assignable_v<_Ty>) /* strengthened */
+        requires (is_move_constructible_v<_Ty> && is_move_assignable_v<_Ty>
+                  && !(is_trivially_move_constructible_v<_Ty> && is_trivially_move_assignable_v<_Ty>
+                       && is_trivially_destructible_v<_Ty>) )
+    {
+        if (_Has_value) {
+            if (_Right._Has_value) {
+                **this = _STD move(*_Right);
+            } else {
+                reset();
+            }
+        } else {
+            if (_Right._Has_value) {
+                _STD construct_at(_STD addressof(_Raw_value), _STD move(*_Right));
+                _Has_value = true;
+            } else {
+                // nothing to do
+            }
+        }
+        return *this;
+    }
+
+    template <class _Ty2 = _Ty>
+        requires (!is_same_v<_Remove_cvref_t<_Ty2>, optional> && !(is_scalar_v<_Ty> && is_same_v<_Ty, decay_t<_Ty2>>)
+                  && is_constructible_v<_Ty, _Ty2> && is_assignable_v<_Ty&, _Ty2>)
+    constexpr optional& operator=(_Ty2&& _Right)
+        noexcept(is_nothrow_assignable_v<_Ty&, _Ty2> && is_nothrow_constructible_v<_Ty, _Ty2>) /* strengthened */ {
+        if (_Has_value) {
+            **this = _STD forward<_Ty2>(_Right);
+        } else {
+            _STD construct_at(_STD addressof(_Raw_value), _STD forward<_Ty2>(_Right));
+            _Has_value = true;
+        }
+        return *this;
+    }
+
+    template <class _Ty2>
+        requires _AllowUnwrappingAssignment<_Ty2> && is_constructible_v<_Ty, const _Ty2&>
+              && is_assignable_v<_Ty&, const _Ty2&>
+    constexpr optional& operator=(const optional<_Ty2>& _Right) noexcept(
+        is_nothrow_assignable_v<_Ty&, const _Ty2&> && is_nothrow_constructible_v<_Ty, const _Ty2&>) /* strengthened */ {
+        if (_Has_value) {
+            if (_Right._Has_value) {
+                **this = *_Right;
+            } else {
+                reset();
+            }
+        } else {
+            if (_Right._Has_value) {
+                _STD construct_at(_STD addressof(_Raw_value), *_Right);
+                _Has_value = true;
+            } else {
+                // nothing to do
+            }
+        }
+
+        return *this;
+    }
+
+    template <class _Ty2>
+        requires _AllowUnwrappingAssignment<_Ty2> && is_constructible_v<_Ty, _Ty2> && is_assignable_v<_Ty&, _Ty2>
+    constexpr optional& operator=(optional<_Ty2>&& _Right)
+        noexcept(is_nothrow_assignable_v<_Ty&, _Ty2> && is_nothrow_constructible_v<_Ty, _Ty2>) /* strengthened */ {
+        if (_Has_value) {
+            if (_Right._Has_value) {
+                **this = _STD move(*_Right);
+            } else {
+                reset();
+            }
+        } else {
+            if (_Right._Has_value) {
+                _STD construct_at(_STD addressof(_Raw_value), _STD move(*_Right));
+                _Has_value = true;
+            } else {
+                // nothing to do
+            }
+        }
+
+        return *this;
+    }
+
+    template <class... _Types>
+    constexpr _Ty& emplace(_Types&&... _Args) noexcept(is_nothrow_constructible_v<_Ty, _Types...>) /* strengthened */ {
+        reset();
+        _STD construct_at(_STD addressof(_Raw_value), _STD forward<_Types>(_Args)...);
+        _Has_value = true;
+        return _Raw_value;
+    }
+
+    template <class _Elem, class... _Types>
+        requires is_constructible_v<_Ty, initializer_list<_Elem>&, _Types...>
+    constexpr _Ty& emplace(initializer_list<_Elem> _Ilist, _Types&&... _Args)
+        noexcept(is_nothrow_constructible_v<_Ty, initializer_list<_Elem>&, _Types...>) /* strengthened */ {
+        reset();
+        _STD construct_at(_STD addressof(_Raw_value), _Ilist, _STD forward<_Types>(_Args)...);
+        _Has_value = true;
+        return _Raw_value;
+    }
+
+    constexpr void swap(optional& _Right)
+        noexcept(is_nothrow_move_constructible_v<_Ty> && is_nothrow_swappable_v<_Ty>) {
+        static_assert(is_move_constructible_v<_Ty>,
+            "optional<T>::swap requires T to be move constructible (N4828 [optional.swap]/1).");
+        static_assert(!is_move_constructible_v<_Ty> || is_swappable_v<_Ty>,
+            "optional<T>::swap requires T to be swappable (N4828 [optional.swap]/1).");
+        if constexpr (_Is_trivially_swappable_v<_Ty>) {
+            optional _Tmp = _STD move(*this);
+            *this         = _STD move(_Right);
+            _Right        = _STD move(_Tmp);
+        } else {
+            if (_Has_value == _Right._Has_value) {
+                if (_Has_value) {
+                    using std::swap;
+                    swap(**this, *_Right); // intentional ADL
+                }
+            } else {
+                optional& _Source = _Has_value ? *this : _Right;
+                optional& _Target = _Has_value ? _Right : *this;
+                _STD construct_at(_STD addressof(_Target._Raw_value), _STD move(*_Source));
+                _Target._Has_value = true;
+                _Source.reset();
+            }
+        }
+    }
+
+    _NODISCARD constexpr const _Ty* operator->() const noexcept /* strengthened */ {
+#if _CONTAINER_DEBUG_LEVEL > 0
+        _STL_VERIFY(_Has_value, "Cannot access value of empty optional");
+#endif // _CONTAINER_DEBUG_LEVEL > 0
+        return _STD addressof(**this);
+    }
+    _NODISCARD constexpr _Ty* operator->() noexcept /* strengthened */ {
+#if _CONTAINER_DEBUG_LEVEL > 0
+        _STL_VERIFY(_Has_value, "Cannot access value of empty optional");
+#endif // _CONTAINER_DEBUG_LEVEL > 0
+        return _STD addressof(**this);
+    }
+
+    _NODISCARD constexpr const _Ty& operator*() const& noexcept /* strengthened */ {
+#if _CONTAINER_DEBUG_LEVEL > 0
+        _STL_VERIFY(_Has_value, "Cannot access value of empty optional");
+#endif // _CONTAINER_DEBUG_LEVEL > 0
+        return _Raw_value;
+    }
+    _NODISCARD constexpr _Ty& operator*() & noexcept /* strengthened */ {
+#if _CONTAINER_DEBUG_LEVEL > 0
+        _STL_VERIFY(_Has_value, "Cannot access value of empty optional");
+#endif // _CONTAINER_DEBUG_LEVEL > 0
+        return _Raw_value;
+    }
+    _NODISCARD constexpr _Ty&& operator*() && noexcept /* strengthened */ {
+#if _CONTAINER_DEBUG_LEVEL > 0
+        _STL_VERIFY(_Has_value, "Cannot access value of empty optional");
+#endif // _CONTAINER_DEBUG_LEVEL > 0
+        return _STD move(_Raw_value);
+    }
+    _NODISCARD constexpr const _Ty&& operator*() const&& noexcept /* strengthened */ {
+#if _CONTAINER_DEBUG_LEVEL > 0
+        _STL_VERIFY(_Has_value, "Cannot access value of empty optional");
+#endif // _CONTAINER_DEBUG_LEVEL > 0
+        return _STD move(_Raw_value);
+    }
+
+    constexpr explicit operator bool() const noexcept {
+        return _Has_value;
+    }
+    _NODISCARD constexpr bool has_value() const noexcept {
+        return _Has_value;
+    }
+
+    _NODISCARD constexpr const _Ty& value() const& {
+        if (!_Has_value) {
+            _Throw_bad_optional_access();
+        }
+
+        return _Raw_value;
+    }
+    _NODISCARD constexpr _Ty& value() & {
+        if (!_Has_value) {
+            _Throw_bad_optional_access();
+        }
+
+        return _Raw_value;
+    }
+    _NODISCARD constexpr _Ty&& value() && {
+        if (!_Has_value) {
+            _Throw_bad_optional_access();
+        }
+
+        return _STD move(_Raw_value);
+    }
+    _NODISCARD constexpr const _Ty&& value() const&& {
+        if (!_Has_value) {
+            _Throw_bad_optional_access();
+        }
+
+        return _STD move(_Raw_value);
+    }
+
+    template <class _Ty2>
+    _NODISCARD constexpr remove_cv_t<_Ty> value_or(_Ty2&& _Right) const& {
+        static_assert(is_convertible_v<const _Ty&, remove_cv_t<_Ty>>,
+            "The const overload of optional<T>::value_or requires const T& to be convertible to remove_cv_t<T> "
+            "([optional.observe]/18 as modified by LWG-XXXX).");
+        static_assert(is_convertible_v<_Ty2, _Ty>,
+            "optional<T>::value_or(U) requires U to be convertible to T (N4828 [optional.observe]/18).");
+
+        if (_Has_value) {
+            return **this;
+        }
+
+        return static_cast<remove_cv_t<_Ty>>(_STD forward<_Ty2>(_Right));
+    }
+    template <class _Ty2>
+    _NODISCARD constexpr remove_cv_t<_Ty> value_or(_Ty2&& _Right) && {
+        static_assert(is_convertible_v<_Ty, remove_cv_t<_Ty>>,
+            "The rvalue overload of optional<T>::value_or requires T to be convertible to remove_cv_t<T> "
+            "([optional.observe]/20 as modified by LWG-XXXX).");
+        static_assert(is_convertible_v<_Ty2, _Ty>,
+            "optional<T>::value_or(U) requires U to be convertible to T (N4828 [optional.observe]/20).");
+
+        if (_Has_value) {
+            return _STD move(**this);
+        }
+
+        return static_cast<remove_cv_t<_Ty>>(_STD forward<_Ty2>(_Right));
+    }
+
+#if _HAS_CXX23
+    template <class _Fn>
+    constexpr auto and_then(_Fn&& _Func) & {
+        using _Uty = invoke_result_t<_Fn, _Ty&>;
+
+        static_assert(_Is_specialization_v<remove_cvref_t<_Uty>, optional>,
+            "optional<T>::and_then(F) requires the return type of F to be a specialization of optional "
+            "(N4950 [optional.monadic]/2).");
+
+        if (_Has_value) {
+            return _STD invoke(_STD forward<_Fn>(_Func), **this);
+        } else {
+            return remove_cvref_t<_Uty>{};
+        }
+    }
+
+    template <class _Fn>
+    constexpr auto and_then(_Fn&& _Func) const& {
+        using _Uty = invoke_result_t<_Fn, const _Ty&>;
+
+        static_assert(_Is_specialization_v<remove_cvref_t<_Uty>, optional>,
+            "optional<T>::and_then(F) requires the return type of F to be a specialization of optional "
+            "(N4950 [optional.monadic]/2).");
+
+        if (_Has_value) {
+            return _STD invoke(_STD forward<_Fn>(_Func), **this);
+        } else {
+            return remove_cvref_t<_Uty>{};
+        }
+    }
+
+    template <class _Fn>
+    constexpr auto and_then(_Fn&& _Func) && {
+        using _Uty = invoke_result_t<_Fn, _Ty>;
+
+        static_assert(_Is_specialization_v<remove_cvref_t<_Uty>, optional>,
+            "optional<T>::and_then(F) requires the return type of F to be a specialization of optional "
+            "(N4950 [optional.monadic]/5).");
+
+        if (_Has_value) {
+            return _STD invoke(_STD forward<_Fn>(_Func), _STD move(**this));
+        } else {
+            return remove_cvref_t<_Uty>{};
+        }
+    }
+
+    template <class _Fn>
+    constexpr auto and_then(_Fn&& _Func) const&& {
+        using _Uty = invoke_result_t<_Fn, const _Ty>;
+
+        static_assert(_Is_specialization_v<remove_cvref_t<_Uty>, optional>,
+            "optional<T>::and_then(F) requires the return type of F to be a specialization of optional "
+            "(N4950 [optional.monadic]/5).");
+
+        if (_Has_value) {
+            return _STD invoke(_STD forward<_Fn>(_Func), _STD move(**this));
+        } else {
+            return remove_cvref_t<_Uty>{};
+        }
+    }
+
+    template <class _Fn>
+    constexpr auto transform(_Fn&& _Func) & {
+        using _Uty = remove_cv_t<invoke_result_t<_Fn, _Ty&>>;
+
+        static_assert(!_Is_any_of_v<_Uty, nullopt_t, in_place_t>,
+            "optional<T>::transform(F) requires the return type of F to be a type other than nullopt_t or in_place_t "
+            "(N4950 [optional.monadic]/8).");
+        static_assert(is_object_v<_Uty> && !is_array_v<_Uty>,
+            "optional<T>::transform(F) requires the return type of F to be a non-array object type "
+            "(N4950 [optional.monadic]/8).");
+
+        if (_Has_value) {
+            return optional<_Uty>{
+                _Construct_from_invoke_result_tag{}, _STD forward<_Fn>(_Func), **this};
+        } else {
+            return optional<_Uty>{};
+        }
+    }
+
+    template <class _Fn>
+    constexpr auto transform(_Fn&& _Func) const& {
+        using _Uty = remove_cv_t<invoke_result_t<_Fn, const _Ty&>>;
+
+        static_assert(!_Is_any_of_v<_Uty, nullopt_t, in_place_t>,
+            "optional<T>::transform(F) requires the return type of F to be a type other than nullopt_t or in_place_t "
+            "(N4950 [optional.monadic]/8).");
+        static_assert(is_object_v<_Uty> && !is_array_v<_Uty>,
+            "optional<T>::transform(F) requires the return type of F to be a non-array object type "
+            "(N4950 [optional.monadic]/8).");
+
+        if (_Has_value) {
+            return optional<_Uty>{
+                _Construct_from_invoke_result_tag{}, _STD forward<_Fn>(_Func), **this};
+        } else {
+            return optional<_Uty>{};
+        }
+    }
+
+    template <class _Fn>
+    constexpr auto transform(_Fn&& _Func) && {
+        using _Uty = remove_cv_t<invoke_result_t<_Fn, _Ty>>;
+
+        static_assert(!_Is_any_of_v<_Uty, nullopt_t, in_place_t>,
+            "optional<T>::transform(F) requires the return type of F to be a type other than nullopt_t or in_place_t "
+            "(N4950 [optional.monadic]/11).");
+        static_assert(is_object_v<_Uty> && !is_array_v<_Uty>,
+            "optional<T>::transform(F) requires the return type of F to be a non-array object type "
+            "(N4950 [optional.monadic]/11).");
+
+        if (_Has_value) {
+            return optional<_Uty>{
+                _Construct_from_invoke_result_tag{}, _STD forward<_Fn>(_Func), _STD move(**this)};
+        } else {
+            return optional<_Uty>{};
+        }
+    }
+
+    template <class _Fn>
+    constexpr auto transform(_Fn&& _Func) const&& {
+        using _Uty = remove_cv_t<invoke_result_t<_Fn, const _Ty>>;
+
+        static_assert(!_Is_any_of_v<_Uty, nullopt_t, in_place_t>,
+            "optional<T>::transform(F) requires the return type of F to be a type other than nullopt_t or in_place_t "
+            "(N4950 [optional.monadic]/11).");
+        static_assert(is_object_v<_Uty> && !is_array_v<_Uty>,
+            "optional<T>::transform(F) requires the return type of F to be a non-array object type "
+            "(N4950 [optional.monadic]/11).");
+
+        if (_Has_value) {
+            return optional<_Uty>{
+                _Construct_from_invoke_result_tag{}, _STD forward<_Fn>(_Func), _STD move(**this)};
+        } else {
+            return optional<_Uty>{};
+        }
+    }
+
+    template <invocable<> _Fn>
+        requires copy_constructible<_Ty>
+    constexpr optional or_else(_Fn&& _Func) const& {
+        static_assert(is_same_v<remove_cvref_t<invoke_result_t<_Fn>>, optional>,
+            "optional<T>::or_else(F) requires F to return an optional<T> (N4950 [optional.monadic]/14).");
+
+        if (_Has_value) {
+            return *this;
+        } else {
+            return _STD forward<_Fn>(_Func)();
+        }
+    }
+
+    template <invocable<> _Fn>
+        requires move_constructible<_Ty>
+    constexpr optional or_else(_Fn&& _Func) && {
+        static_assert(is_same_v<remove_cvref_t<invoke_result_t<_Fn>>, optional>,
+            "optional<T>::or_else(F) requires F to return an optional<T> (N4950 [optional.monadic]/17).");
+
+        if (_Has_value) {
+            return _STD move(*this);
+        } else {
+            return _STD forward<_Fn>(_Func)();
+        }
+    }
+#endif // _HAS_CXX23
+
+    constexpr void reset() noexcept {
+        if constexpr (is_trivially_destructible_v<_Ty>) {
+            _Has_value = false;
+        } else {
+            if (_Has_value) {
+                _Raw_value.~remove_cv_t<_Ty>();
+                _Has_value = false;
+            }
+        }
+    }
+};
+
+#else // ^^^ _HAS_CXX20 / !_HAS_CXX20 vvv
 
 template <class _Ty, bool = is_trivially_destructible_v<_Ty>>
 struct _Optional_destruct_base { // either contains a value of _Ty or is empty (trivial destructor)
@@ -615,6 +1185,7 @@ public:
 
     using _Mybase::reset;
 };
+#endif // ^^^ !_HAS_CXX20 ^^^
 
 template <class _Ty>
 optional(_Ty) -> optional<_Ty>;
