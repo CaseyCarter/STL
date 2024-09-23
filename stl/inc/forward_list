@@ -20,44 +20,141 @@ _STL_DISABLE_CLANG_WARNINGS
 #pragma push_macro("new")
 #undef new
 
+#define _CONSTEXPR_EXP _CONSTEXPR20
+
 _STD_BEGIN
+
+#ifdef _M_CEE_PURE
+#define _Lockit2 _Lockit
+#else // ^^^ defined(_M_CEE_PURE) / !defined(_M_CEE_PURE) vvv
+class _NODISCARD _Lockit2 {
+public:
+    _CONSTEXPR20 _Lockit2() noexcept {
+        if (_STD _Is_constant_evaluated()) {
+#if __cpp_constexpr < 201907L
+            _CSTD memset(_Space, 0, sizeof(_Space));
+#endif // ^^^ __cpp_constexpr < 201907L ^^^
+        } else {
+            ::new (static_cast<void*>(&_Space)) _Lockit;
+        }
+    }
+
+    _CONSTEXPR20 explicit _Lockit2(int _Kind) noexcept {
+        if (_STD _Is_constant_evaluated()) {
+#if __cpp_constexpr < 201907L
+            _CSTD memset(_Space, 0, sizeof(_Space));
+#endif // ^^^ __cpp_constexpr < 201907L ^^^
+        } else {
+            ::new (static_cast<void*>(&_Space)) _Lockit(_Kind);
+        }
+    }
+
+    _Lockit2(const _Lockit2&)            = delete;
+    _Lockit2& operator=(const _Lockit2&) = delete;
+
+    _CONSTEXPR20 ~_Lockit2() noexcept { // clear the lock
+        if (!_STD _Is_constant_evaluated()) {
+            reinterpret_cast<_Lockit&>(_Space).~_Lockit();
+        }
+    }
+
+private:
+    alignas(_Lockit) unsigned char _Space[sizeof(_Lockit)];
+};
+#endif // ^^^ !defined(_M_CEE_PURE) ^^^
+
+template <class _Voidptr>
+struct _Flist_link {
+    using _Linkptr = _Rebind_pointer_t<_Voidptr, _Flist_link>;
+    _Linkptr _Next;
+};
+
+template <class _Value_type, class _Voidptr>
+struct _Flist_node : _Flist_link<_Voidptr> { // forward_list node
+    using _Link    = _Flist_link<_Voidptr>;
+    using _Linkptr = typename _Link::_Linkptr;
+    using _Nodeptr = _Rebind_pointer_t<_Voidptr, _Flist_node>;
+
+    union {
+        _Value_type _Myval;
+    };
+
+    _CONSTEXPR_EXP _Flist_node() noexcept {}
+    _Flist_node(const _Flist_node&)            = delete;
+    _Flist_node& operator=(const _Flist_node&) = delete;
+
+    static _CONSTEXPR_EXP _Value_type& _Get_val(const _Linkptr _Ptr) noexcept {
+        return static_cast<_Flist_node&>(*_Ptr)._Myval;
+    }
+
+    template <class _Alloc, class... _Args>
+    static _CONSTEXPR20 void _Construct(_Alloc& _Al, const _Nodeptr _Ptr, _Args&&... args) {
+        // Construct a node in uninitialized storage at _Ptr and initialize its contained value with the specified
+        // arguments
+        _STL_INTERNAL_CHECK(_Ptr != nullptr);
+        _STD _Construct_in_place(*_Ptr);
+        allocator_traits<_Alloc>::construct(_Al, _STD addressof(_Ptr->_Myval), _STD forward<_Args>(args)...);
+    }
+
+    template <class _Alnode>
+    static _CONSTEXPR_EXP void _Freenode(_Alnode& _Al, const _Nodeptr _Pnode) noexcept {
+        allocator_traits<_Alnode>::destroy(_Al, _STD addressof(_Pnode->_Myval));
+        _Pnode->~_Flist_node();
+        _Al.deallocate(_Pnode, 1);
+    }
+
+    template <class _Alnode>
+    static _CONSTEXPR_EXP void _Freenode(_Alnode& _Al, const _Linkptr _Plink) noexcept {
+        const _Nodeptr _Pnode = pointer_traits<_Nodeptr>::pointer_to(static_cast<_Flist_node&>(*_Plink));
+        _Freenode(_Al, _Pnode);
+    }
+
+    _NODISCARD _CONSTEXPR_EXP _Linkptr _Mylink() noexcept {
+        return pointer_traits<_Linkptr>::pointer_to(*this);
+    }
+
+private:
+    _CONSTEXPR_EXP ~_Flist_node() noexcept {}
+};
+
 template <class _Mylist, class _Base = _Iterator_base0>
 class _Flist_unchecked_const_iterator : public _Base {
 public:
+    using _Node    = typename _Mylist::_Node;
+    using _Linkptr = typename _Mylist::_Linkptr;
+
     using iterator_category = forward_iterator_tag;
+    using value_type        = typename _Mylist::value_type;
+    using difference_type   = typename _Mylist::difference_type;
+    using pointer           = typename _Mylist::const_pointer;
+    using reference         = const value_type&;
 
-    using _Nodeptr        = typename _Mylist::_Nodeptr;
-    using value_type      = typename _Mylist::value_type;
-    using difference_type = typename _Mylist::difference_type;
-    using pointer         = typename _Mylist::const_pointer;
-    using reference       = const value_type&;
+    _CONSTEXPR_EXP _Flist_unchecked_const_iterator() noexcept : _Ptr() {}
 
-    _Flist_unchecked_const_iterator() noexcept : _Ptr() {}
-
-    _Flist_unchecked_const_iterator(_Nodeptr _Pnode, const _Mylist* _Plist) noexcept : _Ptr(_Pnode) {
+    _CONSTEXPR_EXP _Flist_unchecked_const_iterator(_Linkptr _Plink, const _Mylist* _Plist) noexcept : _Ptr(_Plink) {
         this->_Adopt(_Plist);
     }
 
-    _NODISCARD reference operator*() const noexcept {
-        return _Ptr->_Myval;
+    _NODISCARD _CONSTEXPR_EXP reference operator*() const noexcept {
+        return _Node::_Get_val(_Ptr);
     }
 
-    _NODISCARD pointer operator->() const noexcept {
+    _NODISCARD _CONSTEXPR_EXP pointer operator->() const noexcept {
         return pointer_traits<pointer>::pointer_to(**this);
     }
 
-    _Flist_unchecked_const_iterator& operator++() noexcept {
+    _CONSTEXPR_EXP _Flist_unchecked_const_iterator& operator++() noexcept {
         _Ptr = _Ptr->_Next;
         return *this;
     }
 
-    _Flist_unchecked_const_iterator operator++(int) noexcept {
+    _CONSTEXPR_EXP _Flist_unchecked_const_iterator operator++(int) noexcept {
         _Flist_unchecked_const_iterator _Tmp = *this;
         _Ptr                                 = _Ptr->_Next;
         return _Tmp;
     }
 
-    _NODISCARD bool operator==(const _Flist_unchecked_const_iterator& _Right) const noexcept {
+    _NODISCARD _CONSTEXPR_EXP bool operator==(const _Flist_unchecked_const_iterator& _Right) const noexcept {
         return _Ptr == _Right._Ptr;
     }
 
@@ -67,7 +164,7 @@ public:
     }
 #endif // !_HAS_CXX20
 
-    _NODISCARD bool operator==(_Default_sentinel) const noexcept {
+    _NODISCARD _CONSTEXPR_EXP bool operator==(_Default_sentinel) const noexcept {
         return _Ptr == nullptr;
     }
 
@@ -77,37 +174,36 @@ public:
     }
 #endif // !_HAS_CXX20
 
-    _Nodeptr _Ptr; // pointer to node
+    _Linkptr _Ptr;
 };
 
 template <class _Mylist>
 class _Flist_unchecked_iterator : public _Flist_unchecked_const_iterator<_Mylist> {
 public:
-    using _Mybase           = _Flist_unchecked_const_iterator<_Mylist>;
-    using iterator_category = forward_iterator_tag;
+    using _Mybase = _Flist_unchecked_const_iterator<_Mylist>;
 
-    using _Nodeptr        = typename _Mylist::_Nodeptr;
-    using value_type      = typename _Mylist::value_type;
-    using difference_type = typename _Mylist::difference_type;
-    using pointer         = typename _Mylist::pointer;
-    using reference       = value_type&;
+    using iterator_category = forward_iterator_tag;
+    using value_type        = typename _Mylist::value_type;
+    using difference_type   = typename _Mylist::difference_type;
+    using pointer           = typename _Mylist::pointer;
+    using reference         = value_type&;
 
     using _Mybase::_Mybase;
 
-    _NODISCARD reference operator*() const noexcept {
+    _NODISCARD _CONSTEXPR_EXP reference operator*() const noexcept {
         return const_cast<reference>(_Mybase::operator*());
     }
 
-    _NODISCARD pointer operator->() const noexcept {
+    _NODISCARD _CONSTEXPR_EXP pointer operator->() const noexcept {
         return pointer_traits<pointer>::pointer_to(**this);
     }
 
-    _Flist_unchecked_iterator& operator++() noexcept {
+    _CONSTEXPR_EXP _Flist_unchecked_iterator& operator++() noexcept {
         _Mybase::operator++();
         return *this;
     }
 
-    _Flist_unchecked_iterator operator++(int) noexcept {
+    _CONSTEXPR_EXP _Flist_unchecked_iterator operator++(int) noexcept {
         _Flist_unchecked_iterator _Tmp = *this;
         _Mybase::operator++();
         return _Tmp;
@@ -117,43 +213,42 @@ public:
 template <class _Mylist>
 class _Flist_const_iterator : public _Flist_unchecked_const_iterator<_Mylist, _Iterator_base> {
 public:
-    using _Mybase           = _Flist_unchecked_const_iterator<_Mylist, _Iterator_base>;
-    using iterator_category = forward_iterator_tag;
+    using _Mybase = _Flist_unchecked_const_iterator<_Mylist, _Iterator_base>;
 
-    using _Nodeptr        = typename _Mylist::_Nodeptr;
-    using value_type      = typename _Mylist::value_type;
-    using difference_type = typename _Mylist::difference_type;
-    using pointer         = typename _Mylist::const_pointer;
-    using reference       = const value_type&;
+    using iterator_category = forward_iterator_tag;
+    using value_type        = typename _Mylist::value_type;
+    using difference_type   = typename _Mylist::difference_type;
+    using pointer           = typename _Mylist::const_pointer;
+    using reference         = const value_type&;
 
     using _Mybase::_Mybase;
 
-    _NODISCARD reference operator*() const noexcept {
+    _NODISCARD _CONSTEXPR_EXP reference operator*() const noexcept {
 #if _ITERATOR_DEBUG_LEVEL == 2
         const auto _Mycont = static_cast<const _Mylist*>(this->_Getcont());
         _STL_ASSERT(_Mycont, "cannot dereference value-initialized forward_list iterator");
         _STL_VERIFY(this->_Ptr != _Mycont->_Before_head(), "cannot dereference forward_list before_begin");
 #endif // _ITERATOR_DEBUG_LEVEL == 2
 
-        return this->_Ptr->_Myval;
+        return _Mybase::operator*();
     }
 
-    _Flist_const_iterator& operator++() noexcept {
+    _CONSTEXPR_EXP _Flist_const_iterator& operator++() noexcept {
 #if _ITERATOR_DEBUG_LEVEL == 2
         _STL_VERIFY(this->_Getcont(), "forward_list iterator not incrementable");
 #endif // _ITERATOR_DEBUG_LEVEL == 2
 
-        this->_Ptr = this->_Ptr->_Next;
+        _Mybase::operator++();
         return *this;
     }
 
-    _Flist_const_iterator operator++(int) noexcept {
+    _CONSTEXPR_EXP _Flist_const_iterator operator++(int) noexcept {
         _Flist_const_iterator _Tmp = *this;
-        this->_Ptr                 = this->_Ptr->_Next;
+        _Mybase::operator++();
         return _Tmp;
     }
 
-    _NODISCARD bool operator==(const _Flist_const_iterator& _Right) const noexcept {
+    _NODISCARD _CONSTEXPR_EXP bool operator==(const _Flist_const_iterator& _Right) const noexcept {
 #if _ITERATOR_DEBUG_LEVEL == 2
         _STL_VERIFY(this->_Getcont() == _Right._Getcont(), "forward_list iterators incompatible");
 #endif // _ITERATOR_DEBUG_LEVEL == 2
@@ -168,7 +263,8 @@ public:
 #endif // !_HAS_CXX20
 
 #if _ITERATOR_DEBUG_LEVEL == 2
-    friend void _Verify_range(const _Flist_const_iterator& _First, const _Flist_const_iterator& _Last) noexcept {
+    friend _CONSTEXPR_EXP void _Verify_range(
+        const _Flist_const_iterator& _First, const _Flist_const_iterator& _Last) noexcept {
         _STL_VERIFY(
             _First._Getcont() == _Last._Getcont(), "forward_list iterators in range are from different containers");
     }
@@ -176,11 +272,11 @@ public:
 
     using _Prevent_inheriting_unwrap = _Flist_const_iterator;
 
-    _NODISCARD _Flist_unchecked_const_iterator<_Mylist> _Unwrapped() const noexcept {
+    _NODISCARD _CONSTEXPR_EXP _Flist_unchecked_const_iterator<_Mylist> _Unwrapped() const noexcept {
         return _Flist_unchecked_const_iterator<_Mylist>(this->_Ptr, static_cast<const _Mylist*>(this->_Getcont()));
     }
 
-    void _Seek_to(const _Flist_unchecked_const_iterator<_Mylist> _It) noexcept {
+    _CONSTEXPR_EXP void _Seek_to(const _Flist_unchecked_const_iterator<_Mylist> _It) noexcept {
         this->_Ptr = _It._Ptr;
     }
 };
@@ -188,31 +284,30 @@ public:
 template <class _Mylist>
 class _Flist_iterator : public _Flist_const_iterator<_Mylist> {
 public:
-    using _Mybase           = _Flist_const_iterator<_Mylist>;
-    using iterator_category = forward_iterator_tag;
+    using _Mybase = _Flist_const_iterator<_Mylist>;
 
-    using _Nodeptr        = typename _Mylist::_Nodeptr;
-    using value_type      = typename _Mylist::value_type;
-    using difference_type = typename _Mylist::difference_type;
-    using pointer         = typename _Mylist::pointer;
-    using reference       = value_type&;
+    using iterator_category = forward_iterator_tag;
+    using value_type        = typename _Mylist::value_type;
+    using difference_type   = typename _Mylist::difference_type;
+    using pointer           = typename _Mylist::pointer;
+    using reference         = value_type&;
 
     using _Mybase::_Mybase;
 
-    _NODISCARD reference operator*() const noexcept {
+    _NODISCARD _CONSTEXPR_EXP reference operator*() const noexcept {
         return const_cast<reference>(_Mybase::operator*());
     }
 
-    _NODISCARD pointer operator->() const noexcept {
+    _NODISCARD _CONSTEXPR_EXP pointer operator->() const noexcept {
         return pointer_traits<pointer>::pointer_to(**this);
     }
 
-    _Flist_iterator& operator++() noexcept {
+    _CONSTEXPR_EXP _Flist_iterator& operator++() noexcept {
         _Mybase::operator++();
         return *this;
     }
 
-    _Flist_iterator operator++(int) noexcept {
+    _CONSTEXPR_EXP _Flist_iterator operator++(int) noexcept {
         _Flist_iterator _Tmp = *this;
         _Mybase::operator++();
         return _Tmp;
@@ -220,52 +315,37 @@ public:
 
     using _Prevent_inheriting_unwrap = _Flist_iterator;
 
-    _NODISCARD _Flist_unchecked_iterator<_Mylist> _Unwrapped() const noexcept {
+    _NODISCARD _CONSTEXPR_EXP _Flist_unchecked_iterator<_Mylist> _Unwrapped() const noexcept {
         return _Flist_unchecked_iterator<_Mylist>(this->_Ptr, static_cast<const _Mylist*>(this->_Getcont()));
     }
 };
 
 template <class _Value_type, class _Size_type, class _Difference_type, class _Pointer, class _Const_pointer,
-    class _Nodeptr_type>
+    class _Node_type>
 struct _Flist_iter_types {
     using value_type      = _Value_type;
     using size_type       = _Size_type;
     using difference_type = _Difference_type;
     using pointer         = _Pointer;
     using const_pointer   = _Const_pointer;
-    using _Nodeptr        = _Nodeptr_type;
-};
-
-template <class _Value_type, class _Voidptr>
-struct _Flist_node { // forward_list node
-    using _Nodeptr = _Rebind_pointer_t<_Voidptr, _Flist_node>;
-
-    _Nodeptr _Next;
-    _Value_type _Myval = _Returns_exactly<_Value_type>(); // fake a viable constructor to workaround GH-2749
-
-    _Flist_node()                              = default;
-    _Flist_node(const _Flist_node&)            = delete;
-    _Flist_node& operator=(const _Flist_node&) = delete;
-
-    template <class _Alnode>
-    static void _Freenode(_Alnode& _Al, _Nodeptr _Pnode) noexcept {
-        _Destroy_in_place(_Pnode->_Next);
-        allocator_traits<_Alnode>::destroy(_Al, _STD addressof(_Pnode->_Myval));
-        _Al.deallocate(_Pnode, 1);
-    }
+    using _Node           = _Node_type;
+    using _Link           = _Flist_link<_Rebind_pointer_t<pointer, void>>;
+    using _Linkptr        = _Rebind_pointer_t<pointer, _Link>;
 };
 
 template <class _Ty>
 struct _Flist_simple_types : _Simple_types<_Ty> {
     using _Node    = _Flist_node<_Ty, void*>;
-    using _Nodeptr = _Node*;
+    using _Link    = _Flist_link<void*>;
+    using _Linkptr = _Flist_link<void*>*;
 };
 
 template <class _Val_types>
 class _Flist_val : public _Container_base {
 public:
-    using _Nodeptr = typename _Val_types::_Nodeptr;
-    using _Node    = typename pointer_traits<_Nodeptr>::element_type;
+    using _Node    = typename _Val_types::_Node;
+    using _Link    = typename _Val_types::_Link;
+    using _Linkptr = typename _Val_types::_Linkptr;
 
     using value_type      = typename _Val_types::value_type;
     using size_type       = typename _Val_types::size_type;
@@ -275,16 +355,16 @@ public:
     using reference       = value_type&;
     using const_reference = const value_type&;
 
-    _Flist_val() noexcept : _Myhead() {} // initialize data
+    _CONSTEXPR_EXP _Flist_val() noexcept = default;
 
-    _Nodeptr _Before_head() const noexcept { // return pointer to the "before begin" pseudo node
-        return pointer_traits<_Nodeptr>::pointer_to(reinterpret_cast<_Node&>(const_cast<_Nodeptr&>(_Myhead)));
+    _CONSTEXPR_EXP _Linkptr _Before_head() const noexcept { // return pointer to the "before begin" pseudo node
+        return pointer_traits<_Linkptr>::pointer_to(const_cast<_Link&>(_Myhead));
     }
 
 #if _ITERATOR_DEBUG_LEVEL == 2
-    void _Orphan_ptr(_Nodeptr _Ptr) noexcept { // orphan iterators with specified node pointers
-        const auto _BHead = _Before_head();
-        _Lockit _Lock(_LOCK_DEBUG);
+    _CONSTEXPR_EXP void _Orphan_ptr(const _Linkptr _Ptr) noexcept { // orphan iterators with specified pointer
+        const _Linkptr _BHead = _Before_head();
+        _Lockit2 _Lock(_LOCK_DEBUG);
         _Iterator_base12** _Pnext = &this->_Myproxy->_Myfirstiter;
         while (*_Pnext) {
             const auto _Pnextptr = static_cast<_Flist_const_iterator<_Flist_val>&>(**_Pnext)._Ptr;
@@ -299,40 +379,40 @@ public:
 #endif // _ITERATOR_DEBUG_LEVEL == 2
 
     template <class _Pr2>
-    static _Nodeptr _Inplace_merge(_Nodeptr _BFirst1, const _Nodeptr _BMid, const _Nodeptr _BLast, _Pr2 _Pred) {
+    static _CONSTEXPR_EXP _Linkptr _Inplace_merge(
+        _Linkptr _BFirst1, const _Linkptr _BMid, const _Linkptr _BLast, _Pr2 _Pred) {
         // Merge the sorted ranges (_BFirst1, _BMid] and (_BMid, _BLast)
         // Returns one before the new logical end of the range.
         auto _First2 = _BMid->_Next;
         for (;;) { // process 1 splice
-            _Nodeptr _First1;
+            _Linkptr _First1;
             for (;;) { // advance _BFirst1 over elements already in position
                 if (_BFirst1 == _BMid) {
                     return _BLast;
                 }
 
                 _First1 = _BFirst1->_Next;
-                if (_DEBUG_LT_PRED(_Pred, _First2->_Myval, _First1->_Myval)) {
-                    // _First2->_Myval is out of order
+                if (_DEBUG_LT_PRED(_Pred, _Node::_Get_val(_First2), _Node::_Get_val(_First1))) {
+                    // *_First2 is out of order
                     break;
                 }
 
-                // _First1->_Myval is already in position; advance
+                // *_First1 is already in position; advance
                 _BFirst1 = _First1;
             }
 
-            // find the end of the "run" of elements less than _First1->_Myval in the 2nd range
+            // find the end of the "run" of elements less than *_First1 in the 2nd range
             auto _BRun_end = _First2;
-            _Nodeptr _Run_end;
+            _Linkptr _Run_end;
             for (;;) {
                 _Run_end = _BRun_end->_Next;
                 if (_BRun_end == _BLast) {
                     break;
                 }
 
-                if (!_DEBUG_LT_PRED(_Pred, _Run_end->_Myval, _First1->_Myval)) {
-                    // _Run_end is the first element in (_BMid->_Myval, _BLast->_Myval) that shouldn't precede
-                    // _First1->_Myval.
-                    // After the splice _First1->_Myval will be in position and must not be compared again.
+                if (!_DEBUG_LT_PRED(_Pred, _Node::_Get_val(_Run_end), _Node::_Get_val(_First1))) {
+                    // _Run_end is the first element in (*_BMid, *_BLast) that shouldn't precede *_First1.
+                    // After the splice *_First1 will be in position and must not be compared again.
                     break;
                 }
 
@@ -352,7 +432,7 @@ public:
     }
 
     template <class _Pr2>
-    static _Nodeptr _Sort2(const _Nodeptr _BFirst, _Pr2 _Pred) {
+    static _CONSTEXPR_EXP _Linkptr _Sort2(const _Linkptr _BFirst, _Pr2 _Pred) {
         // Sort (_BFirst, _BFirst + 2], unless nullptr is encountered.
         // Returns a pointer one before the end of the sorted region.
         const auto _First1 = _BFirst->_Next;
@@ -361,7 +441,7 @@ public:
         }
 
         auto _First2 = _First1->_Next;
-        if (!_First2 || !_DEBUG_LT_PRED(_Pred, _First2->_Myval, _First1->_Myval)) {
+        if (!_First2 || !_DEBUG_LT_PRED(_Pred, _Node::_Get_val(_First2), _Node::_Get_val(_First1))) {
             return _First1;
         }
 
@@ -373,7 +453,7 @@ public:
     }
 
     template <class _Pr2>
-    static _Nodeptr _Sort(const _Nodeptr _BFirst, size_type _Bound, _Pr2 _Pred) {
+    static _CONSTEXPR_EXP _Linkptr _Sort(const _Linkptr _BFirst, size_type _Bound, _Pr2 _Pred) {
         // Sort (_BFirst, _BFirst + _Bound), unless nullptr is encountered.
         // Returns a pointer one before the end of the sorted region.
         if (_Bound <= 2) {
@@ -391,7 +471,7 @@ public:
     }
 
     template <class _Pr2>
-    static void _Sort(_Nodeptr _BFirst, _Pr2 _Pred) {
+    static _CONSTEXPR_EXP void _Sort(_Linkptr _BFirst, _Pr2 _Pred) {
         auto _BMid       = _Sort2(_BFirst, _Pred);
         size_type _Bound = 2;
         do {
@@ -405,7 +485,7 @@ public:
         } while (_Bound != 0);
     }
 
-    _Nodeptr _Myhead; // pointer to head node
+    _Link _Myhead{};
 };
 
 template <class _Alnode>
@@ -413,51 +493,53 @@ struct _Flist_insert_after_op2 {
     // forward_list insert-after operation which maintains exception safety
     using _Alnode_traits = allocator_traits<_Alnode>;
     using pointer        = typename _Alnode_traits::pointer;
-    using value_type     = typename _Alnode_traits::value_type;
+    using _Node          = typename _Alnode_traits::value_type;
+    using _Linkptr       = typename _Node::_Linkptr;
 
-    explicit _Flist_insert_after_op2(_Alnode& _Al_) : _Al(_Al_), _Tail() {}
+    _CONSTEXPR_EXP explicit _Flist_insert_after_op2(_Alnode& _Al_) : _Al(_Al_), _Tail() {}
 
     _Flist_insert_after_op2(const _Flist_insert_after_op2&)            = delete;
     _Flist_insert_after_op2& operator=(const _Flist_insert_after_op2&) = delete;
 
     template <class... _CArgT>
-    void _Append_n(typename _Alnode_traits::size_type _Count, const _CArgT&... _Carg) {
+    _CONSTEXPR_EXP void _Append_n(typename _Alnode_traits::size_type _Count, const _CArgT&... _Carg) {
         // Append _Count elements, constructed from _Carg
         if (_Count <= 0) {
             return;
         }
 
         _Alloc_construct_ptr<_Alnode> _Newnode(_Al);
-        if (_Tail == pointer{}) {
+        if (_Tail == _Linkptr{}) {
             _Newnode._Allocate(); // throws
-            _Alnode_traits::construct(_Al, _STD addressof(_Newnode._Ptr->_Myval), _Carg...); // throws
-            _Head = _Newnode._Ptr;
-            _Tail = _Newnode._Ptr;
+            _Node::_Construct(_Al, _Newnode._Ptr, _Carg...); // throws
+            _Head = _Newnode._Ptr->_Mylink();
+            _Tail = _Head;
             --_Count;
         }
 
         for (; 0 < _Count; --_Count) {
             _Newnode._Allocate(); // throws
-            _Alnode_traits::construct(_Al, _STD addressof(_Newnode._Ptr->_Myval), _Carg...); // throws
-            _Construct_in_place(_Tail->_Next, _Newnode._Ptr);
-            _Tail = _Newnode._Ptr;
+            _Node::_Construct(_Al, _Newnode._Ptr, _Carg...); // throws
+            const _Linkptr _Newtail = _Newnode._Ptr->_Mylink();
+            _Tail->_Next            = _Newtail;
+            _Tail                   = _Newtail;
         }
 
         (void) _Newnode._Release();
     }
 
     template <class _InIt, class _Sentinel>
-    void _Append_range_unchecked(_InIt _First, const _Sentinel _Last) {
+    _CONSTEXPR_EXP void _Append_range_unchecked(_InIt _First, const _Sentinel _Last) {
         // Append the values in [_First, _Last)
         if (_First == _Last) { // throws
             return;
         }
 
         _Alloc_construct_ptr<_Alnode> _Newnode(_Al);
-        if (_Tail == pointer{}) {
+        if (_Tail == _Linkptr{}) {
             _Newnode._Allocate(); // throws
-            _Alnode_traits::construct(_Al, _STD addressof(_Newnode._Ptr->_Myval), *_First); // throws
-            const auto _Newhead = _Newnode._Release();
+            _Node::_Construct(_Al, _Newnode._Ptr, *_First); // throws
+            const auto _Newhead = _Newnode._Release()->_Mylink();
             _Head               = _Newhead;
             _Tail               = _Newhead;
             ++_First; // throws
@@ -465,45 +547,44 @@ struct _Flist_insert_after_op2 {
 
         while (_First != _Last) { // throws
             _Newnode._Allocate(); // throws
-            _Alnode_traits::construct(_Al, _STD addressof(_Newnode._Ptr->_Myval), *_First); // throws
-            const auto _Newtail = _Newnode._Release();
-            _Construct_in_place(_Tail->_Next, _Newtail);
-            _Tail = _Newtail;
+            _Node::_Construct(_Al, _Newnode._Ptr, *_First); // throws
+            const auto _Newtail = _Newnode._Release()->_Mylink();
+            _Tail->_Next        = _Newtail;
+            _Tail               = _Newtail;
             ++_First; // throws
         }
     }
 
-    pointer _Attach_after(pointer _After) noexcept {
+    _CONSTEXPR_EXP _Linkptr _Attach_after(_Linkptr _After) noexcept {
         // Attaches the elements in *this after _After, and resets *this to the default-initialized state
-        const auto _Local_tail = _Tail;
-        if (_Local_tail == pointer{}) {
+        auto _Local_tail = _Tail;
+        if (_Local_tail == _Linkptr{}) {
             return _After;
         }
 
-        _Construct_in_place(_Local_tail->_Next, _After->_Next);
-        _After->_Next = _Head;
-        _Tail         = pointer{};
+        _Local_tail->_Next = _After->_Next;
+        _After->_Next      = _Head;
+        _Tail              = _Linkptr{};
 
         return _Local_tail;
     }
 
-    ~_Flist_insert_after_op2() {
-        if (_Tail == pointer{}) {
+    _CONSTEXPR_EXP ~_Flist_insert_after_op2() noexcept {
+        if (_Tail == _Linkptr{}) {
             return;
         }
+        _Tail->_Next = _Linkptr{};
 
-        _Construct_in_place(_Tail->_Next, pointer{});
-        pointer _Subject = _Head;
+        _Linkptr _Subject = _Head;
         while (_Subject) {
-            value_type::_Freenode(_Al, _STD exchange(_Subject, _Subject->_Next));
+            _Node::_Freenode(_Al, _STD exchange(_Subject, _Subject->_Next));
         }
     }
 
 private:
     _Alnode& _Al;
-    pointer _Tail; // Points to the most recently constructed node. If pointer{}, the value of _Head is indeterminate.
-                   // _Tail->_Next is not constructed.
-    pointer _Head; // Points at the first constructed node.
+    _Linkptr _Tail; // Points to the most recently constructed node. If _Linkptr{}, the value of _Head is indeterminate.
+    _Linkptr _Head; // Points at the first constructed node.
 };
 
 _EXPORT_STD template <class _Ty, class _Alloc = allocator<_Ty>>
@@ -512,9 +593,9 @@ private:
     using _Alty          = _Rebind_alloc_t<_Alloc, _Ty>;
     using _Alty_traits   = allocator_traits<_Alty>;
     using _Node          = _Flist_node<_Ty, typename _Alty_traits::void_pointer>;
+    using _Linkptr       = typename _Flist_link<typename _Alty_traits::void_pointer>::_Linkptr;
     using _Alnode        = _Rebind_alloc_t<_Alloc, _Node>;
     using _Alnode_traits = allocator_traits<_Alnode>;
-    using _Nodeptr       = typename _Alnode_traits::pointer;
 
     static_assert(!_ENFORCE_MATCHING_ALLOCATORS || is_same_v<_Ty, typename _Alloc::value_type>,
         _MISMATCHED_ALLOCATOR_MESSAGE("forward_list<T, Allocator>", "T"));
@@ -523,7 +604,7 @@ private:
 
     using _Scary_val = _Flist_val<conditional_t<_Is_simple_alloc_v<_Alnode>, _Flist_simple_types<_Ty>,
         _Flist_iter_types<_Ty, typename _Alty_traits::size_type, typename _Alty_traits::difference_type,
-            typename _Alty_traits::pointer, typename _Alty_traits::const_pointer, _Nodeptr>>>;
+            typename _Alty_traits::pointer, typename _Alty_traits::const_pointer, _Node>>>;
 
 public:
     using value_type      = _Ty;
@@ -540,12 +621,12 @@ public:
     using _Unchecked_iterator       = _Flist_unchecked_iterator<_Scary_val>;
     using _Unchecked_const_iterator = _Flist_unchecked_const_iterator<_Scary_val>;
 
-    forward_list() noexcept(is_nothrow_default_constructible_v<_Alnode>) // strengthened
+    _CONSTEXPR_EXP forward_list() noexcept(is_nothrow_default_constructible_v<_Alnode>) // strengthened
         : _Mypair(_Zero_then_variadic_args_t{}) {
         _Alloc_proxy();
     }
 
-    explicit forward_list(_CRT_GUARDOVERFLOW size_type _Count, const _Alloc& _Al = _Alloc())
+    _CONSTEXPR_EXP explicit forward_list(_CRT_GUARDOVERFLOW size_type _Count, const _Alloc& _Al = _Alloc())
         : _Mypair(_One_then_variadic_args_t{}, _Al) { // construct list from _Count * _Ty(), optional allocator
         _Flist_insert_after_op2<_Alnode> _Insert_op(_Getal());
         _Insert_op._Append_n(_Count);
@@ -553,7 +634,7 @@ public:
         _Insert_op._Attach_after(_Mypair._Myval2._Before_head());
     }
 
-    forward_list(_CRT_GUARDOVERFLOW size_type _Count, const _Ty& _Val)
+    _CONSTEXPR_EXP forward_list(_CRT_GUARDOVERFLOW size_type _Count, const _Ty& _Val)
         : _Mypair(_Zero_then_variadic_args_t{}) { // construct list from _Count * _Val
         _Flist_insert_after_op2<_Alnode> _Insert_op(_Getal());
         _Insert_op._Append_n(_Count, _Val);
@@ -564,7 +645,7 @@ public:
 #if _HAS_CXX17
     template <class _Alloc2 = _Alloc, enable_if_t<_Is_allocator<_Alloc2>::value, int> = 0>
 #endif // _HAS_CXX17
-    forward_list(_CRT_GUARDOVERFLOW size_type _Count, const _Ty& _Val, const _Alloc& _Al)
+    _CONSTEXPR_EXP forward_list(_CRT_GUARDOVERFLOW size_type _Count, const _Ty& _Val, const _Alloc& _Al)
         : _Mypair(_One_then_variadic_args_t{}, _Al) { // construct list from _Count * _Val, allocator
         _Flist_insert_after_op2<_Alnode> _Insert_op(_Getal());
         _Insert_op._Append_n(_Count, _Val);
@@ -572,12 +653,12 @@ public:
         _Insert_op._Attach_after(_Mypair._Myval2._Before_head());
     }
 
-    explicit forward_list(const _Alloc& _Al) noexcept // strengthened
+    _CONSTEXPR_EXP explicit forward_list(const _Alloc& _Al) noexcept // strengthened
         : _Mypair(_One_then_variadic_args_t{}, _Al) {
         _Alloc_proxy();
     }
 
-    forward_list(const forward_list& _Right)
+    _CONSTEXPR_EXP forward_list(const forward_list& _Right)
         : _Mypair(_One_then_variadic_args_t{}, _Alnode_traits::select_on_container_copy_construction(_Right._Getal())) {
         _Flist_insert_after_op2<_Alnode> _Insert_op(_Getal());
         _Insert_op._Append_range_unchecked(_Right._Unchecked_begin(), _Right._Unchecked_end());
@@ -585,7 +666,7 @@ public:
         _Insert_op._Attach_after(_Mypair._Myval2._Before_head());
     }
 
-    forward_list(const forward_list& _Right, const _Identity_t<_Alloc>& _Al)
+    _CONSTEXPR_EXP forward_list(const forward_list& _Right, const _Identity_t<_Alloc>& _Al)
         : _Mypair(_One_then_variadic_args_t{}, _Al) {
         _Flist_insert_after_op2<_Alnode> _Insert_op(_Getal());
         _Insert_op._Append_range_unchecked(_Right._Unchecked_begin(), _Right._Unchecked_end());
@@ -594,7 +675,7 @@ public:
     }
 
     template <class _Iter, enable_if_t<_Is_iterator_v<_Iter>, int> = 0>
-    forward_list(_Iter _First, _Iter _Last) : _Mypair(_Zero_then_variadic_args_t{}) {
+    _CONSTEXPR_EXP forward_list(_Iter _First, _Iter _Last) : _Mypair(_Zero_then_variadic_args_t{}) {
         _STD _Adl_verify_range(_First, _Last);
         _Flist_insert_after_op2<_Alnode> _Insert_op(_Getal());
         _Insert_op._Append_range_unchecked(_STD _Get_unwrapped(_First), _STD _Get_unwrapped(_Last));
@@ -603,7 +684,8 @@ public:
     }
 
     template <class _Iter, enable_if_t<_Is_iterator_v<_Iter>, int> = 0>
-    forward_list(_Iter _First, _Iter _Last, const _Alloc& _Al) : _Mypair(_One_then_variadic_args_t{}, _Al) {
+    _CONSTEXPR_EXP forward_list(_Iter _First, _Iter _Last, const _Alloc& _Al)
+        : _Mypair(_One_then_variadic_args_t{}, _Al) {
         _STD _Adl_verify_range(_First, _Last);
         _Flist_insert_after_op2<_Alnode> _Insert_op(_Getal());
         _Insert_op._Append_range_unchecked(_STD _Get_unwrapped(_First), _STD _Get_unwrapped(_Last));
@@ -613,7 +695,7 @@ public:
 
 #if _HAS_CXX23
     template <_Container_compatible_range<_Ty> _Rng>
-    forward_list(from_range_t, _Rng&& _Range) : _Mypair(_Zero_then_variadic_args_t{}) {
+    _CONSTEXPR_EXP forward_list(from_range_t, _Rng&& _Range) : _Mypair(_Zero_then_variadic_args_t{}) {
         _Flist_insert_after_op2<_Alnode> _Insert_op(_Getal());
         _Insert_op._Append_range_unchecked(_RANGES _Ubegin(_Range), _RANGES _Uend(_Range));
         _Alloc_proxy();
@@ -621,7 +703,8 @@ public:
     }
 
     template <_Container_compatible_range<_Ty> _Rng>
-    forward_list(from_range_t, _Rng&& _Range, const _Alloc& _Al) : _Mypair(_One_then_variadic_args_t{}, _Al) {
+    _CONSTEXPR_EXP forward_list(from_range_t, _Rng&& _Range, const _Alloc& _Al)
+        : _Mypair(_One_then_variadic_args_t{}, _Al) {
         _Flist_insert_after_op2<_Alnode> _Insert_op(_Getal());
         _Insert_op._Append_range_unchecked(_RANGES _Ubegin(_Range), _RANGES _Uend(_Range));
         _Alloc_proxy();
@@ -629,13 +712,13 @@ public:
     }
 #endif // _HAS_CXX23
 
-    forward_list(forward_list&& _Right) noexcept // strengthened
+    _CONSTEXPR_EXP forward_list(forward_list&& _Right) noexcept // strengthened
         : _Mypair(_One_then_variadic_args_t{}, _STD move(_Right._Getal())) {
         _Alloc_proxy();
         _Take_head(_Right);
     }
 
-    forward_list(forward_list&& _Right, const _Identity_t<_Alloc>& _Al)
+    _CONSTEXPR_EXP forward_list(forward_list&& _Right, const _Identity_t<_Alloc>& _Al)
         noexcept(_Alnode_traits::is_always_equal::value) // strengthened
         : _Mypair(_One_then_variadic_args_t{}, _Al) {
         if constexpr (!_Alty_traits::is_always_equal::value) {
@@ -653,7 +736,7 @@ public:
         _Take_head(_Right);
     }
 
-    forward_list& operator=(forward_list&& _Right)
+    _CONSTEXPR_EXP forward_list& operator=(forward_list&& _Right)
         noexcept(_Choose_pocma_v<_Alnode> != _Pocma_values::_No_propagate_allocators) /* strengthened */ {
         if (this == _STD addressof(_Right)) {
             return *this;
@@ -667,7 +750,7 @@ public:
                 _Mypair._Myval2._Orphan_all();
                 clear();
                 _Mypair._Myval2._Reload_proxy(_GET_PROXY_ALLOCATOR(_Alty, _Al), _GET_PROXY_ALLOCATOR(_Alty, _Right_al));
-                _Pocma(_Al, _Right_al);
+                _STD _Pocma(_Al, _Right_al);
                 _Take_head(_Right);
                 return *this;
             }
@@ -679,28 +762,28 @@ public:
         }
 
         clear();
-        _Pocma(_Al, _Right_al);
+        _STD _Pocma(_Al, _Right_al);
         _Take_head(_Right);
         return *this;
     }
 
 private:
-    void _Take_head(forward_list& _Right) noexcept { // take contents from _Right, same allocator
+    _CONSTEXPR_EXP void _Take_head(forward_list& _Right) noexcept { // take contents from _Right, same allocator
         _Swap_proxy_and_iterators(_Right);
-        _Mypair._Myval2._Myhead = _STD exchange(_Right._Mypair._Myval2._Myhead, nullptr);
+        _Mypair._Myval2._Myhead = _STD exchange(_Right._Mypair._Myval2._Myhead, {});
     }
 
 public:
-    void push_front(_Ty&& _Val) { // insert element at beginning
+    _CONSTEXPR_EXP void push_front(_Ty&& _Val) { // insert element at beginning
         _Insert_after(_Mypair._Myval2._Before_head(), _STD move(_Val));
     }
 
-    iterator insert_after(const_iterator _Where, _Ty&& _Val) { // insert _Val after _Where
+    _CONSTEXPR_EXP iterator insert_after(const_iterator _Where, _Ty&& _Val) { // insert _Val after _Where
         return emplace_after(_Where, _STD move(_Val));
     }
 
     template <class... _Valty>
-    _CONTAINER_EMPLACE_RETURN emplace_front(_Valty&&... _Val) { // insert element at beginning
+    _CONSTEXPR_EXP _CONTAINER_EMPLACE_RETURN emplace_front(_Valty&&... _Val) { // insert element at beginning
         _Insert_after(_Mypair._Myval2._Before_head(), _STD forward<_Valty>(_Val)...);
 
 #if _HAS_CXX17
@@ -709,7 +792,7 @@ public:
     }
 
     template <class... _Valty>
-    iterator emplace_after(const_iterator _Where, _Valty&&... _Val) { // insert element after _Where
+    _CONSTEXPR_EXP iterator emplace_after(const_iterator _Where, _Valty&&... _Val) { // insert element after _Where
 #if _ITERATOR_DEBUG_LEVEL == 2
         _STL_VERIFY(
             _Where._Getcont() == _STD addressof(_Mypair._Myval2), "forward_list emplace_after iterator outside range");
@@ -720,17 +803,16 @@ public:
 
 private:
     template <class... _Valty>
-    void _Insert_after(_Nodeptr _Pnode, _Valty&&... _Val) { // insert element after _Where
+    _CONSTEXPR_EXP void _Insert_after(_Linkptr _Plink, _Valty&&... _Val) { // insert element after _Where
         _Alloc_construct_ptr<_Alnode> _Newnode(_Getal());
         _Newnode._Allocate(); // throws
-        _Alnode_traits::construct(
-            _Newnode._Al, _STD addressof(_Newnode._Ptr->_Myval), _STD forward<_Valty>(_Val)...); // throws
-        _Construct_in_place(_Newnode._Ptr->_Next, _Pnode->_Next);
-        _Pnode->_Next = _Newnode._Release();
+        _Node::_Construct(_Newnode._Al, _Newnode._Ptr, _STD forward<_Valty>(_Val)...); // throws
+        _Newnode._Ptr->_Next = _Plink->_Next;
+        _Plink->_Next        = _Newnode._Release()->_Mylink();
     }
 
 public:
-    forward_list(initializer_list<_Ty> _Ilist, const _Alloc& _Al = allocator_type())
+    _CONSTEXPR_EXP forward_list(initializer_list<_Ty> _Ilist, const _Alloc& _Al = allocator_type())
         : _Mypair(_One_then_variadic_args_t{}, _Al) {
         auto&& _Alproxy = _GET_PROXY_ALLOCATOR(_Alnode, _Getal());
         _Container_proxy_ptr<_Alty> _Proxy(_Alproxy, _Mypair._Myval2);
@@ -738,29 +820,28 @@ public:
         _Proxy._Release();
     }
 
-    forward_list& operator=(initializer_list<_Ty> _Ilist) {
+    _CONSTEXPR_EXP forward_list& operator=(initializer_list<_Ty> _Ilist) {
         assign(_Ilist.begin(), _Ilist.end());
         return *this;
     }
 
-    void assign(initializer_list<_Ty> _Ilist) {
+    _CONSTEXPR_EXP void assign(initializer_list<_Ty> _Ilist) {
         assign(_Ilist.begin(), _Ilist.end());
     }
 
-    iterator insert_after(const_iterator _Where,
-        initializer_list<_Ty> _Ilist) { // insert initializer_list
+    _CONSTEXPR_EXP iterator insert_after(const_iterator _Where, initializer_list<_Ty> _Ilist) {
         return insert_after(_Where, _Ilist.begin(), _Ilist.end());
     }
 
-    ~forward_list() noexcept {
+    _CONSTEXPR_EXP ~forward_list() noexcept {
         clear();
 #if _ITERATOR_DEBUG_LEVEL != 0 // TRANSITION, ABI
         auto&& _Alproxy = _GET_PROXY_ALLOCATOR(_Alty, _Getal());
-        _Delete_plain_internal(_Alproxy, _Mypair._Myval2._Myproxy);
+        _STD _Delete_plain_internal(_Alproxy, _Mypair._Myval2._Myproxy);
 #endif // _ITERATOR_DEBUG_LEVEL != 0
     }
 
-    forward_list& operator=(const forward_list& _Right) {
+    _CONSTEXPR_EXP forward_list& operator=(const forward_list& _Right) {
         if (this == _STD addressof(_Right)) {
             return *this;
         }
@@ -776,75 +857,75 @@ public:
             }
         }
 
-        _Pocca(_Al, _Right_al);
+        _STD _Pocca(_Al, _Right_al);
         _Assign_unchecked(_Right._Unchecked_begin(), _Right._Unchecked_end());
 
         return *this;
     }
 
-    _NODISCARD iterator before_begin() noexcept {
+    _NODISCARD _CONSTEXPR_EXP iterator before_begin() noexcept {
         return iterator(_Mypair._Myval2._Before_head(), _STD addressof(_Mypair._Myval2));
     }
 
-    _NODISCARD const_iterator before_begin() const noexcept {
+    _NODISCARD _CONSTEXPR_EXP const_iterator before_begin() const noexcept {
         return const_iterator(_Mypair._Myval2._Before_head(), _STD addressof(_Mypair._Myval2));
     }
 
-    _NODISCARD const_iterator cbefore_begin() const noexcept {
+    _NODISCARD _CONSTEXPR_EXP const_iterator cbefore_begin() const noexcept {
         return before_begin();
     }
 
-    _NODISCARD iterator begin() noexcept {
-        return iterator(_Mypair._Myval2._Myhead, _STD addressof(_Mypair._Myval2));
+    _NODISCARD _CONSTEXPR_EXP iterator begin() noexcept {
+        return iterator(_Mypair._Myval2._Myhead._Next, _STD addressof(_Mypair._Myval2));
     }
 
-    _NODISCARD const_iterator begin() const noexcept {
-        return const_iterator(_Mypair._Myval2._Myhead, _STD addressof(_Mypair._Myval2));
+    _NODISCARD _CONSTEXPR_EXP const_iterator begin() const noexcept {
+        return const_iterator(_Mypair._Myval2._Myhead._Next, _STD addressof(_Mypair._Myval2));
     }
 
-    _NODISCARD iterator end() noexcept {
+    _NODISCARD _CONSTEXPR_EXP iterator end() noexcept {
         return iterator(nullptr, _STD addressof(_Mypair._Myval2));
     }
 
-    _NODISCARD const_iterator end() const noexcept {
+    _NODISCARD _CONSTEXPR_EXP const_iterator end() const noexcept {
         return const_iterator(nullptr, _STD addressof(_Mypair._Myval2));
     }
 
-    _Unchecked_iterator _Unchecked_before_begin() noexcept {
+    _CONSTEXPR_EXP _Unchecked_iterator _Unchecked_before_begin() noexcept {
         return _Unchecked_iterator(_Mypair._Myval2._Before_head(), nullptr);
     }
 
-    _Unchecked_iterator _Unchecked_begin() noexcept {
-        return _Unchecked_iterator(_Mypair._Myval2._Myhead, nullptr);
+    _CONSTEXPR_EXP _Unchecked_iterator _Unchecked_begin() noexcept {
+        return _Unchecked_iterator(_Mypair._Myval2._Myhead._Next, nullptr);
     }
 
-    _Unchecked_const_iterator _Unchecked_begin() const noexcept {
-        return _Unchecked_const_iterator(_Mypair._Myval2._Myhead, nullptr);
+    _CONSTEXPR_EXP _Unchecked_const_iterator _Unchecked_begin() const noexcept {
+        return _Unchecked_const_iterator(_Mypair._Myval2._Myhead._Next, nullptr);
     }
 
-    _Default_sentinel _Unchecked_end() const noexcept {
+    _CONSTEXPR_EXP _Default_sentinel _Unchecked_end() const noexcept {
         return {};
     }
 
-    _Unchecked_const_iterator _Unchecked_end_iter() const noexcept {
+    _CONSTEXPR_EXP _Unchecked_const_iterator _Unchecked_end_iter() const noexcept {
         return _Unchecked_const_iterator(nullptr, nullptr);
     }
 
-    iterator _Make_iter(_Nodeptr _Where) const noexcept {
+    _CONSTEXPR_EXP iterator _Make_iter(_Linkptr _Where) const noexcept {
         return iterator(_Where, _STD addressof(_Mypair._Myval2));
     }
 
-    _NODISCARD const_iterator cbegin() const noexcept {
+    _NODISCARD _CONSTEXPR_EXP const_iterator cbegin() const noexcept {
         return begin();
     }
 
-    _NODISCARD const_iterator cend() const noexcept {
+    _NODISCARD _CONSTEXPR_EXP const_iterator cend() const noexcept {
         return end();
     }
 
 private:
     template <class... _Args>
-    void _Resize(_CRT_GUARDOVERFLOW size_type _Newsize, const _Args&... _Vals) {
+    _CONSTEXPR_EXP void _Resize(_CRT_GUARDOVERFLOW size_type _Newsize, const _Args&... _Vals) {
         auto& _Al = _Getal();
         auto _Ptr = _Mypair._Myval2._Before_head();
         for (;;) {
@@ -878,61 +959,61 @@ private:
     }
 
 public:
-    void resize(_CRT_GUARDOVERFLOW size_type _Newsize) {
+    _CONSTEXPR_EXP void resize(_CRT_GUARDOVERFLOW size_type _Newsize) {
         _Resize(_Newsize);
     }
 
-    void resize(_CRT_GUARDOVERFLOW size_type _Newsize, const _Ty& _Val) {
+    _CONSTEXPR_EXP void resize(_CRT_GUARDOVERFLOW size_type _Newsize, const _Ty& _Val) {
         _Resize(_Newsize, _Val);
     }
 
-    _NODISCARD size_type max_size() const noexcept {
+    _NODISCARD _CONSTEXPR_EXP size_type max_size() const noexcept {
         return (_STD min)(
             static_cast<size_type>(_STD _Max_limit<difference_type>()), _Alnode_traits::max_size(_Getal()));
     }
 
-    _NODISCARD_EMPTY_MEMBER bool empty() const noexcept {
-        return _Mypair._Myval2._Myhead == nullptr;
+    _NODISCARD_EMPTY_MEMBER _CONSTEXPR_EXP bool empty() const noexcept {
+        return _Mypair._Myval2._Myhead._Next == nullptr;
     }
 
-    _NODISCARD allocator_type get_allocator() const noexcept {
+    _NODISCARD _CONSTEXPR_EXP allocator_type get_allocator() const noexcept {
         return static_cast<allocator_type>(_Getal());
     }
 
-    _NODISCARD reference front() noexcept /* strengthened */ {
+    _NODISCARD _CONSTEXPR_EXP reference front() noexcept /* strengthened */ {
 #if _CONTAINER_DEBUG_LEVEL > 0
-        _STL_VERIFY(_Mypair._Myval2._Myhead != nullptr, "front() called on empty forward_list");
+        _STL_VERIFY(_Mypair._Myval2._Myhead._Next != nullptr, "front() called on empty forward_list");
 #endif // _CONTAINER_DEBUG_LEVEL > 0
 
-        return _Mypair._Myval2._Myhead->_Myval;
+        return _Node::_Get_val(_Mypair._Myval2._Myhead._Next);
     }
 
-    _NODISCARD const_reference front() const noexcept /* strengthened */ {
+    _NODISCARD _CONSTEXPR_EXP const_reference front() const noexcept /* strengthened */ {
 #if _CONTAINER_DEBUG_LEVEL > 0
-        _STL_VERIFY(_Mypair._Myval2._Myhead != nullptr, "front() called on empty forward_list");
+        _STL_VERIFY(_Mypair._Myval2._Myhead._Next != nullptr, "front() called on empty forward_list");
 #endif // _CONTAINER_DEBUG_LEVEL > 0
 
-        return _Mypair._Myval2._Myhead->_Myval;
+        return _Node::_Get_val(_Mypair._Myval2._Myhead._Next);
     }
 
-    void push_front(const _Ty& _Val) {
+    _CONSTEXPR_EXP void push_front(const _Ty& _Val) {
         _Insert_after(_Mypair._Myval2._Before_head(), _Val);
     }
 
 #if _HAS_CXX23
     template <_Container_compatible_range<_Ty> _Rng>
-    void prepend_range(_Rng&& _Range) {
+    _CONSTEXPR_EXP void prepend_range(_Rng&& _Range) {
         _Insert_range_after(_Mypair._Myval2._Before_head(), _RANGES _Ubegin(_Range), _RANGES _Uend(_Range));
     }
 #endif // _HAS_CXX23
 
-    void pop_front() noexcept /* strengthened */ {
+    _CONSTEXPR_EXP void pop_front() noexcept /* strengthened */ {
         _Erase_after(_Mypair._Myval2._Before_head());
     }
 
 private:
     template <class _UIter, class _Sentinel>
-    void _Assign_unchecked(_UIter _UFirst, const _Sentinel _ULast) {
+    _CONSTEXPR_EXP void _Assign_unchecked(_UIter _UFirst, const _Sentinel _ULast) {
         auto _Myfirst = _Mypair._Myval2._Before_head();
         for (; _UFirst != _ULast; ++_UFirst) {
             const auto _Next = _Myfirst->_Next;
@@ -943,8 +1024,8 @@ private:
                 return;
             }
 
-            _Next->_Myval = *_UFirst;
-            _Myfirst      = _Next;
+            _Node::_Get_val(_Next) = *_UFirst;
+            _Myfirst               = _Next;
         }
 
         for (auto _To_delete = _STD exchange(_Myfirst->_Next, nullptr); _To_delete;) {
@@ -959,24 +1040,24 @@ private:
 
 public:
     template <class _Iter, enable_if_t<_Is_iterator_v<_Iter>, int> = 0>
-    void assign(_Iter _First, _Iter _Last) {
+    _CONSTEXPR_EXP void assign(_Iter _First, _Iter _Last) {
         _STD _Adl_verify_range(_First, _Last);
         _Assign_unchecked(_STD _Get_unwrapped(_First), _STD _Get_unwrapped(_Last));
     }
 
 #if _HAS_CXX23
     template <_Container_compatible_range<_Ty> _Rng>
-    void assign_range(_Rng&& _Range) {
+    _CONSTEXPR_EXP void assign_range(_Rng&& _Range) {
         _Assign_unchecked(_RANGES _Ubegin(_Range), _RANGES _Uend(_Range));
     }
 #endif // _HAS_CXX23
 
-    void assign(_CRT_GUARDOVERFLOW size_type _Count, const _Ty& _Val) {
+    _CONSTEXPR_EXP void assign(_CRT_GUARDOVERFLOW size_type _Count, const _Ty& _Val) {
         clear();
         insert_after(before_begin(), _Count, _Val);
     }
 
-    iterator insert_after(const_iterator _Where, const _Ty& _Val) { // insert _Val after _Where
+    _CONSTEXPR_EXP iterator insert_after(const_iterator _Where, const _Ty& _Val) { // insert _Val after _Where
 #if _ITERATOR_DEBUG_LEVEL == 2
         _STL_VERIFY(
             _Where._Getcont() == _STD addressof(_Mypair._Myval2), "forward_list insert_after location incompatible");
@@ -985,7 +1066,7 @@ public:
         return _Make_iter(_Where._Ptr->_Next);
     }
 
-    iterator insert_after(const_iterator _Where, _CRT_GUARDOVERFLOW size_type _Count, const _Ty& _Val) {
+    _CONSTEXPR_EXP iterator insert_after(const_iterator _Where, _CRT_GUARDOVERFLOW size_type _Count, const _Ty& _Val) {
         // insert _Count * _Val after _Where
 #if _ITERATOR_DEBUG_LEVEL == 2
         _STL_VERIFY(
@@ -1003,20 +1084,20 @@ public:
 
 private:
     template <class _Iter, class _Sent>
-    iterator _Insert_range_after(_Nodeptr _Pnode, _Iter _First, const _Sent _Last) {
-        // insert [_First, _Last) after _Pnode
+    _CONSTEXPR_EXP iterator _Insert_range_after(_Linkptr _Plink, _Iter _First, const _Sent _Last) {
+        // insert [_First, _Last) after _Plink
         if (_First == _Last) {
-            return _Make_iter(_Pnode);
+            return _Make_iter(_Plink);
         }
 
         _Flist_insert_after_op2<_Alnode> _Insert_op(_Getal());
         _Insert_op._Append_range_unchecked(_STD move(_First), _Last);
-        return _Make_iter(_Insert_op._Attach_after(_Pnode));
+        return _Make_iter(_Insert_op._Attach_after(_Plink));
     }
 
 public:
     template <class _Iter, enable_if_t<_Is_iterator_v<_Iter>, int> = 0>
-    iterator insert_after(const_iterator _Where, _Iter _First, _Iter _Last) {
+    _CONSTEXPR_EXP iterator insert_after(const_iterator _Where, _Iter _First, _Iter _Last) {
         // insert [_First, _Last) after _Where
 #if _ITERATOR_DEBUG_LEVEL == 2
         _STL_VERIFY(
@@ -1028,7 +1109,7 @@ public:
 
 #if _HAS_CXX23
     template <_Container_compatible_range<_Ty> _Rng>
-    iterator insert_range_after(const_iterator _Where, _Rng&& _Range) {
+    _CONSTEXPR_EXP iterator insert_range_after(const_iterator _Where, _Rng&& _Range) {
 #if _ITERATOR_DEBUG_LEVEL == 2
         _STL_VERIFY(_Where._Getcont() == _STD addressof(_Mypair._Myval2),
             "forward_list insert_range_after location incompatible");
@@ -1038,17 +1119,17 @@ public:
 #endif // _HAS_CXX23
 
 private:
-    void _Erase_after(_Nodeptr _Pnode) noexcept { // erase element after _Pnode
-        auto _Subject = _Pnode->_Next;
+    _CONSTEXPR_EXP void _Erase_after(_Linkptr _Plink) noexcept { // erase element after _Plink
+        auto _Subject = _Plink->_Next;
 #if _ITERATOR_DEBUG_LEVEL == 2
         _Mypair._Myval2._Orphan_ptr(_Subject);
 #endif // _ITERATOR_DEBUG_LEVEL == 2
-        _Pnode->_Next = _Subject->_Next;
+        _Plink->_Next = _Subject->_Next;
         _Node::_Freenode(_Getal(), _Subject);
     }
 
 public:
-    iterator erase_after(const_iterator _Where) noexcept /* strengthened */ {
+    _CONSTEXPR_EXP iterator erase_after(const_iterator _Where) noexcept /* strengthened */ {
 #if _ITERATOR_DEBUG_LEVEL == 2
         _STL_VERIFY(
             _Where._Getcont() == _STD addressof(_Mypair._Myval2), "forward_list erase_after iterator outside range");
@@ -1057,7 +1138,7 @@ public:
         return _Make_iter(_Where._Ptr->_Next);
     }
 
-    iterator erase_after(const_iterator _First, const_iterator _Last) noexcept /* strengthened */ {
+    _CONSTEXPR_EXP iterator erase_after(const_iterator _First, const_iterator _Last) noexcept /* strengthened */ {
 #if _ITERATOR_DEBUG_LEVEL == 2
         const auto _Mycont = _STD addressof(_Mypair._Myval2);
         _STL_VERIFY(_First._Getcont() == _Mycont && _Last._Getcont() == _Mycont,
@@ -1083,31 +1164,31 @@ public:
         return _Make_iter(_Last._Ptr);
     }
 
-    void clear() noexcept { // erase all
+    _CONSTEXPR_EXP void clear() noexcept { // erase all
 #if _ITERATOR_DEBUG_LEVEL == 2
         _Mypair._Myval2._Orphan_ptr(nullptr);
 #endif // _ITERATOR_DEBUG_LEVEL == 2
 
-        _Nodeptr _Pnext;
-        _Nodeptr _Pnode = _STD exchange(_Mypair._Myval2._Myhead, nullptr);
+        _Linkptr _Pnext;
+        _Linkptr _Plink = _STD exchange(_Mypair._Myval2._Myhead._Next, nullptr);
 
         auto& _Al = _Getal();
-        for (; _Pnode; _Pnode = _Pnext) { // delete an element
-            _Pnext = _Pnode->_Next;
-            _Node::_Freenode(_Al, _Pnode);
+        for (; _Plink; _Plink = _Pnext) { // delete an element
+            _Pnext = _Plink->_Next;
+            _Node::_Freenode(_Al, _Plink);
         }
     }
 
-    void swap(forward_list& _Right) noexcept /* strengthened */ {
+    _CONSTEXPR_EXP void swap(forward_list& _Right) noexcept /* strengthened */ {
         using _STD swap;
         if (this != _STD addressof(_Right)) {
-            _Pocs(_Getal(), _Right._Getal());
+            _STD _Pocs(_Getal(), _Right._Getal());
             _Swap_proxy_and_iterators(_Right);
-            swap(_Mypair._Myval2._Myhead, _Right._Mypair._Myval2._Myhead); // intentional ADL
+            swap(_Mypair._Myval2._Myhead._Next, _Right._Mypair._Myval2._Myhead._Next); // intentional ADL
         }
     }
 
-    void splice_after(const_iterator _Where, forward_list& _Right) noexcept /* strengthened */ {
+    _CONSTEXPR_EXP void splice_after(const_iterator _Where, forward_list& _Right) noexcept /* strengthened */ {
         // splice all of _Right after _Where
 #if _ITERATOR_DEBUG_LEVEL == 2
         _STL_VERIFY(
@@ -1119,12 +1200,13 @@ public:
         }
     }
 
-    void splice_after(const_iterator _Where, forward_list&& _Right) noexcept /* strengthened */ {
+    _CONSTEXPR_EXP void splice_after(const_iterator _Where, forward_list&& _Right) noexcept /* strengthened */ {
         // splice all of _Right after _Where
         splice_after(_Where, _Right);
     }
 
-    void splice_after(const_iterator _Where, forward_list& _Right, const_iterator _First) noexcept /* strengthened */ {
+    _CONSTEXPR_EXP void splice_after(const_iterator _Where, forward_list& _Right, const_iterator _First) noexcept
+    /* strengthened */ {
         // splice _Right (_First, _First + 2) after _Where
 #if _ITERATOR_DEBUG_LEVEL == 2
         _STL_VERIFY(
@@ -1137,12 +1219,14 @@ public:
         _Splice_after(_Where._Ptr, _Right, _First._Ptr);
     }
 
-    void splice_after(const_iterator _Where, forward_list&& _Right, const_iterator _First) noexcept /* strengthened */ {
+    _CONSTEXPR_EXP void splice_after(const_iterator _Where, forward_list&& _Right, const_iterator _First) noexcept
+    /* strengthened */ {
         // splice _Right (_First, _First + 2) after _Where
         splice_after(_Where, _Right, _First);
     }
 
-    void splice_after(const_iterator _Where, forward_list& _Right, const_iterator _First, const_iterator _Last) noexcept
+    _CONSTEXPR_EXP void splice_after(
+        const_iterator _Where, forward_list& _Right, const_iterator _First, const_iterator _Last) noexcept
     /* strengthened */ {
         // splice _Right (_First, _Last) after _Where
 #if _ITERATOR_DEBUG_LEVEL == 2
@@ -1156,7 +1240,7 @@ public:
         _Splice_after(_Where._Unwrapped(), _Right, _First._Unwrapped(), _Last._Unwrapped());
     }
 
-    void splice_after(const_iterator _Where, forward_list&& _Right, const_iterator _First,
+    _CONSTEXPR_EXP void splice_after(const_iterator _Where, forward_list&& _Right, const_iterator _First,
         const_iterator _Last) noexcept /* strengthened */ {
         // splice _Right [_First, _Last) after _Where
         splice_after(_Where, _Right, _First, _Last);
@@ -1166,13 +1250,12 @@ public:
         // tracks nodes pending removal in a remove operation, so that program-defined predicates may reference those
         // elements until the removal is complete.
 
-        explicit _Flist_node_remove_op(forward_list& _List_) noexcept
-            : _List(_List_), _Head(), _Tail(_STD addressof(_Head)) {}
+        _CONSTEXPR_EXP explicit _Flist_node_remove_op(forward_list& _List_) noexcept : _List(_List_) {}
 
         _Flist_node_remove_op(const _Flist_node_remove_op&)            = delete;
         _Flist_node_remove_op& operator=(const _Flist_node_remove_op&) = delete;
 
-        _Nodeptr _Transfer_back(const _Nodeptr _Predecessor) noexcept {
+        _CONSTEXPR_EXP _Linkptr _Transfer_back(const _Linkptr _Predecessor) noexcept {
             // extract _Predecessor->_Next from the container, and add it to the singly-linked list of nodes to destroy
             // returns the successor of the removed node
 
@@ -1188,32 +1271,30 @@ public:
             return _Next;
         }
 
-        ~_Flist_node_remove_op() {
+        _CONSTEXPR_EXP ~_Flist_node_remove_op() {
             auto& _Al    = _List._Getal();
             auto _Target = _Head;
             while (_Target) {
-                auto _Next = _Target->_Next;
 #if _ITERATOR_DEBUG_LEVEL == 2
                 _List._Mypair._Myval2._Orphan_ptr(_Target);
 #endif // _ITERATOR_DEBUG_LEVEL == 2
-                _Alnode_traits::destroy(_Al, _STD addressof(_Target->_Next));
-                _Alnode_traits::destroy(_Al, _STD addressof(_Target->_Myval));
-                _Al.deallocate(_Target, 1);
+                const auto _Next = _Target->_Next;
+                _Node::_Freenode(_Al, _Target);
                 _Target = _Next;
             }
         }
 
         forward_list& _List;
-        _Nodeptr _Head;
-        _Nodeptr* _Tail;
+        _Linkptr _Head  = nullptr;
+        _Linkptr* _Tail = _STD addressof(_Head);
     };
 
-    auto remove(const _Ty& _Val) { // erase each element matching _Val
+    _CONSTEXPR_EXP auto remove(const _Ty& _Val) { // erase each element matching _Val
         return remove_if([&](const _Ty& _Other) -> bool { return _Other == _Val; });
     }
 
     template <class _Pr1>
-    auto remove_if(_Pr1 _Pred) { // erase each element satisfying _Pr1
+    _CONSTEXPR_EXP auto remove_if(_Pr1 _Pred) { // erase each element satisfying _Pr1
         _Flist_node_remove_op _Op(*this);
         auto _Firstb       = _Unchecked_before_begin();
         size_type _Removed = 0;
@@ -1235,12 +1316,12 @@ public:
 #endif
     }
 
-    auto unique() { // erase each element matching previous
+    _CONSTEXPR_EXP auto unique() { // erase each element matching previous
         return unique(equal_to<>{});
     }
 
     template <class _Pr2>
-    auto unique(_Pr2 _Pred) { // erase each element satisfying _Pred with previous
+    _CONSTEXPR_EXP auto unique(_Pr2 _Pred) { // erase each element satisfying _Pred with previous
         _Flist_node_remove_op _Op(*this);
         auto _First        = _Unchecked_begin();
         size_type _Removed = 0;
@@ -1265,27 +1346,30 @@ public:
 #endif
     }
 
-    void merge(forward_list& _Right) { // merge in elements from _Right, both ordered by operator<
+    _CONSTEXPR_EXP void merge(forward_list& _Right) { // merge in elements from _Right, both ordered by operator<
         _Merge1(_Right, less<>{});
     }
 
-    void merge(forward_list&& _Right) { // merge in elements from _Right, both ordered by operator<
+    _CONSTEXPR_EXP void merge(forward_list&& _Right) { // merge in elements from _Right, both ordered by operator<
         _Merge1(_Right, less<>{});
     }
 
     template <class _Pr2>
-    void merge(forward_list& _Right, _Pr2 _Pred) { // merge in elements from _Right, both ordered by _Pred
+    _CONSTEXPR_EXP void merge(
+        forward_list& _Right, _Pr2 _Pred) { // merge in elements from _Right, both ordered by _Pred
         _Merge1(_Right, _STD _Pass_fn(_Pred));
     }
 
     template <class _Pr2>
-    void merge(forward_list&& _Right, _Pr2 _Pred) { // merge in elements from _Right, both ordered by _Pred
+    _CONSTEXPR_EXP void merge(
+        forward_list&& _Right, _Pr2 _Pred) { // merge in elements from _Right, both ordered by _Pred
         _Merge1(_Right, _STD _Pass_fn(_Pred));
     }
 
 private:
     template <class _Pr2>
-    void _Merge1(forward_list& _Right, _Pr2 _Pred) { // merge in elements from _Right, both ordered by _Pred
+    _CONSTEXPR_EXP void _Merge1(
+        forward_list& _Right, _Pr2 _Pred) { // merge in elements from _Right, both ordered by _Pred
 #if _ITERATOR_DEBUG_LEVEL != 0
         _DEBUG_ORDER_UNWRAPPED(_Unchecked_begin(), _Default_sentinel{}, _Pred);
 #endif // _ITERATOR_DEBUG_LEVEL != 0
@@ -1302,67 +1386,67 @@ private:
         }
 #endif // _ITERATOR_DEBUG_LEVEL != 0
 
-        if (!_My_data._Myhead) {
+        if (!_My_data._Myhead._Next) {
             // *this is empty; take all elements of _Right with no comparisons
 #if _ITERATOR_DEBUG_LEVEL == 2
             {
-                _Lockit _Lock(_LOCK_DEBUG);
+                _Lockit2 _Lock(_LOCK_DEBUG);
                 _Transfer_non_before_begin_ownership(_Right);
             } // unlock
 #endif // _ITERATOR_DEBUG_LEVEL == 2
-            _My_data._Myhead    = _Right_data._Myhead;
-            _Right_data._Myhead = nullptr;
+            _My_data._Myhead._Next    = _Right_data._Myhead._Next;
+            _Right_data._Myhead._Next = nullptr;
             return;
         }
 
 #if _ITERATOR_DEBUG_LEVEL == 2
-        constexpr bool _Noexcept =
-            noexcept(_DEBUG_LT_PRED(_Pred, _My_data._Myhead->_Myval, _Right_data._Myhead->_Myval));
+        constexpr bool _Noexcept = noexcept(
+            _DEBUG_LT_PRED(_Pred, _Node::_Get_val(_My_data._Myhead._Next), _Node::_Get_val(_Right_data._Myhead._Next)));
         if constexpr (_Noexcept) {
             // if the comparison is noexcept, we can take all the iterators in one go and avoid quadratic updates of
             // the iterator chain
-            _Lockit _Lock(_LOCK_DEBUG);
+            _Lockit2 _Lock(_LOCK_DEBUG);
             _Transfer_non_before_begin_ownership(_Right);
         } // unlock
 #endif // _ITERATOR_DEBUG_LEVEL == 2
 
-        if (!_Right_data._Myhead) {
+        if (!_Right_data._Myhead._Next) {
             return;
         }
 
         auto _BFirst1 = _My_data._Before_head();
-        auto _First2  = _Right_data._Myhead;
+        auto _First2  = _Right_data._Myhead._Next;
         for (;;) { // process 1 splice
-            _Nodeptr _First1;
+            _Linkptr _First1;
             for (;;) { // advance _BFirst1 over elements already in position
                 _First1 = _BFirst1->_Next;
                 if (!_First1) { // all elements in _Right are greater than elements in *this, splice them all
-                    _BFirst1->_Next     = _First2;
-                    _Right_data._Myhead = nullptr;
+                    _BFirst1->_Next           = _First2;
+                    _Right_data._Myhead._Next = nullptr;
                     return;
                 }
 
-                if (_DEBUG_LT_PRED(_Pred, _First2->_Myval, _First1->_Myval)) {
-                    // _First2->_Myval is out of order
+                if (_DEBUG_LT_PRED(_Pred, _Node::_Get_val(_First2), _Node::_Get_val(_First1))) {
+                    // *_First2 is out of order
                     break;
                 }
 
-                // _First1->_Myval is already in position; advance
+                // *_First1 is already in position; advance
                 _BFirst1 = _First1;
             }
 
-            // find the end of the "run" of elements less than _First1->_Myval in _Right
+            // find the end of the "run" of elements less than *_First1 in _Right
             auto _BRun_end = _First2;
-            _Nodeptr _Run_end;
+            _Linkptr _Run_end;
             for (;;) {
                 _Run_end = _BRun_end->_Next;
                 if (!_Run_end) {
                     break;
                 }
 
-                if (!_DEBUG_LT_PRED(_Pred, _Run_end->_Myval, _First1->_Myval)) {
-                    // _Run_end is the first element in _Right that shouldn't precede _First1->_Myval.
-                    // After the splice _First1->_Myval will be in position and must not be compared again.
+                if (!_DEBUG_LT_PRED(_Pred, _Node::_Get_val(_Run_end), _Node::_Get_val(_First1))) {
+                    // _Run_end is the first element in _Right that shouldn't precede *_First1.
+                    // After the splice *_First1 will be in position and must not be compared again.
                     break;
                 }
 
@@ -1371,16 +1455,16 @@ private:
 
 #if _ITERATOR_DEBUG_LEVEL == 2
             if constexpr (!_Noexcept) {
-                _Lockit _Lock(_LOCK_DEBUG);
+                _Lockit2 _Lock(_LOCK_DEBUG);
                 for (auto _Next = _First2; _Next != _Run_end; _Next = _Next->_Next) {
                     _Transfer_ownership(_Right, _Next);
                 }
             } // unlock
 #endif // _ITERATOR_DEBUG_LEVEL == 2
 
-            _Right_data._Myhead = _Run_end; // snip out the run from its old position
-            _BFirst1->_Next     = _First2; // insert into new position
-            _BRun_end->_Next    = _First1;
+            _Right_data._Myhead._Next = _Run_end; // snip out the run from its old position
+            _BFirst1->_Next           = _First2; // insert into new position
+            _BRun_end->_Next          = _First1;
             if (!_Run_end) {
                 return;
             }
@@ -1391,28 +1475,28 @@ private:
     }
 
 public:
-    void sort() { // order sequence
+    _CONSTEXPR_EXP void sort() { // order sequence
         _Scary_val::_Sort(_Mypair._Myval2._Before_head(), less<>{});
     }
 
     template <class _Pr2>
-    void sort(_Pr2 _Pred) { // order sequence
+    _CONSTEXPR_EXP void sort(_Pr2 _Pred) { // order sequence
         _Scary_val::_Sort(_Mypair._Myval2._Before_head(), _STD _Pass_fn(_Pred));
     }
 
-    void reverse() noexcept { // reverse sequence
-        auto _Current = _Mypair._Myval2._Myhead;
+    _CONSTEXPR_EXP void reverse() noexcept { // reverse sequence
+        auto _Current = _Mypair._Myval2._Myhead._Next;
         if (!_Current) {
             // empty forward_list
             return;
         }
 
-        _Nodeptr _Prev{};
+        _Linkptr _Prev{};
         for (;;) {
             const auto _Next = _Current->_Next;
             _Current->_Next  = _Prev;
             if (!_Next) {
-                _Mypair._Myval2._Myhead = _Current;
+                _Mypair._Myval2._Myhead._Next = _Current;
                 return;
             }
 
@@ -1423,7 +1507,7 @@ public:
 
 private:
 #if _ITERATOR_DEBUG_LEVEL == 2
-    void _Transfer_non_before_begin_ownership(forward_list& _Right) noexcept {
+    _CONSTEXPR_EXP void _Transfer_non_before_begin_ownership(forward_list& _Right) noexcept {
         // requires holding the debug lock
         const auto _Mycont            = _STD addressof(_Mypair._Myval2);
         const auto _Myproxy           = _Mycont->_Myproxy;
@@ -1443,7 +1527,7 @@ private:
         }
     }
 
-    void _Transfer_ownership(forward_list& _Right, _Nodeptr _Target) noexcept {
+    _CONSTEXPR_EXP void _Transfer_ownership(forward_list& _Right, _Linkptr _Target) noexcept {
         // requires holding the debug lock
         const auto _Mycont        = _STD addressof(_Mypair._Myval2);
         const auto _Myproxy       = _Mycont->_Myproxy;
@@ -1463,7 +1547,7 @@ private:
     }
 #endif // _ITERATOR_DEBUG_LEVEL == 2
 
-    void _Splice_after(_Nodeptr _Where, forward_list& _Right, _Nodeptr _Prev) noexcept {
+    _CONSTEXPR_EXP void _Splice_after(_Linkptr _Where, forward_list& _Right, _Linkptr _Prev) noexcept {
         // splice _Right (_Prev, _Prev + 2) after _Where
 #if _ITERATOR_DEBUG_LEVEL == 0
         (void) _Right;
@@ -1475,7 +1559,7 @@ private:
 
 #if _ITERATOR_DEBUG_LEVEL == 2
         if (this != _STD addressof(_Right)) {
-            _Lockit _Lock(_LOCK_DEBUG);
+            _Lockit2 _Lock(_LOCK_DEBUG);
             _Transfer_ownership(_Right, _Prev->_Next);
         }
 #endif // _ITERATOR_DEBUG_LEVEL == 2
@@ -1491,8 +1575,8 @@ private:
     }
 
     template <class _Sentinel>
-    void _Splice_after(_Unchecked_const_iterator _Where, forward_list& _Right, _Unchecked_const_iterator _First,
-        _Sentinel _Last) noexcept {
+    _CONSTEXPR_EXP void _Splice_after(_Unchecked_const_iterator _Where, forward_list& _Right,
+        _Unchecked_const_iterator _First, _Sentinel _Last) noexcept {
         // splice _Right (_First, _Last) just after _Where
 #if _ITERATOR_DEBUG_LEVEL == 0
         (void) _Right;
@@ -1508,7 +1592,7 @@ private:
 
 #if _ITERATOR_DEBUG_LEVEL == 2
         if (this != _STD addressof(_Right)) { // transfer ownership of (_First, _Last)
-            _Lockit _Lock(_LOCK_DEBUG);
+            _Lockit2 _Lock(_LOCK_DEBUG);
             _Unchecked_const_iterator _Next = _First;
             while (++_Next != _Last) { // transfer ownership
                 _Transfer_ownership(_Right, _Next._Ptr);
@@ -1535,19 +1619,19 @@ private:
         _Where._Ptr->_Next         = _Extracted_head;
     }
 
-    void _Alloc_proxy() {
+    _CONSTEXPR_EXP void _Alloc_proxy() {
         _Mypair._Myval2._Alloc_proxy(_GET_PROXY_ALLOCATOR(_Alnode, _Getal()));
     }
 
-    void _Swap_proxy_and_iterators(forward_list& _Right) noexcept {
+    _CONSTEXPR_EXP void _Swap_proxy_and_iterators(forward_list& _Right) noexcept {
         _Mypair._Myval2._Swap_proxy_and_iterators(_Right._Mypair._Myval2);
     }
 
-    _Alnode& _Getal() noexcept {
+    _CONSTEXPR_EXP _Alnode& _Getal() noexcept {
         return _Mypair._Get_first();
     }
 
-    const _Alnode& _Getal() const noexcept {
+    _CONSTEXPR_EXP const _Alnode& _Getal() const noexcept {
         return _Mypair._Get_first();
     }
 
@@ -1566,19 +1650,21 @@ forward_list(from_range_t, _Rng&&, _Alloc = _Alloc()) -> forward_list<_RANGES ra
 #endif // _HAS_CXX23
 
 _EXPORT_STD template <class _Ty, class _Alloc>
-void swap(forward_list<_Ty, _Alloc>& _Left, forward_list<_Ty, _Alloc>& _Right) noexcept /* strengthened */ {
+_CONSTEXPR_EXP void swap(forward_list<_Ty, _Alloc>& _Left, forward_list<_Ty, _Alloc>& _Right) noexcept
+/* strengthened */ {
     _Left.swap(_Right);
 }
 
 _EXPORT_STD template <class _Ty, class _Alloc>
-_NODISCARD bool operator==(const forward_list<_Ty, _Alloc>& _Left, const forward_list<_Ty, _Alloc>& _Right) {
+_NODISCARD _CONSTEXPR_EXP bool operator==(
+    const forward_list<_Ty, _Alloc>& _Left, const forward_list<_Ty, _Alloc>& _Right) {
     return _STD equal(
         _Left._Unchecked_begin(), _Left._Unchecked_end_iter(), _Right._Unchecked_begin(), _Right._Unchecked_end_iter());
 }
 
 #if _HAS_CXX20
 _EXPORT_STD template <class _Ty, class _Alloc>
-_NODISCARD _Synth_three_way_result<_Ty> operator<=>(
+_NODISCARD _CONSTEXPR_EXP _Synth_three_way_result<_Ty> operator<=>(
     const forward_list<_Ty, _Alloc>& _Left, const forward_list<_Ty, _Alloc>& _Right) {
     return _STD lexicographical_compare_three_way(_Left._Unchecked_begin(), _Left._Unchecked_end_iter(),
         _Right._Unchecked_begin(), _Right._Unchecked_end_iter(), _Synth_three_way{});
@@ -1613,12 +1699,12 @@ _NODISCARD bool operator>=(const forward_list<_Ty, _Alloc>& _Left, const forward
 
 #if _HAS_CXX20
 _EXPORT_STD template <class _Ty, class _Alloc, class _Uty>
-forward_list<_Ty, _Alloc>::size_type erase(forward_list<_Ty, _Alloc>& _Cont, const _Uty& _Val) {
+_CONSTEXPR_EXP forward_list<_Ty, _Alloc>::size_type erase(forward_list<_Ty, _Alloc>& _Cont, const _Uty& _Val) {
     return _Cont.remove_if([&](_Ty& _Elem) -> bool { return _Elem == _Val; });
 }
 
 _EXPORT_STD template <class _Ty, class _Alloc, class _Pr>
-forward_list<_Ty, _Alloc>::size_type erase_if(forward_list<_Ty, _Alloc>& _Cont, _Pr _Pred) {
+_CONSTEXPR_EXP forward_list<_Ty, _Alloc>::size_type erase_if(forward_list<_Ty, _Alloc>& _Cont, _Pr _Pred) {
     return _Cont.remove_if(_STD _Pass_fn(_Pred));
 }
 #endif // _HAS_CXX20
