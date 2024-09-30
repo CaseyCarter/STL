@@ -4,18 +4,21 @@
 // test <forward_list>
 #define TEST_NAME "<forward_list>"
 
-#define _HAS_AUTO_PTR_ETC                1
-#define _HAS_DEPRECATED_ADAPTOR_TYPEDEFS 1
-
 #include "tdefs.h"
 #include <forward_list>
 #include <functional>
 #include <stddef.h>
 
+#if _HAS_CXX20
+#define CONSTEXPR_EXP constexpr
+#else
+#define CONSTEXPR_EXP
+#endif
+
 typedef STD allocator<char> Myal;
 typedef STD forward_list<char, Myal> Mycont;
 
-CSTD size_t size(const Mycont& flist) { // get size of list
+CONSTEXPR_EXP CSTD size_t size(const Mycont& flist) { // get size of list
     CSTD size_t ans           = 0;
     Mycont::const_iterator it = flist.begin();
     for (; it != flist.end(); ++it) {
@@ -24,7 +27,7 @@ CSTD size_t size(const Mycont& flist) { // get size of list
     return ans;
 }
 
-Mycont::const_iterator before_end(const Mycont& flist) { // get iterator for last element of list
+CONSTEXPR_EXP Mycont::const_iterator before_end(const Mycont& flist) { // get iterator for last element of list
     Mycont::const_iterator it = flist.before_begin();
     Mycont::const_iterator it2;
     for (it2 = it; ++it2 != flist.end(); it = it2) {
@@ -33,11 +36,11 @@ Mycont::const_iterator before_end(const Mycont& flist) { // get iterator for las
     return it;
 }
 
-Mycont::value_type back(const Mycont& flist) { // get last element of list
+CONSTEXPR_EXP Mycont::value_type back(const Mycont& flist) { // get last element of list
     return *before_end(flist);
 }
 
-void test_main() { // test basic workings of forward_list definitions
+CONSTEXPR_EXP bool test() { // test basic workings of forward_list definitions
     char ch     = '\0';
     char carr[] = "abc";
 
@@ -283,7 +286,7 @@ void test_main() { // test basic workings of forward_list definitions
     CHECK(v1.empty());
     v0.remove('b');
     CHECK_INT(v0.front(), 'c');
-    v0.remove_if(STD binder2nd<STD not_equal_to<char>>(STD not_equal_to<char>(), 'c'));
+    v0.remove_if([](const auto& x) { return x != 'c'; });
     CHECK_INT(v0.front(), 'c');
     CHECK_INT(size(v0), 1);
 
@@ -354,4 +357,14 @@ void test_main() { // test basic workings of forward_list definitions
         CHECK_INT(size(v11), 3);
         CHECK_INT(v11.front(), 'a');
     }
+
+    return true;
+}
+
+#if _HAS_CXX20
+static_assert(test());
+#endif
+
+void test_main() {
+    test();
 }

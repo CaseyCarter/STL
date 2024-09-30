@@ -3,6 +3,7 @@
 
 #ifndef TDEFS_H
 #define TDEFS_H
+#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -74,6 +75,12 @@
 
 #define EXIT_STATUS (0 < total_fail ? 1 : 0)
 
+#if _HAS_CXX20
+#define CONSTEXPR20 constexpr
+#else
+#define CONSTEXPR20 inline
+#endif
+
 // OBJECTS
 int total_pass = 0;
 int total_fail = 0;
@@ -97,51 +104,76 @@ int verbose = 0;
 #endif // VERBOSE
 
 // FUNCTIONS
-int check_one(int ok, unsigned int ch, const char* label, const char* file_name, int line_number,
+CONSTEXPR20 int check_one(int ok, unsigned int ch, const char* label, const char* file_name, int line_number,
     int test) { // accumulate and maybe display failures
-    if (test != 0) { // succeeded, display if verbose
-        if (verbose) {
-            CSTD printf(" PASS test %.3d at line %.3d in %s for %#.2x: %s\n", total_pass + total_fail + 1, line_number,
-                file_name, ch, label);
-        }
-    } else { // failed, accumulate and maybe display
-        ++total_fail;
-        ok = 0;
-        if (!terse) {
-            CSTD printf(" FAIL test %.3d at line %.3d in %s for %#.2x: %s\n", total_pass + total_fail + 1, line_number,
-                file_name, ch, label);
+#if _HAS_CXX20
+    if (STD is_constant_evaluated()) {
+        assert(test != 0);
+    } else
+#endif
+    {
+        if (test != 0) { // succeeded, display if verbose
+            if (verbose) {
+                CSTD printf(" PASS test %.3d at line %.3d in %s for %#.2x: %s\n", total_pass + total_fail + 1,
+                    line_number, file_name, ch, label);
+            }
+        } else { // failed, accumulate and maybe display
+            ++total_fail;
+            ok = 0;
+            if (!terse) {
+                CSTD printf(" FAIL test %.3d at line %.3d in %s for %#.2x: %s\n", total_pass + total_fail + 1,
+                    line_number, file_name, ch, label);
+            }
         }
     }
     return ok;
 }
 
-void results(const char* label, const char* file_name, int line_number, int test) { // display results
-    if (test != 0) { // pass, count and maybe display
-        ++total_pass;
-        if (verbose) {
+CONSTEXPR20 void results(const char* label, const char* file_name, int line_number, int test) { // display results
+#if _HAS_CXX20
+    if (STD is_constant_evaluated()) {
+        assert(test != 0);
+    } else
+#endif
+    {
+        if (test != 0) { // pass, count and maybe display
+            ++total_pass;
+            if (verbose) {
+                CSTD printf(
+                    " PASS test %.3d at line %.3d in %s: %s\n", total_pass + total_fail, line_number, file_name, label);
+            }
+        } else { // fail, count and display
+            ++total_fail;
             CSTD printf(
-                " PASS test %.3d at line %.3d in %s: %s\n", total_pass + total_fail, line_number, file_name, label);
+                " FAIL test %.3d at line %.3d in %s: %s\n", total_pass + total_fail, line_number, file_name, label);
         }
-    } else { // fail, count and display
-        ++total_fail;
-        CSTD printf(" FAIL test %.3d at line %.3d in %s: %s\n", total_pass + total_fail, line_number, file_name, label);
     }
 }
 
-void check_int(const char* label, const char* file_name, int line_number, int left, int right) {
+CONSTEXPR20 void check_int(const char* label, const char* file_name, int line_number, int left, int right) {
     int ans = left == right;
 
-    if (!terse && !ans) {
-        CSTD printf(" GOT %d != %d\n", left, right);
+#if _HAS_CXX20
+    if (!STD is_constant_evaluated())
+#endif
+    {
+        if (!terse && !ans) {
+            CSTD printf(" GOT %d != %d\n", left, right);
+        }
     }
     results(label, file_name, line_number, ans);
 }
 
-void check_size_t(const char* label, const char* file_name, int line_number, size_t left, size_t right) {
+CONSTEXPR20 void check_size_t(const char* label, const char* file_name, int line_number, size_t left, size_t right) {
     int ans = left == right;
 
-    if (!terse && !ans) {
-        CSTD printf(" GOT %zu != %zu\n", left, right);
+#if _HAS_CXX20
+    if (!STD is_constant_evaluated())
+#endif
+    {
+        if (!terse && !ans) {
+            CSTD printf(" GOT %zu != %zu\n", left, right);
+        }
     }
     results(label, file_name, line_number, ans);
 }
@@ -465,40 +497,40 @@ Ldbl_complex cmplx(long double re, long double im) { // construct a long double 
 #ifdef __cplusplus
 class Copyable_int { // wrap an integer, copyable
 public:
-    Copyable_int(int v = 0) : val(v) { // construct from value
+    constexpr Copyable_int(int v = 0) : val(v) { // construct from value
     }
 
-    Copyable_int(const Copyable_int& x) : val(x.val) { // construct from copied value
+    constexpr Copyable_int(const Copyable_int& x) : val(x.val) { // construct from copied value
     }
 
-    Copyable_int& operator=(const Copyable_int& x) { // copy value
+    constexpr Copyable_int& operator=(const Copyable_int& x) { // copy value
         val = x.val;
         return *this;
     }
 
-    operator int() const { // convert to int
+    constexpr operator int() const { // convert to int
         return val;
     }
 
-    bool operator==(const Copyable_int& x) const { // compare for equality
+    constexpr bool operator==(const Copyable_int& x) const { // compare for equality
         return val == x.val;
     }
 
-    bool operator!=(const Copyable_int& x) const { // compare for equality
+    constexpr bool operator!=(const Copyable_int& x) const { // compare for equality
         return val != x.val;
     }
 
-    bool operator<(const Copyable_int& x) const { // compare for order
+    constexpr bool operator<(const Copyable_int& x) const { // compare for order
         return val < x.val;
     }
 
     int val;
 
-    Copyable_int(Copyable_int&& x) : val(x.val) { // construct from moved value
+    constexpr Copyable_int(Copyable_int&& x) : val(x.val) { // construct from moved value
         x.val = -1;
     }
 
-    Copyable_int& operator=(Copyable_int&& x) { // move value
+    constexpr Copyable_int& operator=(Copyable_int&& x) { // move value
         val   = x.val;
         x.val = -1;
         return *this;
@@ -509,28 +541,28 @@ class Movable_int : public Copyable_int { // wrap a move-only integer
 public:
     typedef Copyable_int Mybase;
 
-    Movable_int(int v = 0) : Mybase(v) { // construct from value
+    constexpr Movable_int(int v = 0) : Mybase(v) { // construct from value
     }
 
-    Movable_int(int v1, int v2) : Mybase(v2 + (v1 << 4)) { // construct from two values
+    constexpr Movable_int(int v1, int v2) : Mybase(v2 + (v1 << 4)) { // construct from two values
     }
 
-    Movable_int(int v1, int v2, int v3) : Mybase(v3 + (v2 << 4) + (v1 << 8)) { // construct from three values
+    constexpr Movable_int(int v1, int v2, int v3) : Mybase(v3 + (v2 << 4) + (v1 << 8)) { // construct from three values
     }
 
-    Movable_int(int v1, int v2, int v3, int v4)
+    constexpr Movable_int(int v1, int v2, int v3, int v4)
         : Mybase(v4 + (v3 << 4) + (v2 << 8) + (v1 << 12)) { // construct from four values
     }
 
-    Movable_int(int v1, int v2, int v3, int v4, int v5)
+    constexpr Movable_int(int v1, int v2, int v3, int v4, int v5)
         : Mybase(v5 + (v4 << 4) + (v3 << 8) + (v2 << 12) + (v1 << 16)) { // construct from five values
     }
 
-    Movable_int(Movable_int&& right) : Mybase(right.val) { // construct from moved value
+    constexpr Movable_int(Movable_int&& right) : Mybase(right.val) { // construct from moved value
         right.val = -1;
     }
 
-    Movable_int& operator=(Movable_int&& right) { // assign from moved value
+    constexpr Movable_int& operator=(Movable_int&& right) { // assign from moved value
         if (this != &right) { // different, move it
             val       = right.val;
             right.val = -1;
@@ -538,19 +570,19 @@ public:
         return *this;
     }
 
-    operator int() const { // convert to int
+    constexpr operator int() const { // convert to int
         return val;
     }
 
-    bool operator==(const Movable_int& x) const { // compare for equality
+    constexpr bool operator==(const Movable_int& x) const { // compare for equality
         return val == x.val;
     }
 
-    bool operator!=(const Movable_int& x) const { // compare for equality
+    constexpr bool operator!=(const Movable_int& x) const { // compare for equality
         return val != x.val;
     }
 
-    bool operator<(const Movable_int& x) const { // compare for order
+    constexpr bool operator<(const Movable_int& x) const { // compare for order
         return val < x.val;
     }
 
