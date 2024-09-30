@@ -31,7 +31,7 @@ class _NODISCARD _Lockit2 {
 public:
     _CONSTEXPR20 _Lockit2() noexcept {
         if (_STD _Is_constant_evaluated()) {
-#if __cpp_constexpr < 201907L
+#if __cpp_constexpr < 201907L // TRANSITION, FIXME
             _CSTD memset(_Space, 0, sizeof(_Space));
 #endif // ^^^ __cpp_constexpr < 201907L ^^^
         } else {
@@ -41,7 +41,7 @@ public:
 
     _CONSTEXPR20 explicit _Lockit2(int _Kind) noexcept {
         if (_STD _Is_constant_evaluated()) {
-#if __cpp_constexpr < 201907L
+#if __cpp_constexpr < 201907L // TRANSITION, FIXME
             _CSTD memset(_Space, 0, sizeof(_Space));
 #endif // ^^^ __cpp_constexpr < 201907L ^^^
         } else {
@@ -66,7 +66,11 @@ private:
 template <class _Voidptr>
 struct _Flist_link {
     using _Linkptr = _Rebind_pointer_t<_Voidptr, _Flist_link>;
+#ifdef __EDG__ // FIXME: bug, or lack of support for default-init in constexpr?
+    _Linkptr _Next = nullptr;
+#else
     _Linkptr _Next;
+#endif
 };
 
 template <class _Value_type, class _Voidptr>
