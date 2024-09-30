@@ -25,26 +25,18 @@ _STL_DISABLE_CLANG_WARNINGS
 _STD_BEGIN
 
 #ifdef _M_CEE_PURE
-#define _Lockit2 _Lockit
+using _Lockit2 = _Lockit;
 #else // ^^^ defined(_M_CEE_PURE) / !defined(_M_CEE_PURE) vvv
 class _NODISCARD _Lockit2 {
 public:
     _CONSTEXPR20 _Lockit2() noexcept {
-        if (_STD _Is_constant_evaluated()) {
-#if __cpp_constexpr < 201907L // TRANSITION, FIXME
-            _CSTD memset(_Space, 0, sizeof(_Space));
-#endif // ^^^ __cpp_constexpr < 201907L ^^^
-        } else {
+        if (!_STD _Is_constant_evaluated()) {
             ::new (static_cast<void*>(&_Space)) _Lockit;
         }
     }
 
     _CONSTEXPR20 explicit _Lockit2(int _Kind) noexcept {
-        if (_STD _Is_constant_evaluated()) {
-#if __cpp_constexpr < 201907L // TRANSITION, FIXME
-            _CSTD memset(_Space, 0, sizeof(_Space));
-#endif // ^^^ __cpp_constexpr < 201907L ^^^
-        } else {
+        if (!_STD _Is_constant_evaluated()) {
             ::new (static_cast<void*>(&_Space)) _Lockit(_Kind);
         }
     }
@@ -52,7 +44,7 @@ public:
     _Lockit2(const _Lockit2&)            = delete;
     _Lockit2& operator=(const _Lockit2&) = delete;
 
-    _CONSTEXPR20 ~_Lockit2() noexcept { // clear the lock
+    _CONSTEXPR20 ~_Lockit2() noexcept {
         if (!_STD _Is_constant_evaluated()) {
             reinterpret_cast<_Lockit&>(_Space).~_Lockit();
         }
