@@ -229,7 +229,7 @@ public:
 
     _NODISCARD _CONSTEXPR_EXP reference operator*() const noexcept {
 #if _ITERATOR_DEBUG_LEVEL == 2
-        const auto _Mycont = static_cast<const _Mylist*>(this->_Getcont());
+        const auto _Mycont = _Getcont();
         _STL_ASSERT(_Mycont, "cannot dereference value-initialized forward_list iterator");
         _STL_VERIFY(this->_Ptr != _Mycont->_Before_head(), "cannot dereference forward_list before_begin");
 #endif // _ITERATOR_DEBUG_LEVEL == 2
@@ -239,7 +239,7 @@ public:
 
     _CONSTEXPR_EXP _Flist_const_iterator& operator++() noexcept {
 #if _ITERATOR_DEBUG_LEVEL == 2
-        _STL_VERIFY(this->_Getcont(), "forward_list iterator not incrementable");
+        _STL_VERIFY(_Getcont(), "forward_list iterator not incrementable");
 #endif // _ITERATOR_DEBUG_LEVEL == 2
 
         _Mybase::operator++();
@@ -254,7 +254,7 @@ public:
 
     _NODISCARD _CONSTEXPR_EXP bool operator==(const _Flist_const_iterator& _Right) const noexcept {
 #if _ITERATOR_DEBUG_LEVEL == 2
-        _STL_VERIFY(this->_Getcont() == _Right._Getcont(), "forward_list iterators incompatible");
+        _STL_VERIFY(_Getcont() == _Right._Getcont(), "forward_list iterators incompatible");
 #endif // _ITERATOR_DEBUG_LEVEL == 2
 
         return this->_Ptr == _Right._Ptr;
@@ -277,11 +277,21 @@ public:
     using _Prevent_inheriting_unwrap = _Flist_const_iterator;
 
     _NODISCARD _CONSTEXPR_EXP _Flist_unchecked_const_iterator<_Mylist> _Unwrapped() const noexcept {
-        return _Flist_unchecked_const_iterator<_Mylist>(this->_Ptr, static_cast<const _Mylist*>(this->_Getcont()));
+        return _Flist_unchecked_const_iterator<_Mylist>(this->_Ptr, _Getcont());
     }
 
     _CONSTEXPR_EXP void _Seek_to(const _Flist_unchecked_const_iterator<_Mylist> _It) noexcept {
         this->_Ptr = _It._Ptr;
+    }
+
+    _CONSTEXPR_EXP const _Mylist* _Getcont() const noexcept {
+#ifndef __clang__ // TRANSITION, FIXME
+        const auto _Raw_container = this->_Iterator_base::_Getcont();
+        const auto _Cont = _Raw_container ? static_cast<const _Mylist*>(_Raw_container) : nullptr; // FIXME
+        return _Cont;
+#else // ^^^ workaround / no workaround vvv
+        return static_cast<const _Mylist*>(this->_Iterator_base::_Getcont());
+#endif // ^^^ no workaround ^^^
     }
 };
 
