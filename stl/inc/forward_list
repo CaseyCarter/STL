@@ -69,6 +69,7 @@ template <class _Value_type, class _Voidptr>
 struct _Flist_node : _Flist_link<_Voidptr> { // forward_list node
     using _Link    = _Flist_link<_Voidptr>;
     using _Linkptr = typename _Link::_Linkptr;
+    using _Node    = _Flist_node;
     using _Nodeptr = _Rebind_pointer_t<_Voidptr, _Flist_node>;
 
     union {
@@ -83,20 +84,21 @@ struct _Flist_node : _Flist_link<_Voidptr> { // forward_list node
         return static_cast<_Flist_node&>(*_Ptr)._Myval;
     }
 
-    template <class _Alloc, class... _Args>
-    static _CONSTEXPR20 void _Construct(_Alloc& _Al, const _Nodeptr _Ptr, _Args&&... args) {
+    template <class _Alnode, class... _Args>
+    static _CONSTEXPR20 void _Construct(_Alnode& _Al, const _Nodeptr _Ptr, _Args&&... args) {
         // Construct a node in uninitialized storage at _Ptr and initialize its contained value with the specified
         // arguments
         _STL_INTERNAL_CHECK(_Ptr != nullptr);
         _STD _Construct_in_place(*_Ptr);
-        allocator_traits<_Alloc>::construct(_Al, _STD addressof(_Ptr->_Myval), _STD forward<_Args>(args)...);
+        allocator_traits<_Alnode>::construct(_Al, _STD addressof(_Ptr->_Myval), _STD forward<_Args>(args)...);
     }
 
     template <class _Alnode>
-    static _CONSTEXPR_EXP void _Freenode(_Alnode& _Al, const _Nodeptr _Pnode) noexcept {
-        allocator_traits<_Alnode>::destroy(_Al, _STD addressof(_Pnode->_Myval));
-        _Pnode->~_Flist_node();
-        _Al.deallocate(_Pnode, 1);
+    static _CONSTEXPR_EXP void _Freenode(_Alnode& _Al, const _Nodeptr _Ptr) noexcept {
+        _STL_INTERNAL_CHECK(_Ptr != nullptr);
+        allocator_traits<_Alnode>::destroy(_Al, _STD addressof(_Ptr->_Myval));
+        _Ptr->~_Flist_node();
+        _Al.deallocate(_Ptr, 1);
     }
 
     template <class _Alnode>
@@ -279,7 +281,7 @@ public:
     _CONSTEXPR_EXP const _Mylist* _Getcont() const noexcept {
 #ifndef __clang__ // TRANSITION, FIXME
         const auto _Raw_container = this->_Iterator_base::_Getcont();
-        const auto _Cont = _Raw_container ? static_cast<const _Mylist*>(_Raw_container) : nullptr; // FIXME
+        const auto _Cont          = _Raw_container ? static_cast<const _Mylist*>(_Raw_container) : nullptr; // FIXME
         return _Cont;
 #else // ^^^ workaround / no workaround vvv
         return static_cast<const _Mylist*>(this->_Iterator_base::_Getcont());

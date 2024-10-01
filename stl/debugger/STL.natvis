@@ -1196,7 +1196,7 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 
   <!-- VC 2015 -->
-  <Type Name="std::forward_list&lt;*&gt;">
+  <Type Name="std::forward_list&lt;*&gt;" Priority="MediumLow">
       <DisplayString Condition="_Mypair._Myval2._Myhead == 0">empty</DisplayString>
       <DisplayString Condition="_Mypair._Myval2._Myhead != 0">non-empty</DisplayString>
       <Expand>
@@ -1209,12 +1209,34 @@ SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
       </Expand>
   </Type>
 
-  <Type Name="std::_Flist_iterator&lt;*&gt;">
+  <Type Name="std::_Flist_iterator&lt;*&gt;" Priority="MediumLow">
       <AlternativeType Name="std::_Flist_const_iterator&lt;*&gt;" />
       <SmartPointer Usage="Minimal">&amp;_Ptr-&gt;_Myval,na</SmartPointer>
       <DisplayString Condition="_Ptr == 0">end</DisplayString>
       <DisplayString Condition="_Ptr != 0">{**this}</DisplayString>
   </Type>
+
+  <!-- VC FIXME -->
+  <Type Name="std::forward_list&lt;*&gt;" Priority="Medium">
+      <DisplayString Condition="_Mypair._Myval2._Myhead._Next == 0">empty</DisplayString>
+      <DisplayString Condition="_Mypair._Myval2._Myhead._Next != 0">non-empty</DisplayString>
+      <Expand>
+          <Item Name="[allocator]" ExcludeView="simple">_Mypair</Item>
+          <LinkedListItems>
+              <HeadPointer>(_Node*)&amp;*_Mypair._Myval2._Myhead._Next</HeadPointer>
+              <NextPointer>(_Node*)&amp;*_Next</NextPointer>
+              <ValueNode>_Myval</ValueNode>
+          </LinkedListItems>
+      </Expand>
+  </Type>
+
+  <Type Name="std::_Flist_iterator&lt;*&gt;" Priority="Medium">
+      <AlternativeType Name="std::_Flist_const_iterator&lt;*&gt;" />
+      <SmartPointer Usage="Minimal">&amp;((_Node*)_Ptr)-&gt;_Myval,na</SmartPointer>
+      <DisplayString Condition="_Ptr == 0">end</DisplayString>
+      <DisplayString Condition="_Ptr != 0">{**this}</DisplayString>
+  </Type>
+
 
   <!-- VC 2015 -->
   <Type Name="std::list&lt;*&gt;">
