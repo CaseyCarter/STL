@@ -25,33 +25,38 @@ _STL_DISABLE_CLANG_WARNINGS
 _STD_BEGIN
 
 #ifdef _M_CEE_PURE
-using _Lockit2 = _Lockit;
-#else // ^^^ defined(_M_CEE_PURE) / !defined(_M_CEE_PURE) vvv
-class _NODISCARD _Lockit2 {
+class _NODISCARD _IDL_Lock {
 public:
-    _CONSTEXPR20 _Lockit2() noexcept {
-        if (!_STD _Is_constant_evaluated()) {
-            ::new (static_cast<void*>(&_Space)) _Lockit;
+    _IDL_Lock(bool) noexcept {}
+
+    _IDL_Lock(const _IDL_Lock&)            = delete;
+    _IDL_Lock& operator=(const _IDL_Lock&) = delete;
+
+private:
+    _Lockit _Lock(_LOCK_DEBUG);
+};
+#else // ^^^ defined(_M_CEE_PURE) / !defined(_M_CEE_PURE) vvv
+class _NODISCARD _IDL_Lock {
+public:
+    _CONSTEXPR20 _IDL_Lock(bool _Disable) noexcept : _Disable(_Disable) {
+        if (!_Disable) {
+            ::new (static_cast<void*>(&_Lock)) _Lockit(_LOCK_DEBUG);
         }
     }
 
-    _CONSTEXPR20 explicit _Lockit2(int _Kind) noexcept {
-        if (!_STD _Is_constant_evaluated()) {
-            ::new (static_cast<void*>(&_Space)) _Lockit(_Kind);
-        }
-    }
+    _IDL_Lock(const _IDL_Lock&)            = delete;
+    _IDL_Lock& operator=(const _IDL_Lock&) = delete;
 
-    _Lockit2(const _Lockit2&)            = delete;
-    _Lockit2& operator=(const _Lockit2&) = delete;
-
-    _CONSTEXPR20 ~_Lockit2() noexcept {
-        if (!_STD _Is_constant_evaluated()) {
-            reinterpret_cast<_Lockit&>(_Space).~_Lockit();
+    _CONSTEXPR20 ~_IDL_Lock() noexcept {
+        if (!_Disable) {
+            _Lock.~_Lockit();
         }
     }
 
 private:
-    alignas(_Lockit) unsigned char _Space[sizeof(_Lockit)];
+    union {
+        _Lockit _Lock;
+    } bool _Disable;
 };
 #endif // ^^^ !defined(_M_CEE_PURE) ^^^
 
@@ -372,7 +377,7 @@ public:
 #if _ITERATOR_DEBUG_LEVEL == 2
     _CONSTEXPR_EXP void _Orphan_ptr(const _Linkptr _Ptr) noexcept { // orphan iterators with specified pointer
         const _Linkptr _BHead = _Before_head();
-        _Lockit2 _Lock(_LOCK_DEBUG);
+        _IDL_Lock _Lock(_STD _Is_constant_evaluated());
         _Iterator_base12** _Pnext = &this->_Myproxy->_Myfirstiter;
         while (*_Pnext) {
             const auto _Pnextptr = static_cast<_Flist_const_iterator<_Flist_val>&>(**_Pnext)._Ptr;
@@ -1398,7 +1403,7 @@ private:
             // *this is empty; take all elements of _Right with no comparisons
 #if _ITERATOR_DEBUG_LEVEL == 2
             {
-                _Lockit2 _Lock(_LOCK_DEBUG);
+                _IDL_Lock _Lock(_STD _Is_constant_evaluated());
                 _Transfer_non_before_begin_ownership(_Right);
             } // unlock
 #endif // _ITERATOR_DEBUG_LEVEL == 2
@@ -1413,7 +1418,7 @@ private:
         if constexpr (_Noexcept) {
             // if the comparison is noexcept, we can take all the iterators in one go and avoid quadratic updates of
             // the iterator chain
-            _Lockit2 _Lock(_LOCK_DEBUG);
+            _IDL_Lock _Lock(_STD _Is_constant_evaluated());
             _Transfer_non_before_begin_ownership(_Right);
         } // unlock
 #endif // _ITERATOR_DEBUG_LEVEL == 2
@@ -1463,7 +1468,7 @@ private:
 
 #if _ITERATOR_DEBUG_LEVEL == 2
             if constexpr (!_Noexcept) {
-                _Lockit2 _Lock(_LOCK_DEBUG);
+                _IDL_Lock _Lock(_STD _Is_constant_evaluated());
                 for (auto _Next = _First2; _Next != _Run_end; _Next = _Next->_Next) {
                     _Transfer_ownership(_Right, _Next);
                 }
@@ -1567,7 +1572,7 @@ private:
 
 #if _ITERATOR_DEBUG_LEVEL == 2
         if (this != _STD addressof(_Right)) {
-            _Lockit2 _Lock(_LOCK_DEBUG);
+            _IDL_Lock _Lock(_STD _Is_constant_evaluated());
             _Transfer_ownership(_Right, _Prev->_Next);
         }
 #endif // _ITERATOR_DEBUG_LEVEL == 2
@@ -1600,7 +1605,7 @@ private:
 
 #if _ITERATOR_DEBUG_LEVEL == 2
         if (this != _STD addressof(_Right)) { // transfer ownership of (_First, _Last)
-            _Lockit2 _Lock(_LOCK_DEBUG);
+            _IDL_Lock _Lock(_STD _Is_constant_evaluated());
             _Unchecked_const_iterator _Next = _First;
             while (++_Next != _Last) { // transfer ownership
                 _Transfer_ownership(_Right, _Next._Ptr);
