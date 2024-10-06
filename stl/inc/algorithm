@@ -7307,23 +7307,17 @@ namespace ranges {
 } // namespace ranges
 #endif // _HAS_CXX20
 
-_NODISCARD constexpr _Distance_unknown _Idl_dist_add(_Distance_unknown, _Distance_unknown) {
-    return {};
-}
-
-template <class _Diff1>
-_NODISCARD constexpr _Distance_unknown _Idl_dist_add(_Diff1, _Distance_unknown) {
-    return {};
-}
-
-template <class _Diff2>
-_NODISCARD constexpr _Distance_unknown _Idl_dist_add(_Distance_unknown, _Diff2) {
-    return {};
-}
-
 template <class _Diff1, class _Diff2>
 _NODISCARD constexpr auto _Idl_dist_add(_Diff1 _Lhs, _Diff2 _Rhs) {
+    (void) _Lhs;
+    (void) _Rhs;
+    if constexpr (is_same_v<_Diff1, _Distance_unbounded> || is_same_v<_Diff2, _Distance_unbounded>) {
+        return _Distance_unbounded{};
+    } else if constexpr (is_same_v<_Diff1, _Distance_unknown> || is_same_v<_Diff2, _Distance_unknown>) {
+        return _Distance_unknown{};
+    } else {
     return _Lhs + _Rhs;
+    }
 }
 
 _EXPORT_STD template <class _InIt1, class _InIt2, class _OutIt, class _Pr>
