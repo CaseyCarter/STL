@@ -284,9 +284,9 @@ public:
     }
 
     _CONSTEXPR_EXP const _Mylist* _Getcont() const noexcept {
-#ifndef __clang__ // TRANSITION, FIXME
+#ifndef __clang__ // TRANSITION, VSO-2270583
         const auto _Raw_container = this->_Iterator_base::_Getcont();
-        const auto _Cont          = _Raw_container ? static_cast<const _Mylist*>(_Raw_container) : nullptr; // FIXME
+        const auto _Cont          = _Raw_container ? static_cast<const _Mylist*>(_Raw_container) : nullptr;
         return _Cont;
 #else // ^^^ workaround / no workaround vvv
         return static_cast<const _Mylist*>(this->_Iterator_base::_Getcont());
