@@ -85,7 +85,7 @@ struct _Flist_node : _Flist_link<_Voidptr> { // forward_list node
     }
 
     template <class _Alnode, class... _Args>
-    static _CONSTEXPR20 void _Construct(_Alnode& _Al, const _Nodeptr _Ptr, _Args&&... args) {
+    static _CONSTEXPR_EXP void _Construct(_Alnode& _Al, const _Nodeptr _Ptr, _Args&&... args) {
         // Construct a node in uninitialized storage at _Ptr and initialize its contained value with the specified
         // arguments
         _STL_INTERNAL_CHECK(_Ptr != nullptr);
