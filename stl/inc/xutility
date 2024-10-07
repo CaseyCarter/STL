@@ -1436,7 +1436,7 @@ template <class _Iter, class _Diff>
 _NODISCARD constexpr decltype(auto) _Get_unwrapped_n(_Iter&& _It, const _Diff _Off) {
     if constexpr (is_pointer_v<decay_t<_Iter>>) {
         return _It + 0;
-    } else if constexpr (_Unwrappable_for_offset_v<_Iter> && is_integral_v<_Diff>) {
+    } else if constexpr (_Unwrappable_for_offset_v<_Iter> && _Signed_integer_like<_Diff>) {
         // ask an iterator to assert that the iterator moved _Off positions is valid, and unwrap
         using _IDiff     = _Iter_diff_t<_Remove_cvref_t<_Iter>>;
         using _CDiff     = common_type_t<_Diff, _IDiff>;
