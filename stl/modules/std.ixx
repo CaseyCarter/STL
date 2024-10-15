@@ -7,6 +7,11 @@ module;
 // This named module expects to be built with classic headers, not header units.
 #define _BUILD_STD_MODULE
 
+// We don't want to export the pre-standard two argument wcstok overload that UCRT provides for backwards compatibility.
+#ifndef _CRT_NO_INLINE_DEPRECATED_WCSTOK
+#define _CRT_NO_INLINE_DEPRECATED_WCSTOK 1
+#endif
+
 // The subset of "C headers" [tab:c.headers] corresponding to
 // the "C++ headers for C library facilities" [tab:headers.cpp.c]
 #include <assert.h>
