@@ -29,7 +29,7 @@ _EXPORT_STD using _CSTD strftime;
 _EXPORT_STD using _CSTD timespec;
 #endif // _HAS_CXX17
 
-#ifdef _BUILD_STD_MODULE // TRANSITION, OS-33790456; `template <int = 0>` avoids ambiguity
+#if defined(_BUILD_STD_MODULE) && !defined(_UCRT_MODULAR_INLINE) // TRANSITION, FIXME
 _STL_DISABLE_DEPRECATED_WARNING
 
 _EXPORT_STD template <int = 0>
