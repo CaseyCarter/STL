@@ -207,6 +207,9 @@ InsertNewlineAtEOF: true
 # LambdaBodyIndentation: Signature
 # LineEnding:      DeriveLF
 LineEnding:      CRLF
+Macros:
+- _LIKELY=[[likely]]
+- _UNLIKELY=[[unlikely]]
 # NOTE: MacroBlockBegin/MacroBlockEnd don't work with _CATCH_ALL.
 # MacroBlockBegin: ''
 # MacroBlockEnd:   ''
