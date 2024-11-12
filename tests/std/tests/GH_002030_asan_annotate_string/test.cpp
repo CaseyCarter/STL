@@ -26,12 +26,16 @@
 #include <type_traits>
 #include <utility>
 
+#ifdef INCLUDE_ASAN_INTERFACE
+#include <sanitizer/asan_interface.h>
+#endif
+
 using namespace std;
 
 #define STATIC_ASSERT(...) static_assert(__VA_ARGS__, #__VA_ARGS__)
 
 #ifdef __SANITIZE_ADDRESS__
-extern "C" int __sanitizer_verify_contiguous_container(const void* beg, const void* mid, const void* end) noexcept;
+extern "C" int __sanitizer_verify_contiguous_container(const void* beg, const void* mid, const void* end);
 #endif // ASan instrumentation enabled
 
 constexpr auto literal_input = "Hello fluffy kittens";

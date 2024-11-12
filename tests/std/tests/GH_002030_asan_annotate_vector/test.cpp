@@ -12,6 +12,10 @@
 #include <utility>
 #include <vector>
 
+#ifdef INCLUDE_ASAN_INTERFACE
+#include <sanitizer/asan_interface.h>
+#endif
+
 #pragma warning(disable : 4984) // 'if constexpr' is a C++17 language extension
 
 #ifdef __clang__
@@ -32,8 +36,8 @@ using namespace std;
 
 #ifdef __SANITIZE_ADDRESS__
 extern "C" {
-void* __sanitizer_contiguous_container_find_bad_address(const void* beg, const void* mid, const void* end) noexcept;
-void __asan_describe_address(void*) noexcept;
+const void* __sanitizer_contiguous_container_find_bad_address(const void* beg, const void* mid, const void* end);
+void __asan_describe_address(void*);
 }
 #endif // ASan instrumentation enabled
 
@@ -172,7 +176,8 @@ bool verify_vector(vector<T, Alloc>& vec) {
     const void* const mid       = vec.data() + vec.size();
     const void* const fixed_mid = aligned._Clamp_to_end(mid);
 
-    void* bad_address = __sanitizer_contiguous_container_find_bad_address(aligned._First, fixed_mid, aligned._End);
+    const void* bad_address =
+        __sanitizer_contiguous_container_find_bad_address(aligned._First, fixed_mid, aligned._End);
     if (bad_address == nullptr) {
         return true;
     }
@@ -189,7 +194,7 @@ bool verify_vector(vector<T, Alloc>& vec) {
     cout << "  aligned_last:  " << fixed_mid << endl;
     cout << "  end:           " << buf_end << endl;
     cout << "  aligned_end:   " << aligned._End << endl;
-    __asan_describe_address(bad_address);
+    __asan_describe_address(const_cast<void*>(bad_address));
 
     return false;
 #else // ^^^ ASan instrumentation enabled / ASan instrumentation disabled vvv
