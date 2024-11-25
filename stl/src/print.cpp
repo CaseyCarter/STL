@@ -46,6 +46,13 @@ extern "C" {
         return __std_unicode_console_retrieval_result{._Error = __std_win_error::_File_not_found};
     }
 
+    if (GetConsoleOutputCP() == CP_UTF8) {
+        // The console is set up to output UTF-8 normally. We don't need to route through WriteConsoleW;
+        // we can perform normal output without flushing the stream buffers and transcoding to UTF-16.
+        // Lie about the result, so the caller will avoid the "native Unicode API" code path.
+        return __std_unicode_console_retrieval_result{._Error = __std_win_error::_File_not_found};
+    }
+
     return __std_unicode_console_retrieval_result{
         ._Console_handle = static_cast<__std_unicode_console_handle>(
             reinterpret_cast<_STD underlying_type_t<__std_unicode_console_handle>>(_Console_handle)),
