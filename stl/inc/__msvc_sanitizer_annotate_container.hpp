@@ -118,54 +118,58 @@ _STL_DISABLE_CLANG_WARNINGS
 #undef _ACTIVATE_VECTOR_ANNOTATION
 
 extern "C" {
-#ifdef _INSERT_VECTOR_ANNOTATION
-extern const bool _Asan_vector_should_annotate;
 #endif
 
 #ifdef _INSERT_STRING_ANNOTATION
 extern const bool _Asan_string_should_annotate;
 #endif
+
+#ifdef _INSERT_VECTOR_ANNOTATION
+extern const bool _Asan_vector_should_annotate;
+#endif
 } // extern "C"
 
-#if defined(_INSERT_VECTOR_ANNOTATION) || defined(_INSERT_STRING_ANNOTATION)
-extern "C" {
-// This must match ASan's primary declaration, which isn't marked `noexcept`.
-void __cdecl __sanitizer_annotate_contiguous_container(
-    const void* _First, const void* _End, const void* _Old_last, const void* _New_last);
-} // extern "C"
-
+#if defined(_INSERT_STRING_ANNOTATION) || defined(_INSERT_VECTOR_ANNOTATION)
 #ifdef _M_ARM64EC
-#pragma comment(linker, \
-    "/alternatename:#__sanitizer_annotate_contiguous_container=#__sanitizer_annotate_contiguous_container_default")
-#pragma comment(linker, \
-    "/alternatename:__sanitizer_annotate_contiguous_container=__sanitizer_annotate_contiguous_container_default")
-#pragma comment(linker, "/alternatename:#_Asan_vector_should_annotate=#_Asan_vector_should_annotate_default")
-#pragma comment(linker, "/alternatename:_Asan_vector_should_annotate=_Asan_vector_should_annotate_default")
-#pragma comment(linker, "/alternatename:#_Asan_string_should_annotate=#_Asan_string_should_annotate_default")
-#pragma comment(linker, "/alternatename:_Asan_string_should_annotate=_Asan_string_should_annotate_default")
+#define _STL_NATIVE_SYMBOL_PREFIX "#"
+#define _STL_HYBRID_SYMBOL_PREFIX ""
 #elif defined(_M_HYBRID)
-#pragma comment(linker, \
-    "/alternatename:#__sanitizer_annotate_contiguous_container=#__sanitizer_annotate_contiguous_container_default")
-#pragma comment(linker, \
-    "/alternatename:___sanitizer_annotate_contiguous_container=___sanitizer_annotate_contiguous_container_default")
-#pragma comment(linker, "/alternatename:#_Asan_vector_should_annotate=#_Asan_vector_should_annotate_default")
-#pragma comment(linker, "/alternatename:__Asan_vector_should_annotate=__Asan_vector_should_annotate_default")
-#pragma comment(linker, "/alternatename:#_Asan_string_should_annotate=#_Asan_string_should_annotate_default")
-#pragma comment(linker, "/alternatename:__Asan_string_should_annotate=__Asan_string_should_annotate_default")
+#define _STL_NATIVE_SYMBOL_PREFIX "#"
+#define _STL_HYBRID_SYMBOL_PREFIX "_"
 #elif defined(_M_IX86)
-#pragma comment(linker, \
-    "/alternatename:___sanitizer_annotate_contiguous_container=___sanitizer_annotate_contiguous_container_default")
-#pragma comment(linker, "/alternatename:__Asan_vector_should_annotate=__Asan_vector_should_annotate_default")
-#pragma comment(linker, "/alternatename:__Asan_string_should_annotate=__Asan_string_should_annotate_default")
+#define _STL_NATIVE_SYMBOL_PREFIX "_"
 #elif defined(_M_X64) || defined(_M_ARM) || defined(_M_ARM64)
-#pragma comment(linker, \
-    "/alternatename:__sanitizer_annotate_contiguous_container=__sanitizer_annotate_contiguous_container_default")
-#pragma comment(linker, "/alternatename:_Asan_vector_should_annotate=_Asan_vector_should_annotate_default")
-#pragma comment(linker, "/alternatename:_Asan_string_should_annotate=_Asan_string_should_annotate_default")
+#define _STL_NATIVE_SYMBOL_PREFIX ""
 #else // ^^^ known architecture / unknown architecture vvv
 #error Unknown architecture
 #endif // ^^^ unknown architecture ^^^
 
+#ifdef _STL_HYBRID_SYMBOL_PREFIX
+#define _STL_DATA_ALIAS(alias, target) \
+    __pragma(comment(linker, "/ALTERNATENAME:" _STL_HYBRID_SYMBOL_PREFIX #alias "=" _STL_HYBRID_SYMBOL_PREFIX #target))
+#define _STL_CODE_ALIAS(alias, target) \
+    _STL_DATA_ALIAS(alias, target)     \
+    __pragma(comment(linker, "/ALTERNATENAME:" _STL_NATIVE_SYMBOL_PREFIX #alias "=" _STL_NATIVE_SYMBOL_PREFIX #target))
+#else
+#define _STL_DATA_ALIAS(alias, target) \
+    __pragma(comment(linker, "/ALTERNATENAME:" _STL_NATIVE_SYMBOL_PREFIX #alias "=" _STL_NATIVE_SYMBOL_PREFIX #target))
+#define _STL_CODE_ALIAS(alias, target) _STL_DATA_ALIAS(alias, target)
+#endif
+
+extern "C" { // This must match ASan's primary declaration, which isn't marked `noexcept`.
+void __cdecl __sanitizer_annotate_contiguous_container(
+    const void* _First, const void* _End, const void* _Old_last, const void* _New_last);
+} // extern "C"
+
+_STL_CODE_ALIAS(__sanitizer_annotate_contiguous_container, __sanitizer_annotate_contiguous_container_default)
+
+_STL_DATA_ALIAS(_Asan_string_should_annotate, _Asan_string_should_annotate_default)
+_STL_DATA_ALIAS(_Asan_vector_should_annotate, _Asan_vector_should_annotate_default)
+
+#undef _STL_CODE_ALIAS
+#undef _STL_DATA_ALIAS
+#undef _STL_HYBRID_SYMBOL_PREFIX
+#undef _STL_NATIVE_SYMBOL_PREFIX
 #endif // ^^^ insert ASan annotations ^^^
 
 #pragma pop_macro("new")
