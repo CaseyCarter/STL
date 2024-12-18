@@ -15,16 +15,25 @@ _STL_DISABLE_CLANG_WARNINGS
 #pragma push_macro("new")
 #undef new
 
-// The following macros change the behavior of this file:
-//   - _DISABLE_STL_ANNOTATION: Disable ASan annotations in the standard library
-//     (this will be auto-defined on unsupported platforms)
-//     + _DISABLE_STRING_ANNOTATION: same, but for only `basic_string`
-//     + _DISABLE_VECTOR_ANNOTATION: same, but for only `vector`
-//   - _ENABLE_STL_ANNOTATION_ON_UNSUPPORTED_PLATFORMS: Don't auto-disable ASan annotations
-//   - _ANNOTATE_STL: Even when ASan annotations are disabled, insert the code for annotating into the STL anyways;
-//     this is useful when building static libraries which may be linked against both ASan and non-ASan binaries.
+// By default, Standard Library ASan annotations are enabled when compiling with ASan instrumentation
+// (`/fsanitize=address`) on supported platforms and disabled otherwise. The following macros are available to control
+// ASan annotations:
+//   - _DISABLE_STL_ANNOTATION: Disable all ASan annotations.
+//     + _DISABLE_STRING_ANNOTATION: Disable annotations for `basic_string`
+//     + _DISABLE_VECTOR_ANNOTATION: Disable annotations for `vector`
+//   - _ENABLE_STL_ANNOTATION_ON_UNSUPPORTED_PLATFORMS: Even on unsupported platforms, enable ASan annotations if
+//     instrumentation is enabled.
+//   - _ANNOTATE_STL: Enable ASan annotations even when ASan instrumentation is disabled.
+//     This is useful when building static libraries which may be linked against both ASan and non-ASan binaries.
 //     + _ANNOTATE_STRING: same, but only for `basic_string`
 //     + _ANNOTATE_VECTOR: same, but only for `vector`
+//
+// The more specific `_ANNOTATE_MEOW` macros take precedence over general `_DISABLE_STL_ANNOTATION`. Likewise
+// `_DISABLE_MEOW_ANNOTATION` takes precedence over `_ANNOTATE_STL`.
+
+#if defined(_DISABLE_STL_ANNOTATION) && defined(_ANNOTATE_STL)
+#error _DISABLE_STL_ANNOTATION and _ANNOTATE_STL are mutually exclusive
+#endif // ^^^ defined(_DISABLE_STL_ANNOTATION) && defined(_ANNOTATE_STL) ^^^
 
 #if !defined(_DISABLE_STL_ANNOTATION) && !defined(_ENABLE_STL_ANNOTATION_ON_UNSUPPORTED_PLATFORMS)
 
@@ -50,6 +59,10 @@ _STL_DISABLE_CLANG_WARNINGS
 #endif // ^^^ defined(_DISABLE_STL_ANNOTATION) ^^^
 
 #ifdef _ANNOTATE_STL
+
+#ifdef _DISABLE_STL_ANNOTATION
+#error _ANNOTATE_STL and _DISABLE_STL_ANNOTATION are mutually exclusive
+#endif // ^^^ defined(_DISABLE_STL_ANNOTATION) ^^^
 
 #ifndef _ANNOTATE_STRING
 #define _ANNOTATE_STRING
@@ -108,26 +121,14 @@ _STL_DISABLE_CLANG_WARNINGS
 #ifdef _ACTIVATE_STRING_ANNOTATION
 #pragma comment(lib, "stl_asan")
 #pragma detect_mismatch("annotate_string", "1")
+#undef _ACTIVATE_STRING_ANNOTATION
 #endif // ^^^ defined(_ACTIVATE_STRING_ANNOTATION) ^^^
+
 #ifdef _ACTIVATE_VECTOR_ANNOTATION
 #pragma comment(lib, "stl_asan")
 #pragma detect_mismatch("annotate_vector", "1")
-#endif // ^^^ defined(_ACTIVATE_VECTOR_ANNOTATION) ^^^
-
-#undef _ACTIVATE_STRING_ANNOTATION
 #undef _ACTIVATE_VECTOR_ANNOTATION
-
-extern "C" {
-#endif
-
-#ifdef _INSERT_STRING_ANNOTATION
-extern const bool _Asan_string_should_annotate;
-#endif
-
-#ifdef _INSERT_VECTOR_ANNOTATION
-extern const bool _Asan_vector_should_annotate;
-#endif
-} // extern "C"
+#endif // ^^^ defined(_ACTIVATE_VECTOR_ANNOTATION) ^^^
 
 #if defined(_INSERT_STRING_ANNOTATION) || defined(_INSERT_VECTOR_ANNOTATION)
 #ifdef _M_ARM64EC
@@ -147,24 +148,34 @@ extern const bool _Asan_vector_should_annotate;
 #ifdef _STL_HYBRID_SYMBOL_PREFIX
 #define _STL_DATA_ALIAS(alias, target) \
     __pragma(comment(linker, "/ALTERNATENAME:" _STL_HYBRID_SYMBOL_PREFIX #alias "=" _STL_HYBRID_SYMBOL_PREFIX #target))
+// "Hybrid" architectures have different symbols for native and hybrid function flavors, we need aliases for both.
 #define _STL_CODE_ALIAS(alias, target) \
     _STL_DATA_ALIAS(alias, target)     \
     __pragma(comment(linker, "/ALTERNATENAME:" _STL_NATIVE_SYMBOL_PREFIX #alias "=" _STL_NATIVE_SYMBOL_PREFIX #target))
 #else
 #define _STL_DATA_ALIAS(alias, target) \
     __pragma(comment(linker, "/ALTERNATENAME:" _STL_NATIVE_SYMBOL_PREFIX #alias "=" _STL_NATIVE_SYMBOL_PREFIX #target))
+// Non-hybrid architectures only need one alias per function symbol.
 #define _STL_CODE_ALIAS(alias, target) _STL_DATA_ALIAS(alias, target)
 #endif
 
-extern "C" { // This must match ASan's primary declaration, which isn't marked `noexcept`.
+extern "C" {
+#ifdef _INSERT_STRING_ANNOTATION
+extern const bool _Asan_string_should_annotate;
+_STL_DATA_ALIAS(_Asan_string_should_annotate, _Asan_string_should_annotate_default)
+#endif
+
+#ifdef _INSERT_VECTOR_ANNOTATION
+extern const bool _Asan_vector_should_annotate;
+_STL_DATA_ALIAS(_Asan_vector_should_annotate, _Asan_vector_should_annotate_default)
+#endif
+
+// This must match ASan's primary declaration, which isn't marked `noexcept`.
 void __cdecl __sanitizer_annotate_contiguous_container(
     const void* _First, const void* _End, const void* _Old_last, const void* _New_last);
-} // extern "C"
 
 _STL_CODE_ALIAS(__sanitizer_annotate_contiguous_container, __sanitizer_annotate_contiguous_container_default)
-
-_STL_DATA_ALIAS(_Asan_string_should_annotate, _Asan_string_should_annotate_default)
-_STL_DATA_ALIAS(_Asan_vector_should_annotate, _Asan_vector_should_annotate_default)
+} // extern "C"
 
 #undef _STL_CODE_ALIAS
 #undef _STL_DATA_ALIAS
